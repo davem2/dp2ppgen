@@ -1,7 +1,28 @@
 #!/usr/bin/env python
 
+"""ppimg
+
+Usage:
+  ppimg <infile> <outfile>
+  ppimg <infile>
+
+ppimg automates the process of replacing Illustration tags with the appropriate ppgen markup
+
+Examples:
+  ppimg school-src.txt school2-src.txt
+  ppimg school-src.txt
+
+Options:
+  -t --tbd  CHANGEME
+  
+"""  
+
 from docopt import docopt
 from PIL import Image
+import glob
+import re
+import os
+import sys
 
 
 
@@ -14,33 +35,199 @@ from PIL import Image
 #TODO:
 #multiline caption support
 
-"""ppimg
+inBuf = []
+outBuf = []
+lineNum = 0
+currentScanPage = 0
+encoding = ""
 
-Usage:
-  ppimg <infile> <outfile>
 
-ppimg automates the process of replacing [Illustration] tags with the appropriate ppgen markup
-
-Examples:
-  ppimg school-src.txt school2-src.txt
-
-Options:
-  -t --tbd  CHANGEME
-  
-"""  
+def processPageNumbers():
+	return;
+	
+def processHeadings():
+	return;	
 
 def processIllustrations( infile, outfile ):
+	global inBuf
+	global outBuf
+	global lineNum
+	global currentScanPage
+	global encoding
+
 	# Build dictionary of images
-	files = [f for f in os.listdir('./images') if re.match(r'i_[0-9][0-9][0-9].*\.jpg', f)]
+#	files = [f for f in os.listdir('./images') if re.match(r'.*\.jpg', f)]
+	files = glob.glob("images/*.jpg")
+#	print(files)
 	
-	return
+	illustrations = {}
+
+	# Build dictionary of illustrations in images folder
+	
+
+	for f in files:
+		try:
+			img = Image.open(f)
+			img.load()
+		except:
+			print("Unable to load image", f)
+			sys.exit(1)
+
+#		print(f, img.size);
+		
+		m = re.match(r"images/i_([^\.]+)", f)
+		if( m ):		
+			scanPageNum = m.group(1)
+			anchorID = "i"+scanPageNum
+#			print(anchorID)
+			caption = "test"	
+			f = re.sub(r"images/", "", f)
+			illustrations[scanPageNum] = ({'anchorID':anchorID, 'fileName':f, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':caption })
+#			print(illustrations);
+	
+
+
+	# Find and replace [Illustration: caption] markup
+	
+	loadFile( infile )
+	
+#	print( inBuf )
+	
+	lineNum = 0
+	while lineNum < len(inBuf):
+#		print( str(lineNum) + " : " + inBuf[lineNum] )	
+		
+		# Keep track of active scanpage
+		m = re.match(r"\/\/ (\d+)\.png", inBuf[lineNum])
+		if( m ):
+			currentScanPage = m.group(1)
+#			print( currentScanPage)
+
+		# Copy until next illustration block
+		if( re.match(r"^\[Illustration", inBuf[lineNum]) ):
+#			print("**************************************************\n")
+#			print( inBuf[lineNum] )	
+			inBlock = []
+			outBlock = []
+		
+			# Copy illustration block
+			inBuf[lineNum] = re.sub(r"^\[Illustration: ", "", inBuf[lineNum])
+			inBuf[lineNum] = re.sub(r"^\[Illustration", "", inBuf[lineNum])
+			inBlock.append(inBuf[lineNum])
+			while( lineNum < len(inBuf)-1 and not re.search(r"]$", inBuf[lineNum]) ):
+#				print(str(lineNum))
+#				print(str(len(inBuf)))
+#				print( inBuf[lineNum] )	
+				lineNum += 1
+				inBlock.append(inBuf[lineNum])
+			
+			inBlock[-1] = re.sub(r"]$", "", inBlock[-1])
+
+#			print( inBlock )	
+#			print("**************************************************\n")
+			lineNum += 1
+			
+			# Convert to ppgen illustration block
+#			.il id=i_001 fn=i_001.jpg w=600 alt=''
+#			.ca SOUTHAMPTON BAR IN THE OLDEN TIME.
+			outBlock.append( ".il id=i" + currentScanPage + " fn=" +  illustrations[currentScanPage]['fileName'] + " w=" + str(illustrations[currentScanPage]['dimensions'][0]) + " alt=''" )
+			captionLine = ""
+			for line in inBlock:
+				captionLine += line
+				captionLine += "|"
+
+			captionLine = captionLine[:-1]
+			
+			outBlock.append( ".ca " + captionLine );
+			
+#			print( outBlock)
+			
+			# Write out ppgen illustration block
+			for line in outBlock:
+				outBuf.append(line)
+		else:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+	
+	f = open(outfile,'w')
+	for line in outBuf:
+		f.write(line+'\n')
+	f.close()
+		
+#	writeToFile( outBuf, outfile )
+	
+def loadFile(fn):
+    global inBuf
+    global encoding
+
+    if not os.path.isfile(fn):
+      fatal("specified file {} not found".format(fn))
+
+    if encoding == "":
+      try:
+        wbuf = open(fn, "r", encoding='ascii').read()
+        encoding = "ASCII" # we consider ASCII as a subset of Latin-1 for DP purposes
+        inBuf = wbuf.split("\n")
+      except Exception as e:
+        pass
+
+    if encoding == "":
+      try:
+        wbuf = open(fn, "rU", encoding='UTF-8').read()
+        encoding = "utf_8"
+        inBuf = wbuf.split("\n")
+        # remove BOM on first line if present
+        t = ":".join("{0:x}".format(ord(c)) for c in inBuf[0])
+        if t[0:4] == 'feff':
+          inBuf[0] = inBuf[0][1:]
+      except:
+        pass
+
+    if encoding == "":
+      try:
+        wbuf = open(fn, "r", encoding='latin_1').read()
+        encoding = "latin_1"
+        inBuf = wbuf.split("\n")
+      except Exception as e:
+        pass
+
+    if encoding == "":
+      self.fatal("cannot determine input file decoding")
+    else:
+      # self.info("input file is: {}".format(encoding))
+      if encoding == "ASCII":
+        encoding = "latin_1" # handle ASCII as Latin-1 for DP purposes
+    while inBuf[-1] == "": # no trailing blank lines
+      inBuf.pop()
+
+    for i in range(len(inBuf)):
+      inBuf[i] = inBuf[i].rstrip()
+    
+# display error message and exit
+def fatal(message):
+	sys.stderr.write("FATAL: " + message + "\n")
+	exit(1)
+
+# display warning
+def warn(message):
+	if message not in self.warnings: # don't give exact same warning more than once.
+		self.warnings.append(message)
+		sys.stderr.write("**warning: " + message + "\n")
+
 
 def main():
 	args = arguments = docopt(__doc__, version='ppimg 0.1')
 	print(args)
 
+	outfile = "out.txt"
+	if( args['<outfile>'] ):
+		outfile = args['<outfile>']
+		
+	infile = args['<infile>']
+	print(infile)
+
 	# Process source document
-	processIllustrations( args['infile'],  args['outfile'] )
+	processIllustrations( infile, outfile )
 		
 	return
 
