@@ -98,6 +98,112 @@ def processPageNumbers( infile, outfile ):
 
 	return;
 	
+def isLineBlank( line ):
+	return re.match( r"^\s*$", line )
+	
+def formatAsID( s ):
+	s = re.sub(r" ", '_', s)		# Replace spaces with underscore	
+	s = re.sub(r"[^\w\s]", '', s)	# Strip everything but alphanumeric and _
+	s = s.lower()					# Lowercase
+
+	return s
+	
+def processHeadings( infile, outfile ):
+	global inBuf
+	global outBuf
+	global lineNum
+	
+	loadFile( infile )
+
+	lineNum = 0
+	consecutiveEmptyLineCount = 0
+	foundChapterHeadingStart = False
+	while lineNum < len(inBuf):
+#		print(lineNum)
+		# Chapter heading blocks are in the form:
+			# (4 empty lines)
+			# chapter name
+			# (1 empty line)
+			# chapter description, opening quote, etc., 1 empty line seperating each
+			# ...
+			# (2 empty lines)
+		
+		if( consecutiveEmptyLineCount == 4 and not isLineBlank(inBuf[lineNum]) ):
+			foundChapterHeadingEnd = False;
+			foundChapterHeadingStart = False;
+#			print("*[START[*******************************************\n")
+#			print( inBuf[lineNum] )	
+			inBlock = []
+			outBlock = []
+			consecutiveEmptyLineCount = 0;
+		
+			# Copy chapter heading block
+			inBlock.append(inBuf[lineNum])
+			while( lineNum < len(inBuf)-1 and not foundChapterHeadingEnd ):
+#				print(str(lineNum))
+#				print(str(len(inBuf)))
+#				print( inBuf[lineNum] )	
+				if( isLineBlank(inBuf[lineNum]) ):
+					consecutiveEmptyLineCount += 1
+					if( consecutiveEmptyLineCount == 2):
+						foundChapterHeadingEnd = True
+				else:
+					consecutiveEmptyLineCount = 0
+				
+				if( not foundChapterHeadingEnd ):
+					lineNum += 1
+					inBlock.append(inBuf[lineNum])
+			
+#			print( inBlock )	
+#			print("*[END]************************************************\n")
+
+			# Chapter headings have exactly 2 empty lines follow, if more than two its something else (title page, ..?)
+			if( lineNum+1 < len(inBuf) and isLineBlank(inBuf[lineNum+1]) ):
+#				print("********* NOT A CHAPTER HEADING *********")
+				for line in inBlock:
+					outBlock.append(line)
+			
+			# Convert chapter heading to ppgen format
+			else:
+				# .sp 4
+				# .h2 id=chapter_vi
+				# CHAPTER VI.||chapter description etc..
+				# .sp 2				
+				chapterID = formatAsID(inBlock[0])
+				chapterLine = ""
+				for line in inBlock:
+					chapterLine += line
+					chapterLine += "|"
+				chapterLine = chapterLine[:-1]
+				
+				outBlock.append(".sp4")
+				outBlock.append(".h2 id=" + chapterID )				
+				outBlock.append(chapterLine)
+				outBlock.append(".sp2")
+					
+			print( outBlock)
+			
+			# Write out ppgen illustration block
+			for line in outBlock:
+				outBuf.append(line)
+				
+		else:
+			if( isLineBlank(inBuf[lineNum]) ):
+				consecutiveEmptyLineCount += 1
+			else:
+				consecutiveEmptyLineCount = 0
+
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+
+	# Save file
+	f = open(outfile,'w')
+	for line in outBuf:
+		f.write(line+'\n')
+	f.close()
+
+	return;
+	
 def processIllustrations( infile, outfile ):
 	global inBuf
 	global outBuf
@@ -296,7 +402,7 @@ def main():
 	# Process source document
 	# TODO: command line switches
 #	processIllustrations( infile, outfile )
-#	processHeadings( infile, outfile )
+	processHeadings( infile, outfile )
 #	processPageNumbers( infile, outfile )
 #	processBlankPages( infile, outfile )
 		
