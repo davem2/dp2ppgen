@@ -42,16 +42,62 @@ currentScanPage = 0
 encoding = ""
 
 
-def removeBlankPages():
-	# replace "[Blank Page]" with "// [Blank Page]"
-	return;
+# Replace : [Blank Page]
+# with    : // [Blank Page]
+def processBlankPages( infile, outfile ):
+	global inBuf
+	global outBuf
+	global lineNum
 	
-def processPageNumbers():
-	return;
-	
-def processHeadings():
-	return;	
+	loadFile( infile )
 
+	lineNum = 0
+	while lineNum < len(inBuf):
+		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
+		if( m ):		
+			outBuf.append("// [Blank Page]")
+			lineNum += 1
+		
+		else:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+
+	# Save file
+	f = open(outfile,'w')
+	for line in outBuf:
+		f.write(line+'\n')
+	f.close()
+
+	return;
+	
+# Replace : -----File: 001.png---\sparkleshine\swankypup\Kipling\SeaRose\Scholar\------
+# with    : // 001.png
+def processPageNumbers( infile, outfile ):
+	global inBuf
+	global outBuf
+	global lineNum
+	
+	loadFile( infile )
+
+	lineNum = 0
+	while lineNum < len(inBuf):
+		m = re.match(r"^-----File: (\d\d\d\.png).*", inBuf[lineNum])
+		if( m ):		
+			outBuf.append("// " +  m.group(1))
+			lineNum += 1
+		
+		else:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+
+	# Save file
+	f = open(outfile,'w')
+	for line in outBuf:
+		f.write(line+'\n')
+	f.close()
+
+	return;
+	
 def processIllustrations( infile, outfile ):
 	global inBuf
 	global outBuf
@@ -171,13 +217,12 @@ def processIllustrations( infile, outfile ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 	
+	# Save file
 	f = open(outfile,'w')
 	for line in outBuf:
 		f.write(line+'\n')
 	f.close()
-		
-#	writeToFile( outBuf, outfile )
-	
+			
 def loadFile(fn):
     global inBuf
     global encoding
@@ -249,7 +294,11 @@ def main():
 	print(infile)
 
 	# Process source document
-	processIllustrations( infile, outfile )
+	# TODO: command line switches
+#	processIllustrations( infile, outfile )
+#	processHeadings( infile, outfile )
+#	processPageNumbers( infile, outfile )
+#	processBlankPages( infile, outfile )
 		
 	return
 
