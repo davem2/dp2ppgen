@@ -42,6 +42,10 @@ currentScanPage = 0
 encoding = ""
 
 
+def removeBlankPages():
+	# replace "[Blank Page]" with "// [Blank Page]"
+	return;
+	
 def processPageNumbers():
 	return;
 	
@@ -57,14 +61,12 @@ def processIllustrations( infile, outfile ):
 
 	# Build dictionary of images
 #	files = [f for f in os.listdir('./images') if re.match(r'.*\.jpg', f)]
-	files = glob.glob("images/*.jpg")
+	files = glob.glob("images/*")
 #	print(files)
 	
 	illustrations = {}
 
 	# Build dictionary of illustrations in images folder
-	
-
 	for f in files:
 		try:
 			img = Image.open(f)
@@ -73,8 +75,7 @@ def processIllustrations( infile, outfile ):
 			print("Unable to load image", f)
 			sys.exit(1)
 
-#		print(f, img.size);
-		
+#		print(f, img.size);		
 		m = re.match(r"images/i_([^\.]+)", f)
 		if( m ):		
 			scanPageNum = m.group(1)
@@ -111,8 +112,6 @@ def processIllustrations( infile, outfile ):
 			outBlock = []
 		
 			# Copy illustration block
-			inBuf[lineNum] = re.sub(r"^\[Illustration: ", "", inBuf[lineNum])
-			inBuf[lineNum] = re.sub(r"^\[Illustration", "", inBuf[lineNum])
 			inBlock.append(inBuf[lineNum])
 			while( lineNum < len(inBuf)-1 and not re.search(r"]$", inBuf[lineNum]) ):
 #				print(str(lineNum))
@@ -121,7 +120,6 @@ def processIllustrations( infile, outfile ):
 				lineNum += 1
 				inBlock.append(inBuf[lineNum])
 			
-			inBlock[-1] = re.sub(r"]$", "", inBlock[-1])
 
 #			print( inBlock )	
 #			print("**************************************************\n")
@@ -133,10 +131,13 @@ def processIllustrations( infile, outfile ):
 			outBlock.append( ".il id=i" + currentScanPage + " fn=" +  illustrations[currentScanPage]['fileName'] + " w=" + str(illustrations[currentScanPage]['dimensions'][0]) + " alt=''" )
 			captionLine = ""
 			for line in inBlock:
+				line = re.sub(r"^\[Illustration: ", "", line)
+				line = re.sub(r"^\[Illustration", "", line)
+				line = re.sub(r"]$", "", line)
 				captionLine += line
-				captionLine += "|"
+				captionLine += "<br/>"
 
-			captionLine = captionLine[:-1]
+#			captionLine = captionLine[:-(len("<br/>")]
 			
 			outBlock.append( ".ca " + captionLine );
 			
@@ -145,6 +146,27 @@ def processIllustrations( infile, outfile ):
 			# Write out ppgen illustration block
 			for line in outBlock:
 				outBuf.append(line)
+				
+			# Write out boilerplate code for HTML version as comment in case .il is not sufficient
+			outBuf.append("// ******** BEGIN ********") 
+			outBuf.append("// Boilerplace inline HTML version for use when .il .ca are not sufficient") 
+			outBuf.append(".ig")
+			outBuf.append(".if h")
+			outBuf.append(".de .customCSS { clear:left; float:left; margin:4% 4% 4% 0; }")
+			outBuf.append(".li")
+			outBuf.append("<div class='customCSS'>")
+			outBuf.append("<img src='" + illustrations[currentScanPage]['fileName'] + "' alt='' />")
+			outBuf.append("</div>")
+			outBuf.append(".li-")
+			outBuf.append(".if-")
+			outBuf.append(".if t")
+			for line in inBlock:
+				outBuf.append(line)
+			outBuf.append(".if-")			
+			outBuf.append(".ig-")
+			outBuf.append("// ********* END *********")
+			
+			
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
