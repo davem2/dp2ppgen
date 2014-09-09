@@ -129,9 +129,6 @@ def processHeadings( inBuf ):
 			foundChapterHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
 		
-			# Remove three of the four consecutive blank lines from output buf
-			outBuf = outBuf[:-3]
-		
 			# Copy chapter heading block to inBlock
 			while( lineNum < len(inBuf) and not foundChapterHeadingEnd ):
 				if( isLineBlank(inBuf[lineNum]) ):
@@ -143,7 +140,7 @@ def processHeadings( inBuf ):
 					consecutiveEmptyLineCount = 0
 				
 				if( foundChapterHeadingEnd ):
-					# Remove trailing double empty lines from chapter heading block
+					# Remove trailing empty lines from chapter heading block
 					inBlock = inBlock[:-1]
 					# Rewind parser (to handle back to back chapter headings)
 					lineNum = findPreviousNonEmptyLine(inBuf, lineNum) + 1
@@ -160,6 +157,9 @@ def processHeadings( inBuf ):
 			
 			# Convert chapter heading to ppgen format
 			else:
+				# Remove three of the four consecutive blank lines from output buf
+				outBuf = outBuf[:-4]
+			
 				# .sp 4
 				# .h2 id=chapter_vi
 				# CHAPTER VI.||chapter description etc..
@@ -171,15 +171,18 @@ def processHeadings( inBuf ):
 					chapterLine += "|"
 				chapterLine = chapterLine[:-1]
 				
+				outBlock.append("// ******** PPPREP GENERATED **************************************") 
 				outBlock.append(".sp 4")
 				outBlock.append(".h2 id=" + chapterID )				
 				outBlock.append(chapterLine)
 				outBlock.append(".sp 2")
 
 				# Write out original as a comment
+				outBlock.append(".ig  // *** PPPREP BEGIN ORIGINAL *********************************") 
 				outBlock.append("") 
-				outBlock.append(".ig  // *** PPPREP BEGIN ******************************************") 
-				outBlock.append("// ******* Original text for reference, delete after inspection ***")
+				outBlock.append("") 
+				outBlock.append("") 
+				outBlock.append("") 
 				for line in inBlock:
 					outBlock.append(line)
 				outBlock.append(".ig- // *** END ***************************************************")
@@ -208,10 +211,6 @@ def processHeadings( inBuf ):
 	return outBuf;
 	
 def processIllustrations( inBuf ):
-	outBuf = []
-	lineNum = 0
-	currentScanPage = 0
-	
 	# Build dictionary of images
 #	files = [f for f in os.listdir('./images') if re.match(r'.*\.jpg', f)]
 	files = glob.glob("images/*")
@@ -238,16 +237,12 @@ def processIllustrations( inBuf ):
 			f = re.sub(r"images/", "", f)
 			illustrations[scanPageNum] = ({'anchorID':anchorID, 'fileName':f, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':caption })
 #			print(illustrations);
-	
-
 
 	# Find and replace [Illustration: caption] markup
-	
-	loadFile( infile )
-	
-#	print( inBuf )
-	
+	outBuf = []
 	lineNum = 0
+	currentScanPage = 0
+		
 	while lineNum < len(inBuf):
 #		print( str(lineNum) + " : " + inBuf[lineNum] )	
 		
@@ -400,7 +395,7 @@ def main():
 	# TODO: command line switches
 	outBuf = processPageNumbers( inBuf )
 	outBuf = processBlankPages( outBuf )
-#	outBuf = processIllustrations( outBuf )
+	outBuf = processIllustrations( outBuf )
 	outBuf = processHeadings( outBuf )
 
 	# Save file
