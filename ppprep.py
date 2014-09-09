@@ -44,14 +44,10 @@ encoding = ""
 
 # Replace : [Blank Page]
 # with    : // [Blank Page]
-def processBlankPages( infile, outfile ):
-	global inBuf
-	global outBuf
-	global lineNum
-	
-	loadFile( infile )
-
+def processBlankPages( inBuf ):
+	outBuf = []
 	lineNum = 0
+	
 	while lineNum < len(inBuf):
 		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
 		if( m ):		
@@ -62,24 +58,14 @@ def processBlankPages( infile, outfile ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
-	# Save file
-	f = open(outfile,'w')
-	for line in outBuf:
-		f.write(line+'\n')
-	f.close()
-
-	return;
+	return outBuf;
 	
 # Replace : -----File: 001.png---\sparkleshine\swankypup\Kipling\SeaRose\Scholar\------
 # with    : // 001.png
-def processPageNumbers( infile, outfile ):
-	global inBuf
-	global outBuf
-	global lineNum
-	
-	loadFile( infile )
-
+def processPageNumbers( inBuf ):
+	outBuf = []
 	lineNum = 0
+	
 	while lineNum < len(inBuf):
 		m = re.match(r"^-----File: (\d\d\d\.png).*", inBuf[lineNum])
 		if( m ):		
@@ -90,13 +76,7 @@ def processPageNumbers( infile, outfile ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
-	# Save file
-	f = open(outfile,'w')
-	for line in outBuf:
-		f.write(line+'\n')
-	f.close()
-
-	return;
+	return outBuf;
 	
 def isLineBlank( line ):
 	return re.match( r"^\s*$", line )
@@ -126,16 +106,12 @@ def findNextNonEmptyLine( buf, startLine ):
 	
 	return lineNum
 	
-def processHeadings( infile, outfile ):
-	global inBuf
-	global outBuf
-	global lineNum
-	
-	loadFile( infile )
-
-	lineNum = 0
+def processHeadings( inBuf ):
+	outBuf = []
+	lineNum = 0	
 	consecutiveEmptyLineCount = 0
 	foundChapterHeadingStart = False
+
 	while lineNum < len(inBuf):
 #		print(lineNum)
 		# Chapter heading blocks are in the form:
@@ -152,6 +128,9 @@ def processHeadings( infile, outfile ):
 			outBlock = []
 			foundChapterHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
+		
+			# Remove three of the four consecutive blank lines from output buf
+			outBuf = outBuf[:-3]
 		
 			# Copy chapter heading block to inBlock
 			while( lineNum < len(inBuf) and not foundChapterHeadingEnd ):
@@ -226,21 +205,13 @@ def processHeadings( infile, outfile ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
-	# Save file
-	f = open(outfile,'w')
-	for line in outBuf:
-		f.write(line+'\n')
-	f.close()
-
-	return;
+	return outBuf;
 	
-def processIllustrations( infile, outfile ):
-	global inBuf
-	global outBuf
-	global lineNum
-	global currentScanPage
-	global encoding
-
+def processIllustrations( inBuf ):
+	outBuf = []
+	lineNum = 0
+	currentScanPage = 0
+	
 	# Build dictionary of images
 #	files = [f for f in os.listdir('./images') if re.match(r'.*\.jpg', f)]
 	files = glob.glob("images/*")
@@ -346,63 +317,58 @@ def processIllustrations( infile, outfile ):
 			outBuf.append(".if-")			
 			outBuf.append(".ig- // *** END *********************************************************************")
 			
-			
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 	
-	# Save file
-	f = open(outfile,'w')
-	for line in outBuf:
-		f.write(line+'\n')
-	f.close()
+	return outBuf;
 			
 def loadFile(fn):
-    global inBuf
-    global encoding
+	inBuf = []
+	encoding = ""
+	
+	if not os.path.isfile(fn):
+		fatal("specified file {} not found".format(fn))
 
-    if not os.path.isfile(fn):
-      fatal("specified file {} not found".format(fn))
+	if encoding == "":
+		try:
+			wbuf = open(fn, "r", encoding='ascii').read()
+			encoding = "ASCII" # we consider ASCII as a subset of Latin-1 for DP purposes
+			inBuf = wbuf.split("\n")
+		except Exception as e:
+			pass
 
-    if encoding == "":
-      try:
-        wbuf = open(fn, "r", encoding='ascii').read()
-        encoding = "ASCII" # we consider ASCII as a subset of Latin-1 for DP purposes
-        inBuf = wbuf.split("\n")
-      except Exception as e:
-        pass
+	if encoding == "":
+		try:
+			wbuf = open(fn, "rU", encoding='UTF-8').read()
+			encoding = "utf_8"
+			inBuf = wbuf.split("\n")
+			# remove BOM on first line if present
+			t = ":".join("{0:x}".format(ord(c)) for c in inBuf[0])
+			if t[0:4] == 'feff':
+				inBuf[0] = inBuf[0][1:]
+		except:
+			pass
 
-    if encoding == "":
-      try:
-        wbuf = open(fn, "rU", encoding='UTF-8').read()
-        encoding = "utf_8"
-        inBuf = wbuf.split("\n")
-        # remove BOM on first line if present
-        t = ":".join("{0:x}".format(ord(c)) for c in inBuf[0])
-        if t[0:4] == 'feff':
-          inBuf[0] = inBuf[0][1:]
-      except:
-        pass
+	if encoding == "":
+		try:
+			wbuf = open(fn, "r", encoding='latin_1').read()
+			encoding = "latin_1"
+			inBuf = wbuf.split("\n")
+		except Exception as e:
+			pass
 
-    if encoding == "":
-      try:
-        wbuf = open(fn, "r", encoding='latin_1').read()
-        encoding = "latin_1"
-        inBuf = wbuf.split("\n")
-      except Exception as e:
-        pass
+	if encoding == "":
+		self.fatal("cannot determine input file decoding")
+	else:
+		# self.info("input file is: {}".format(encoding))
+		if encoding == "ASCII":
+			encoding = "latin_1" # handle ASCII as Latin-1 for DP purposes
 
-    if encoding == "":
-      self.fatal("cannot determine input file decoding")
-    else:
-      # self.info("input file is: {}".format(encoding))
-      if encoding == "ASCII":
-        encoding = "latin_1" # handle ASCII as Latin-1 for DP purposes
-    while inBuf[-1] == "": # no trailing blank lines
-      inBuf.pop()
+	for i in range(len(inBuf)):
+		inBuf[i] = inBuf[i].rstrip()
 
-    for i in range(len(inBuf)):
-      inBuf[i] = inBuf[i].rstrip()
+	return inBuf;
     
 # display error message and exit
 def fatal(message):
@@ -427,12 +393,21 @@ def main():
 	infile = args['<infile>']
 	print(infile)
 
+	# Open source file and represent as an array of lines
+	inBuf = loadFile( infile )
+
 	# Process source document
 	# TODO: command line switches
-#	processPageNumbers( infile, outfile )
-#	processBlankPages( infile, outfile )
-#	processIllustrations( infile, outfile )
-	processHeadings( infile, outfile )
+	outBuf = processPageNumbers( inBuf )
+	outBuf = processBlankPages( outBuf )
+#	outBuf = processIllustrations( outBuf )
+	outBuf = processHeadings( outBuf )
+
+	# Save file
+	f = open(outfile,'w')
+	for line in outBuf:
+		f.write(line+'\n')
+	f.close()
 		
 	return
 
