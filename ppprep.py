@@ -101,12 +101,30 @@ def processPageNumbers( infile, outfile ):
 def isLineBlank( line ):
 	return re.match( r"^\s*$", line )
 	
+def isLineComment( line ):
+	print("***FOUND COMMENT: line")
+	return re.match( r"^\/\/ *$", line )
+	
 def formatAsID( s ):
 	s = re.sub(r" ", '_', s)		# Replace spaces with underscore	
 	s = re.sub(r"[^\w\s]", '', s)	# Strip everything but alphanumeric and _
 	s = s.lower()					# Lowercase
 
 	return s
+	
+def findPreviousNonEmptyLine( buf, startLine ):
+	lineNum = startLine
+	while lineNum < len(buf) and isLineBlank(buf[lineNum]):
+		lineNum -= 1
+	
+	return lineNum
+	
+def findNextNonEmptyLine( buf, startLine ):
+	lineNum = startLine
+	while lineNum >= 0 and isLineBlank(buf[lineNum]):
+		lineNum += 1
+	
+	return lineNum
 	
 def processHeadings( infile, outfile ):
 	global inBuf
@@ -128,38 +146,36 @@ def processHeadings( infile, outfile ):
 			# ...
 			# (2 empty lines)
 		
+		# Chapter heading
 		if( consecutiveEmptyLineCount == 4 and not isLineBlank(inBuf[lineNum]) ):
-			foundChapterHeadingEnd = False;
-			foundChapterHeadingStart = False;
-#			print("*[START[*******************************************\n")
-#			print( inBuf[lineNum] )	
 			inBlock = []
 			outBlock = []
+			foundChapterHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
 		
-			# Copy chapter heading block
-			inBlock.append(inBuf[lineNum])
-			while( lineNum < len(inBuf)-1 and not foundChapterHeadingEnd ):
-#				print(str(lineNum))
-#				print(str(len(inBuf)))
-#				print( inBuf[lineNum] )	
+			# Copy chapter heading block to inBlock
+			while( lineNum < len(inBuf) and not foundChapterHeadingEnd ):
 				if( isLineBlank(inBuf[lineNum]) ):
 					consecutiveEmptyLineCount += 1
-					if( consecutiveEmptyLineCount == 2):
+					if( consecutiveEmptyLineCount == 2 ):
 						foundChapterHeadingEnd = True
+						consecutiveEmptyLineCount = 0
 				else:
 					consecutiveEmptyLineCount = 0
 				
-				if( not foundChapterHeadingEnd ):
-					lineNum += 1
+				if( foundChapterHeadingEnd ):
+					# Remove trailing double empty lines from chapter heading block
+					inBlock = inBlock[:-1]
+					# Rewind parser (to handle back to back chapter headings)
+					lineNum = findPreviousNonEmptyLine(inBuf, lineNum) + 1
+#					lineNum -= 1
+				else:
 					inBlock.append(inBuf[lineNum])
+					lineNum += 1
 			
-#			print( inBlock )	
-#			print("*[END]************************************************\n")
-
-			# Chapter headings have exactly 2 empty lines follow, if more than two its something else (title page, ..?)
-			if( lineNum+1 < len(inBuf) and isLineBlank(inBuf[lineNum+1]) ):
-#				print("********* NOT A CHAPTER HEADING *********")
+			# Title pages look like chapter headings but start with /*, handle it
+			if( re.match(r"^\/\*$", inBlock[0]) ):
+#				print("********* FALSE HIT, NOT A CHAPTER HEADING *********")
 				for line in inBlock:
 					outBlock.append(line)
 			
@@ -176,17 +192,31 @@ def processHeadings( infile, outfile ):
 					chapterLine += "|"
 				chapterLine = chapterLine[:-1]
 				
-				outBlock.append(".sp4")
+				outBlock.append(".sp 4")
 				outBlock.append(".h2 id=" + chapterID )				
 				outBlock.append(chapterLine)
-				outBlock.append(".sp2")
+				outBlock.append(".sp 2")
+
+				# Write out original as a comment
+				outBlock.append("") 
+				outBlock.append(".ig  // *** PPPREP BEGIN ******************************************") 
+				outBlock.append("// ******* Original text for reference, delete after inspection ***")
+				for line in inBlock:
+					outBlock.append(line)
+				outBlock.append(".ig- // *** END ***************************************************")
 					
-			print( outBlock)
-			
-			# Write out ppgen illustration block
+			# Write out chapter heading block
 			for line in outBlock:
 				outBuf.append(line)
 				
+		# Section heading
+#		elif( consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) ):
+#			print("*** FOUND SECTION HEADING ***")
+#			print(outBuf[lineNum:-2])
+#			print(outBuf[lineNum:-1])
+#			print(outBuf[lineNum])
+#			print("*****************************") 
+			
 		else:
 			if( isLineBlank(inBuf[lineNum]) ):
 				consecutiveEmptyLineCount += 1
@@ -300,9 +330,8 @@ def processIllustrations( infile, outfile ):
 				outBuf.append(line)
 				
 			# Write out boilerplate code for HTML version as comment in case .il is not sufficient
-			outBuf.append("// ******** BEGIN ********") 
-			outBuf.append("// Boilerplace inline HTML version for use when .il .ca are not sufficient") 
-			outBuf.append(".ig")
+			outBuf.append(".ig  // *** PPPREP BEGIN ************************************************************")
+			outBuf.append("// ******** Alternative inline HTML version for use when .il .ca are insufficient ***") 
 			outBuf.append(".if h")
 			outBuf.append(".de .customCSS { clear:left; float:left; margin:4% 4% 4% 0; }")
 			outBuf.append(".li")
@@ -315,8 +344,7 @@ def processIllustrations( infile, outfile ):
 			for line in inBlock:
 				outBuf.append(line)
 			outBuf.append(".if-")			
-			outBuf.append(".ig-")
-			outBuf.append("// ********* END *********")
+			outBuf.append(".ig- // *** END *********************************************************************")
 			
 			
 		else:
@@ -401,10 +429,10 @@ def main():
 
 	# Process source document
 	# TODO: command line switches
-#	processIllustrations( infile, outfile )
-	processHeadings( infile, outfile )
 #	processPageNumbers( infile, outfile )
 #	processBlankPages( infile, outfile )
+#	processIllustrations( infile, outfile )
+	processHeadings( infile, outfile )
 		
 	return
 
