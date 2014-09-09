@@ -1,20 +1,27 @@
 #!/usr/bin/env python
 
-"""ppimg
+"""ppprep
 
 Usage:
-  ppimg <infile> <outfile>
-  ppimg <infile>
+  ppprep [-abcip] <infile>
+  ppprep [-abcip] <infile> <outfile>
+  ppprep -h | --help
+  ppprep -v | --version
 
-ppimg automates the process of replacing Illustration tags with the appropriate ppgen markup
+Automates various tasks in the post-processing of books for pgdp.org using the ppgen post-processing tool.  Run ppprep as a first step on an unedited book text.
 
 Examples:
-  ppimg school-src.txt school2-src.txt
-  ppimg school-src.txt
+  ppprep school.txt
+  ppprep school-src.txt school2-src.txt
 
 Options:
-  -t --tbd  CHANGEME
-  
+  -h --help             Show help.
+  -v --version          Show version.
+  -i --illustrations    Convert [Illustration] tags into ppgen .il/.ca markup 
+  -p --pagenumbers      Convert page breaks into ppgen // 001.png style 
+  -b --blankpages       Comment out [Blank Page] lines
+  -c --headings         Convert chapter and section headings into ppgen style chapter and section headings
+  -a --all              Perform all actions (default)
 """  
 
 from docopt import docopt
@@ -50,7 +57,7 @@ def processBlankPages( inBuf ):
 	
 	while lineNum < len(inBuf):
 		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
-		if( m ):		
+		if( m ):        
 			outBuf.append("// [Blank Page]")
 			lineNum += 1
 		
@@ -68,7 +75,7 @@ def processPageNumbers( inBuf ):
 	
 	while lineNum < len(inBuf):
 		m = re.match(r"^-----File: (\d\d\d\.png).*", inBuf[lineNum])
-		if( m ):		
+		if( m ):        
 			outBuf.append("// " +  m.group(1))
 			lineNum += 1
 		
@@ -86,9 +93,9 @@ def isLineComment( line ):
 	return re.match( r"^\/\/ *$", line )
 	
 def formatAsID( s ):
-	s = re.sub(r" ", '_', s)		# Replace spaces with underscore	
-	s = re.sub(r"[^\w\s]", '', s)	# Strip everything but alphanumeric and _
-	s = s.lower()					# Lowercase
+	s = re.sub(r" ", '_', s)        # Replace spaces with underscore    
+	s = re.sub(r"[^\w\s]", '', s)   # Strip everything but alphanumeric and _
+	s = s.lower()                   # Lowercase
 
 	return s
 	
@@ -108,12 +115,12 @@ def findNextNonEmptyLine( buf, startLine ):
 	
 def processHeadings( inBuf ):
 	outBuf = []
-	lineNum = 0	
+	lineNum = 0 
 	consecutiveEmptyLineCount = 0
 	foundChapterHeadingStart = False
 
 	while lineNum < len(inBuf):
-#		print(lineNum)
+#       print(lineNum)
 		# Chapter heading blocks are in the form:
 			# (4 empty lines)
 			# chapter name
@@ -144,14 +151,14 @@ def processHeadings( inBuf ):
 					inBlock = inBlock[:-1]
 					# Rewind parser (to handle back to back chapter headings)
 					lineNum = findPreviousNonEmptyLine(inBuf, lineNum) + 1
-#					lineNum -= 1
+#                   lineNum -= 1
 				else:
 					inBlock.append(inBuf[lineNum])
 					lineNum += 1
 			
 			# Title pages look like chapter headings but start with /*, handle it
 			if( re.match(r"^\/\*$", inBlock[0]) ):
-#				print("********* FALSE HIT, NOT A CHAPTER HEADING *********")
+#               print("********* FALSE HIT, NOT A CHAPTER HEADING *********")
 				for line in inBlock:
 					outBlock.append(line)
 			
@@ -163,7 +170,7 @@ def processHeadings( inBuf ):
 				# .sp 4
 				# .h2 id=chapter_vi
 				# CHAPTER VI.||chapter description etc..
-				# .sp 2				
+				# .sp 2             
 				chapterID = formatAsID(inBlock[0])
 				chapterLine = ""
 				for line in inBlock:
@@ -173,7 +180,7 @@ def processHeadings( inBuf ):
 				
 				outBlock.append("// ******** PPPREP GENERATED **************************************") 
 				outBlock.append(".sp 4")
-				outBlock.append(".h2 id=" + chapterID )				
+				outBlock.append(".h2 id=" + chapterID )             
 				outBlock.append(chapterLine)
 				outBlock.append(".sp 2")
 
@@ -192,12 +199,12 @@ def processHeadings( inBuf ):
 				outBuf.append(line)
 				
 		# Section heading
-#		elif( consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) ):
-#			print("*** FOUND SECTION HEADING ***")
-#			print(outBuf[lineNum:-2])
-#			print(outBuf[lineNum:-1])
-#			print(outBuf[lineNum])
-#			print("*****************************") 
+#       elif( consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) ):
+#           print("*** FOUND SECTION HEADING ***")
+#           print(outBuf[lineNum:-2])
+#           print(outBuf[lineNum:-1])
+#           print(outBuf[lineNum])
+#           print("*****************************") 
 			
 		else:
 			if( isLineBlank(inBuf[lineNum]) ):
@@ -212,9 +219,9 @@ def processHeadings( inBuf ):
 	
 def processIllustrations( inBuf ):
 	# Build dictionary of images
-#	files = [f for f in os.listdir('./images') if re.match(r'.*\.jpg', f)]
+#   files = [f for f in os.listdir('./images') if re.match(r'.*\.jpg', f)]
 	files = glob.glob("images/*")
-#	print(files)
+#   print(files)
 	
 	illustrations = {}
 
@@ -227,16 +234,16 @@ def processIllustrations( inBuf ):
 			print("Unable to load image", f)
 			sys.exit(1)
 
-#		print(f, img.size);		
+#       print(f, img.size);     
 		m = re.match(r"images/i_([^\.]+)", f)
-		if( m ):		
+		if( m ):        
 			scanPageNum = m.group(1)
 			anchorID = "i"+scanPageNum
-#			print(anchorID)
-			caption = "test"	
+#           print(anchorID)
+			caption = "test"    
 			f = re.sub(r"images/", "", f)
 			illustrations[scanPageNum] = ({'anchorID':anchorID, 'fileName':f, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':caption })
-#			print(illustrations);
+#           print(illustrations);
 
 	# Find and replace [Illustration: caption] markup
 	outBuf = []
@@ -244,38 +251,38 @@ def processIllustrations( inBuf ):
 	currentScanPage = 0
 		
 	while lineNum < len(inBuf):
-#		print( str(lineNum) + " : " + inBuf[lineNum] )	
+#       print( str(lineNum) + " : " + inBuf[lineNum] )  
 		
 		# Keep track of active scanpage
 		m = re.match(r"\/\/ (\d+)\.png", inBuf[lineNum])
 		if( m ):
 			currentScanPage = m.group(1)
-#			print( currentScanPage)
+#           print( currentScanPage)
 
 		# Copy until next illustration block
 		if( re.match(r"^\[Illustration", inBuf[lineNum]) ):
-#			print("**************************************************\n")
-#			print( inBuf[lineNum] )	
+#           print("**************************************************\n")
+#           print( inBuf[lineNum] ) 
 			inBlock = []
 			outBlock = []
 		
 			# Copy illustration block
 			inBlock.append(inBuf[lineNum])
 			while( lineNum < len(inBuf)-1 and not re.search(r"]$", inBuf[lineNum]) ):
-#				print(str(lineNum))
-#				print(str(len(inBuf)))
-#				print( inBuf[lineNum] )	
+#               print(str(lineNum))
+#               print(str(len(inBuf)))
+#               print( inBuf[lineNum] ) 
 				lineNum += 1
 				inBlock.append(inBuf[lineNum])
 			
 
-#			print( inBlock )	
-#			print("**************************************************\n")
+#           print( inBlock )    
+#           print("**************************************************\n")
 			lineNum += 1
 			
 			# Convert to ppgen illustration block
-#			.il id=i_001 fn=i_001.jpg w=600 alt=''
-#			.ca SOUTHAMPTON BAR IN THE OLDEN TIME.
+#           .il id=i_001 fn=i_001.jpg w=600 alt=''
+#           .ca SOUTHAMPTON BAR IN THE OLDEN TIME.
 			outBlock.append( ".il id=i" + currentScanPage + " fn=" +  illustrations[currentScanPage]['fileName'] + " w=" + str(illustrations[currentScanPage]['dimensions'][0]) + " alt=''" )
 			captionLine = ""
 			for line in inBlock:
@@ -285,11 +292,11 @@ def processIllustrations( inBuf ):
 				captionLine += line
 				captionLine += "<br/>"
 
-#			captionLine = captionLine[:-(len("<br/>")]
+#           captionLine = captionLine[:-(len("<br/>")]
 			
 			outBlock.append( ".ca " + captionLine );
 			
-#			print( outBlock)
+#           print( outBlock)
 			
 			# Write out ppgen illustration block
 			for line in outBlock:
@@ -309,7 +316,7 @@ def processIllustrations( inBuf ):
 			outBuf.append(".if t")
 			for line in inBlock:
 				outBuf.append(line)
-			outBuf.append(".if-")			
+			outBuf.append(".if-")           
 			outBuf.append(".ig- // *** END *********************************************************************")
 			
 		else:
@@ -364,7 +371,7 @@ def loadFile(fn):
 		inBuf[i] = inBuf[i].rstrip()
 
 	return inBuf;
-    
+	
 # display error message and exit
 def fatal(message):
 	sys.stderr.write("FATAL: " + message + "\n")
@@ -378,34 +385,63 @@ def warn(message):
 
 
 def main():
-	args = arguments = docopt(__doc__, version='ppimg 0.1')
-	print(args)
+	try:
+		args = arguments = docopt(__doc__, version='ppprep 0.1')
+		print(args)
 
-	outfile = "out.txt"
-	if( args['<outfile>'] ):
-		outfile = args['<outfile>']
+		# Process required command line arguments
+		outfile = "out.txt"
+		if( args['<outfile>'] ):
+			outfile = args['<outfile>']
+			
+		infile = args['<infile>']
+
+		# Open source file and represent as an array of lines
+		inBuf = loadFile( infile )
+
+		# Process optional command line arguments
+		doPageNumbers = args['--pagenumbers'];
+		doBlankPages = args['--blankpages'];
+		doIllustrations = args['--illustrations'];
+		doHeadings = args['--headings'];
 		
-	infile = args['<infile>']
-	print(infile)
+		# Default to --all if no other options set
+		if( not doPageNumbers and \
+			not doBlankPages and \
+			not doIllustrations and \
+			not doHeadings or \
+			args['--all'] ):
+			doPageNumbers = True;
+			doBlankPages = True;
+			doIllustrations = True;
+			doHeadings = True;
+				
+		# Process source document
+		outBuf = []
+		if( doHeadings ):
+			outBuf = processHeadings( inBuf )
+			inBuf = outBuf
+		if( doBlankPages ):
+			outBuf = processBlankPages( inBuf )
+			inBuf = outBuf
+		if( doPageNumbers or doIllustrations ):
+			outBuf = processPageNumbers( inBuf )
+			inBuf = outBuf
+		if( doIllustrations ):
+			outBuf = processIllustrations( inBuf )
+			inBuf = outBuf
 
-	# Open source file and represent as an array of lines
-	inBuf = loadFile( infile )
-
-	# Process source document
-	# TODO: command line switches
-	outBuf = processPageNumbers( inBuf )
-	outBuf = processBlankPages( outBuf )
-	outBuf = processIllustrations( outBuf )
-	outBuf = processHeadings( outBuf )
-
-	# Save file
-	f = open(outfile,'w')
-	for line in outBuf:
-		f.write(line+'\n')
-	f.close()
+		# Save file
+		f = open(outfile,'w')
+		for line in outBuf:
+			f.write(line+'\n')
+		f.close()
 		
-	return
+	except docopt.DocoptExit as e:
+		print(e.message)
+		
+		return
 
 
 if __name__ == "__main__":
-    main()
+	main()

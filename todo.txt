@@ -17,3 +17,5 @@
 	.ca-
 
 - Need to worry about encoding?
+
+- Add .pg tags when doing pages
