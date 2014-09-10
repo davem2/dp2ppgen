@@ -19,3 +19,9 @@
 - Need to worry about encoding?
 
 - Add .pg tags when doing pages
+
+- Add "aggresiveness" parameter for heading detection option
+
+- Make find chapter heading and find section heading seperate command line options
+
+- Command line option to not include boilerplate code
