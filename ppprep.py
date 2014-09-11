@@ -3,8 +3,8 @@
 """ppprep
 
 Usage:
-  ppprep [-aceip] <infile>
-  ppprep [-aceip] <infile> <outfile>
+  ppprep [-abceip] <infile>
+  ppprep [-abceip] <infile> <outfile>
   ppprep -h | --help
   ppprep -v | --version
 
@@ -18,6 +18,7 @@ Options:
   -h --help           Show help.
   -v --version        Show version.
   -a --all            Perform all safe actions. (-bip) (default)
+  -b --boilerplate    Include HTML boilerplate code when processing illustrations 
   -c --chapters       Convert chapter headings into ppgen style chapter headings.
   -e --sections       Convert section headings into ppgen style section headings.
   -i --illustrations  Convert [Illustration] tags into ppgen .il/.ca markup.
@@ -269,7 +270,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 
 	return outBuf;
 	
-def processIllustrations( inBuf ):
+def processIllustrations( inBuf, doBoilerplate ):
 	# Build dictionary of images
 #   files = [f for f in os.listdir('./images') if re.match(r'.*\.jpg', f)]
 	files = glob.glob("images/*")
@@ -357,22 +358,23 @@ def processIllustrations( inBuf ):
 			for line in outBlock:
 				outBuf.append(line)
 				
-			# Write out boilerplate code for HTML version as comment in case .il is not sufficient
-			outBuf.append(".ig  // *** PPPREP BEGIN **************************************************************")
-			outBuf.append("// ******** Alternative inline HTML version for use when .il .ca are insufficient *****") 
-			outBuf.append(".if h")
-			outBuf.append(".de .customCSS { clear:left; float:left; margin:4% 4% 4% 0; }")
-			outBuf.append(".li")
-			outBuf.append("<div class='customCSS'>")
-			outBuf.append("<img src='" + illustrations[currentScanPage]['fileName'] + "' alt='' />")
-			outBuf.append("</div>")
-			outBuf.append(".li-")
-			outBuf.append(".if-")
-			outBuf.append(".if t")
-			for line in inBlock:
-				outBuf.append(line)
-			outBuf.append(".if-")           
-			outBuf.append(".ig- // *** END ***********************************************************************")
+			if( doBoilerplate ):
+				# Write out boilerplate code for HTML version as comment in case .il is not sufficient
+				outBuf.append(".ig  // *** PPPREP BEGIN **************************************************************")
+				outBuf.append("// ******** Alternative inline HTML version for use when .il .ca are insufficient *****") 
+				outBuf.append(".if h")
+				outBuf.append(".de .customCSS { clear:left; float:left; margin:4% 4% 4% 0; }")
+				outBuf.append(".li")
+				outBuf.append("<div class='customCSS'>")
+				outBuf.append("<img src='" + illustrations[currentScanPage]['fileName'] + "' alt='' />")
+				outBuf.append("</div>")
+				outBuf.append(".li-")
+				outBuf.append(".if-")
+				outBuf.append(".if t")
+				for line in inBlock:
+					outBuf.append(line)
+				outBuf.append(".if-")           
+				outBuf.append(".ig- // *** END ***********************************************************************")
 			
 		else:
 			outBuf.append(inBuf[lineNum])
@@ -458,12 +460,13 @@ def main():
 	inBuf = loadFile( infile )
 
 	# Process optional command line arguments
+	doBoilerplate = args['--boilerplate'];
 	doChapterHeadings = args['--chapters'];
 	doSectionHeadings = args['--sections'];
 	doIllustrations = args['--illustrations'];
 	doPages = args['--pages'];
 	
-	# Default to --all if no other options set
+	# Default to --all if no other processing options set
 	if( not doChapterHeadings and \
 		not doSectionHeadings and \
 		not doIllustrations and \
@@ -485,7 +488,7 @@ def main():
 		outBuf = processBlankPages( inBuf )
 		inBuf = outBuf
 	if( doIllustrations ):
-		outBuf = processIllustrations( inBuf )
+		outBuf = processIllustrations( inBuf, doBoilerplate )
 		inBuf = outBuf
 
 	# Save file
