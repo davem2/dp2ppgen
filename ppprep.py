@@ -3,10 +3,10 @@
 """ppprep
 
 Usage:
-  ppprep [-abceip] <infile>
-  ppprep [-abceip] <infile> <outfile>
+  ppprep [-abceipqv] <infile>
+  ppprep [-abceipqv] <infile> <outfile>
   ppprep -h | --help
-  ppprep -v | --version
+  ppprep ---version
 
 Automates various tasks in the post-processing of books for pgdp.org using the ppgen post-processing tool.  Run ppprep as a first step on an unedited book text.
 
@@ -15,14 +15,16 @@ Examples:
   ppprep school-src.txt school2-src.txt
 
 Options:
-  -h --help           Show help.
-  -v --version        Show version.
-  -a --all            Perform all safe actions. (-bip) (default)
-  -b --boilerplate    Include HTML boilerplate code when processing illustrations 
-  -c --chapters       Convert chapter headings into ppgen style chapter headings.
-  -e --sections       Convert section headings into ppgen style section headings.
-  -i --illustrations  Convert [Illustration] tags into ppgen .il/.ca markup.
-  -p --pages          Convert page breaks into ppgen // 001.png style and Comment out [Blank Page] lines.
+  -h --help            Show help.
+  -a, --all            Perform all safe actions. (-bip) (default)
+  -b, --boilerplate    Include HTML boilerplate code when processing illustrations 
+  -c, --chapters       Convert chapter headings into ppgen style chapter headings.
+  -e, --sections       Convert section headings into ppgen style section headings.
+  -i, --illustrations  Convert [Illustration] tags into ppgen .il/.ca markup.
+  -p, --pages          Convert page breaks into ppgen // 001.png style and Comment out [Blank Page] lines.
+  -q, --quiet          Print less text.
+  -v, --verbose        Print more text.
+  --version            Show version.
 """  
 
 from docopt import docopt
@@ -31,23 +33,7 @@ import glob
 import re
 import os
 import sys
-
-
-
-# Create dictionary of illustrations in /image (id, file name, scan page number, width, caption)
-	# assumes that images are named in the format i_<scan page number>.jpg
-# For each [Illustration: caption] tag
-  # parse caption 
-  # comment out original [Illustration: caption] tag with .ig 
-  
-#TODO:
-#multiline caption support
-
-inBuf = []
-outBuf = []
-lineNum = 0
-currentScanPage = 0
-encoding = ""
+import logging
 
 
 # Replace : [Blank Page]
@@ -56,10 +42,13 @@ def processBlankPages( inBuf ):
 	outBuf = []
 	lineNum = 0
 	
+	logging.info("--- Processing blank pages")
+	
 	while lineNum < len(inBuf):
 		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
 		if( m ):        
 			outBuf.append("// [Blank Page]")
+			logging.debug("Line " + str(lineNum) + ": convert " + inBuf[lineNum] + " ==> " + outBuf[-1])
 			lineNum += 1
 		
 		else:
@@ -67,6 +56,7 @@ def processBlankPages( inBuf ):
 			lineNum += 1
 
 	return outBuf;
+	
 	
 # Replace : -----File: 001.png---\sparkleshine\swankypup\Kipling\SeaRose\Scholar\------
 # with    : // 001.png
@@ -74,10 +64,13 @@ def processPageNumbers( inBuf ):
 	outBuf = []
 	lineNum = 0
 	
+	logging.info("--- Processing page numbers")
+	
 	while lineNum < len(inBuf):
 		m = re.match(r"^-----File: (\d\d\d\.png).*", inBuf[lineNum])
 		if( m ):        
 			outBuf.append("// " +  m.group(1))
+			logging.debug("Line " + str(lineNum) + ": convert " + inBuf[lineNum] + " ==> " + outBuf[-1])
 			lineNum += 1
 		
 		else:
@@ -86,12 +79,14 @@ def processPageNumbers( inBuf ):
 
 	return outBuf;
 	
+	
 def isLineBlank( line ):
 	return re.match( r"^\s*$", line )
 	
+	
 def isLineComment( line ):
-	print("***FOUND COMMENT: line")
 	return re.match( r"^\/\/ *$", line )
+	
 	
 def formatAsID( s ):
 	s = re.sub(r" ", '_', s)        # Replace spaces with underscore    
@@ -100,12 +95,14 @@ def formatAsID( s ):
 
 	return s
 	
+	
 def findPreviousNonEmptyLine( buf, startLine ):
 	lineNum = startLine
 	while lineNum < len(buf) and isLineBlank(buf[lineNum]):
 		lineNum -= 1
 	
 	return lineNum
+	
 	
 def findNextNonEmptyLine( buf, startLine ):
 	lineNum = startLine
@@ -114,6 +111,7 @@ def findNextNonEmptyLine( buf, startLine ):
 	
 	return lineNum
 	
+	
 def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 	outBuf = []
 	lineNum = 0 
@@ -121,8 +119,9 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 	rewrapLevel = 0
 	foundChapterHeadingStart = False
 
+	logging.info("--- Processing headings")
+	
 	while lineNum < len(inBuf):
-#       print(lineNum)
 		# Chapter heading blocks are in the form:
 			# (4 empty lines)
 			# chapter name
@@ -138,8 +137,6 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 			# can span more than one line
 			# (1 empty line)
 
-#		print("** " + str(consecutiveEmptyLineCount) + ":" + str(rewrapLevel) + " : " + inBuf[lineNum])
-		
 		# Out-of-line formatting /# #/ /* */
 		if( re.match(r"^\/\*$", inBuf[lineNum]) or re.match(r"^\/\#$", inBuf[lineNum]) ):
 			rewrapLevel += 1
@@ -168,7 +165,6 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 					inBlock = inBlock[:-1]
 					# Rewind parser (to handle back to back chapter headings)
 					lineNum = findPreviousNonEmptyLine(inBuf, lineNum) + 1
-#                   lineNum -= 1
 				else:
 					inBlock.append(inBuf[lineNum])
 					lineNum += 1
@@ -187,6 +183,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 				chapterLine += "|"
 			chapterLine = chapterLine[:-1]
 			
+			logging.debug("Found chapter heading: " + chapterLine)
+
 			outBlock.append("// ******** PPPREP GENERATED ****************************************") 
 			outBlock.append(".sp 4")
 			outBlock.append(".h2 id=" + chapterID )             
@@ -239,6 +237,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 				sectionLine += "|"
 			sectionLine = sectionLine[:-1]
 			
+			logging.debug("Found section heading: " + sectionLine)
+
 			outBlock.append("// ******** PPPREP GENERATED ****************************************") 
 			outBlock.append(".sp 2")
 			outBlock.append(".h3 id=" + sectionID )             
@@ -270,75 +270,67 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 
 	return outBuf;
 	
+	
 def processIllustrations( inBuf, doBoilerplate ):
 	# Build dictionary of images
-#   files = [f for f in os.listdir('./images') if re.match(r'.*\.jpg', f)]
-	files = glob.glob("images/*")
-#   print(files)
+	files = sorted(glob.glob("images/*"))
 	
-	illustrations = {}
+	logging.info("--- Processing illustrations")
+	logging.info("------ Scanning /image folder")
 
 	# Build dictionary of illustrations in images folder
+	illustrations = {}
 	for f in files:
 		try:
 			img = Image.open(f)
 			img.load()
 		except:
-			fatal("Unable to load image: " + f)
+			logging.critical("Unable to load image: " + f)
 
-#       print(f, img.size);     
 		m = re.match(r"images/i_([^\.]+)", f)
 		if( m ):        
 			scanPageNum = m.group(1)
 			anchorID = "i"+scanPageNum
-#           print(anchorID)
-			caption = "test"    
+			caption = ""    
 			f = re.sub(r"images/", "", f)
 			illustrations[scanPageNum] = ({'anchorID':anchorID, 'fileName':f, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':caption })
-#           print(illustrations);
+			logging.debug("Adding image '" + f + "' " + str(img.size))
+		else:
+			logging.warning("Skipping file '" + f + "' does not match expected naming convention")
 
 	# Find and replace [Illustration: caption] markup
 	outBuf = []
 	lineNum = 0
 	currentScanPage = 0
 		
+	logging.info("------ Processing [Illustration] tags")
+
 	while lineNum < len(inBuf):
-#       print( str(lineNum) + " : " + inBuf[lineNum] )  
-		
 		# Keep track of active scanpage
 		m = re.match(r"\/\/ (\d+)\.png", inBuf[lineNum])
 		if( m ):
 			currentScanPage = m.group(1)
-#           print( currentScanPage)
 
 		# Copy until next illustration block
 		if( re.match(r"^\[Illustration", inBuf[lineNum]) ):
-#           print("**************************************************\n")
-#           print( inBuf[lineNum] ) 
 			inBlock = []
 			outBlock = []
 		
 			# Copy illustration block
 			inBlock.append(inBuf[lineNum])
 			while( lineNum < len(inBuf)-1 and not re.search(r"]$", inBuf[lineNum]) ):
-#               print(str(lineNum))
-#               print(str(len(inBuf)))
-#               print( inBuf[lineNum] ) 
 				lineNum += 1
 				inBlock.append(inBuf[lineNum])
 			
-
-#           print( inBlock )    
-#           print("**************************************************\n")
 			lineNum += 1
 			
 			# Convert to ppgen illustration block
-#           .il id=i_001 fn=i_001.jpg w=600 alt=''
-#           .ca SOUTHAMPTON BAR IN THE OLDEN TIME.
+            # .il id=i_001 fn=i_001.jpg w=600 alt=''
+            # .ca SOUTHAMPTON BAR IN THE OLDEN TIME.
 			try:
 				outBlock.append( ".il id=i" + currentScanPage + " fn=" +  illustrations[currentScanPage]['fileName'] + " w=" + str(illustrations[currentScanPage]['dimensions'][0]) + " alt=''" )
 			except KeyError:
-				fatal("No image file for illustration located on scan page " + currentScanPage + ".png");
+				logging.critical("No image file for illustration located on scan page " + currentScanPage + ".png");
 			
 			captionLine = ""
 			for line in inBlock:
@@ -348,11 +340,7 @@ def processIllustrations( inBuf, doBoilerplate ):
 				captionLine += line
 				captionLine += "<br/>"
 
-#           captionLine = captionLine[:-(len("<br/>")]
-			
 			outBlock.append( ".ca " + captionLine );
-			
-#           print( outBlock)
 			
 			# Write out ppgen illustration block
 			for line in outBlock:
@@ -376,18 +364,21 @@ def processIllustrations( inBuf, doBoilerplate ):
 				outBuf.append(".if-")           
 				outBuf.append(".ig- // *** END ***********************************************************************")
 			
+			logging.debug("Line " + str(lineNum) + ": ScanPage " + str(currentScanPage) + ": convert " + str(inBlock))
+
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 	
 	return outBuf;
+		
 			
 def loadFile(fn):
 	inBuf = []
 	encoding = ""
 	
 	if not os.path.isfile(fn):
-		fatal("specified file {} not found".format(fn))
+		logging.critical("specified file {} not found" + format(fn))
 
 	if encoding == "":
 		try:
@@ -418,7 +409,7 @@ def loadFile(fn):
 			pass
 
 	if encoding == "":
-		fatal("cannot determine input file decoding")
+		fatal("Cannot determine input file decoding")
 	else:
 		# self.info("input file is: {}".format(encoding))
 		if encoding == "ASCII":
@@ -429,25 +420,14 @@ def loadFile(fn):
 
 	return inBuf;
 	
-# display error message and exit
-def fatal(message):
-	sys.stderr.write("FATAL: " + message + "\n")
-	exit(1)
-
-# display warning
-def warn(message):
-	if message not in self.warnings: # don't give exact same warning more than once.
-		self.warnings.append(message)
-		sys.stderr.write("**warning: " + message + "\n")
-
-
+	
 def createOutputFileName( infile ):
 	outfile = infile.split('.')[0] + "-src.txt"
 	return outfile
 
+
 def main():
 	args = docopt(__doc__, version='ppprep 0.1')
-#		print(args)
 
 	# Process required command line arguments
 	outfile = createOutputFileName( args['<infile>'] )
@@ -475,7 +455,19 @@ def main():
 		doIllustrations = True;
 		doPages = True;
 			
+	# Configure logging
+	logLevel = logging.INFO #default
+	if( args['--verbose'] ):
+		logLevel = logging.DEBUG
+	elif( args['--quiet'] ):
+		logLevel = logging.ERROR
+		
+	logging.basicConfig(format='%(levelname)s: %(message)s', level=logLevel)
+			
+	logging.debug(args)
+			
 	# Process source document
+	logging.info("Processing '" + infile + "' to '" + outfile + "'")
 	outBuf = []
 	if( doPages or doIllustrations ): # Illustration process requires // 001.png format
 		outBuf = processPageNumbers( inBuf )
