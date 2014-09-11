@@ -25,3 +25,5 @@
 - Make find chapter heading and find section heading seperate command line options
 
 - Command line option to not include boilerplate code
+
+- Add support for multiple illustrations on one page

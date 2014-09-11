@@ -3,8 +3,8 @@
 """ppprep
 
 Usage:
-  ppprep [-abceip] <infile>
-  ppprep [-abceip] <infile> <outfile>
+  ppprep [-aceip] <infile>
+  ppprep [-aceip] <infile> <outfile>
   ppprep -h | --help
   ppprep -v | --version
 
@@ -18,11 +18,10 @@ Options:
   -h --help           Show help.
   -v --version        Show version.
   -a --all            Perform all safe actions. (-bip) (default)
-  -b --blankpages     Comment out [Blank Page] lines.
   -c --chapters       Convert chapter headings into ppgen style chapter headings.
   -e --sections       Convert section headings into ppgen style section headings.
   -i --illustrations  Convert [Illustration] tags into ppgen .il/.ca markup.
-  -p --pagenumbers    Convert page breaks into ppgen // 001.png style.
+  -p --pages          Convert page breaks into ppgen // 001.png style and Comment out [Blank Page] lines.
 """  
 
 from docopt import docopt
@@ -459,34 +458,31 @@ def main():
 	inBuf = loadFile( infile )
 
 	# Process optional command line arguments
-	doBlankPages = args['--blankpages'];
 	doChapterHeadings = args['--chapters'];
 	doSectionHeadings = args['--sections'];
 	doIllustrations = args['--illustrations'];
-	doPageNumbers = args['--pagenumbers'];
+	doPages = args['--pages'];
 	
 	# Default to --all if no other options set
-	if( not doBlankPages and \
-		not doChapterHeadings and \
+	if( not doChapterHeadings and \
 		not doSectionHeadings and \
 		not doIllustrations and \
-		not doPageNumbers or \
+		not doPages or \
 		args['--all'] ):
-		doBlankPages = True;
 		doIllustrations = True;
-		doPageNumbers = True;
+		doPages = True;
 			
 	# Process source document
 	outBuf = []
+	if( doPages or doIllustrations ): # Illustration process requires // 001.png format
+		outBuf = processPageNumbers( inBuf )
+		inBuf = outBuf
 	if( doChapterHeadings or doSectionHeadings ):
 		outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
 		outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
 		inBuf = outBuf
-	if( doBlankPages ):
+	if( doPages ):
 		outBuf = processBlankPages( inBuf )
-		inBuf = outBuf
-	if( doPageNumbers or doIllustrations ):
-		outBuf = processPageNumbers( inBuf )
 		inBuf = outBuf
 	if( doIllustrations ):
 		outBuf = processIllustrations( inBuf )
