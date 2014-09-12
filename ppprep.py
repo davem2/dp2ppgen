@@ -291,9 +291,8 @@ def processIllustrations( inBuf, doBoilerplate ):
 		if( m ):        
 			scanPageNum = m.group(1)
 			anchorID = "i"+scanPageNum
-			caption = ""    
 			f = re.sub(r"images/", "", f)
-			illustrations[scanPageNum] = ({'anchorID':anchorID, 'fileName':f, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':caption })
+			illustrations[scanPageNum] = ({'anchorID':anchorID, 'fileName':f, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':"", 'usageCount':0 })
 			logging.debug("Adding image '" + f + "' " + str(img.size))
 		else:
 			logging.warning("Skipping file '" + f + "' does not match expected naming convention")
@@ -334,12 +333,27 @@ def processIllustrations( inBuf, doBoilerplate ):
 			
 			lineNum += 1
 			
+			# Handle multiple illustrations per page 
+			if( currentScanPage in illustrations and illustrations[currentScanPage]['usageCount'] == 0 ):
+				illustrationKey = currentScanPage
+			elif( currentScanPage+'a' in illustrations and illustrations[currentScanPage+'a']['usageCount'] == 0 ):
+				illustrationKey = currentScanPage+'a'
+			elif( currentScanPage+'b' in illustrations and illustrations[currentScanPage+'b']['usageCount'] == 0 ):
+				illustrationKey = currentScanPage+'b'
+			elif( currentScanPage+'c' in illustrations and illustrations[currentScanPage+'c']['usageCount'] == 0 ):
+				illustrationKey = currentScanPage+'c'
+			elif( currentScanPage+'d' in illustrations and illustrations[currentScanPage+'d']['usageCount'] == 0 ):
+				illustrationKey = currentScanPage+'d'
+			elif( currentScanPage in illustrations ):
+				illustrationKey = currentScanPage
+			else:
+				logging.critical("No image file for illustration located on scan page " + currentScanPage + ".png");
+				
+			
 			# Convert to ppgen illustration block
 			# .il id=i_001 fn=i_001.jpg w=600 alt=''
-			try:
-				outBlock.append( ".il id=i" + currentScanPage + " fn=" +  illustrations[currentScanPage]['fileName'] + " w=" + str(illustrations[currentScanPage]['dimensions'][0]) + " alt=''" )
-			except KeyError:
-				logging.critical("No image file for illustration located on scan page " + currentScanPage + ".png");
+			outBlock.append( ".il id=i" + illustrationKey + " fn=" +  illustrations[illustrationKey]['fileName'] + " w=" + str(illustrations[illustrationKey]['dimensions'][0]) + " alt=''" )
+			illustrations[illustrationKey]['usageCount'] += 1
 			
 			# Extract caption from illustration block
 			captionBlock = []
