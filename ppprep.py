@@ -325,27 +325,35 @@ def processIllustrations( inBuf, doBoilerplate ):
 			lineNum += 1
 			
 			# Convert to ppgen illustration block
-            # .il id=i_001 fn=i_001.jpg w=600 alt=''
-            # .ca SOUTHAMPTON BAR IN THE OLDEN TIME.
+			# .il id=i_001 fn=i_001.jpg w=600 alt=''
 			try:
 				outBlock.append( ".il id=i" + currentScanPage + " fn=" +  illustrations[currentScanPage]['fileName'] + " w=" + str(illustrations[currentScanPage]['dimensions'][0]) + " alt=''" )
 			except KeyError:
 				logging.critical("No image file for illustration located on scan page " + currentScanPage + ".png");
 			
-			captionLine = ""
+			# Extract caption from illustration block
+			captionBlock = []
 			for line in inBlock:
 				line = re.sub(r"^\[Illustration: ", "", line)
 				line = re.sub(r"^\[Illustration", "", line)
 				line = re.sub(r"]$", "", line)
-				captionLine += line
-				captionLine += "<br/>"
+				captionBlock.append(line)
 
-			outBlock.append( ".ca " + captionLine );
-			
+		   # .ca SOUTHAMPTON BAR IN THE OLDEN TIME.
+			if( len(captionBlock) == 1 ):
+				# One line caption
+				outBlock.append(".ca " + captionBlock[0]);
+			else:
+				# Multiline caption
+				outBlock.append(".ca");
+				for line in captionBlock:
+					outBlock.append(line)
+				outBlock.append(".ca-");
+							
 			# Write out ppgen illustration block
 			for line in outBlock:
 				outBuf.append(line)
-				
+			
 			if( doBoilerplate ):
 				# Write out boilerplate code for HTML version as comment in case .il is not sufficient
 				outBuf.append(".ig  // *** PPPREP BEGIN **************************************************************")
