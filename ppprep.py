@@ -298,24 +298,34 @@ def processIllustrations( inBuf, doBoilerplate ):
 		else:
 			logging.warning("Skipping file '" + f + "' does not match expected naming convention")
 
+	logging.info("------ Found " + str(len(illustrations)) + " illustrations")
+	
 	# Find and replace [Illustration: caption] markup
 	outBuf = []
 	lineNum = 0
 	currentScanPage = 0
+	illustrationTagCount = 0
+	asteriskIllustrationTagCount = 0
 		
 	logging.info("------ Processing [Illustration] tags")
 
 	while lineNum < len(inBuf):
 		# Keep track of active scanpage
-		m = re.match(r"\/\/ (\d+)\.png", inBuf[lineNum])
+		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum])
 		if( m ):
 			currentScanPage = m.group(1)
 
 		# Copy until next illustration block
-		if( re.match(r"^\[Illustration", inBuf[lineNum]) ):
+		if( re.match(r"^\[Illustration", inBuf[lineNum]) or re.match(r"^\*\[Illustration", inBuf[lineNum]) ):
 			inBlock = []
 			outBlock = []
 		
+			# *[Illustration:] tags need to be handled manually afterward (can't reposition before or illustration will change page location)
+			if( re.match(r"^\*\[Illustration", inBuf[lineNum]) ):
+				asteriskIllustrationTagCount += 1
+			else:
+				illustrationTagCount += 1
+
 			# Copy illustration block
 			inBlock.append(inBuf[lineNum])
 			while( lineNum < len(inBuf)-1 and not re.search(r"]$", inBuf[lineNum]) ):
@@ -378,6 +388,9 @@ def processIllustrations( inBuf, doBoilerplate ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 	
+	logging.info("------ Processed " + str(illustrationTagCount) + " [Illustrations] tags")
+	logging.warning("Found " + str(asteriskIllustrationTagCount) + " *[Illustrations] tags; ppgen .il/.ca statements have been generated, but relocation to paragraph break must be performed manually.")
+
 	return outBuf;
 		
 			

@@ -28,3 +28,4 @@
 
 - Add support for multiple illustrations on one page
 
+- Handle *[Illustration or flag it for manual resolution
