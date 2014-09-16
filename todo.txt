@@ -29,3 +29,5 @@
 - Add support for multiple illustrations on one page
 
 - Handle *[Illustration or flag it for manual resolution
+
+- Break off illustration stuff into seperate application ppimg

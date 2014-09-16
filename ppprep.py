@@ -3,24 +3,21 @@
 """ppprep
 
 Usage:
-  ppprep [-abceipqv] <infile>
-  ppprep [-abceipqv] <infile> <outfile>
+  ppprep [-cepqv] <infile>
+  ppprep [-cepqv] <infile> <outfile>
   ppprep -h | --help
   ppprep ---version
 
 Automates various tasks in the post-processing of books for pgdp.org using the ppgen post-processing tool.  Run ppprep as a first step on an unedited book text.
 
 Examples:
-  ppprep school.txt
-  ppprep school-src.txt school2-src.txt
+  ppprep book.txt
+  ppprep book-src.txt book2-src.txt
 
 Options:
   -h --help            Show help.
-  -a, --all            Perform all safe actions. (-bip) (default)
-  -b, --boilerplate    Include HTML boilerplate code when processing illustrations 
   -c, --chapters       Convert chapter headings into ppgen style chapter headings.
   -e, --sections       Convert section headings into ppgen style section headings.
-  -i, --illustrations  Convert [Illustration] tags into ppgen .il/.ca markup.
   -p, --pages          Convert page breaks into ppgen // 001.png style and Comment out [Blank Page] lines.
   -q, --quiet          Print less text.
   -v, --verbose        Print more text.
@@ -28,7 +25,6 @@ Options:
 """  
 
 from docopt import docopt
-from PIL import Image
 import glob
 import re
 import os
@@ -270,144 +266,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 
 	return outBuf;
 	
-	
-def processIllustrations( inBuf, doBoilerplate ):
-	# Build dictionary of images
-	files = sorted(glob.glob("images/*"))
-	
-	logging.info("--- Processing illustrations")
-	logging.info("------ Scanning /image folder")
-
-	# Build dictionary of illustrations in images folder
-	illustrations = {}
-	for f in files:
-		try:
-			img = Image.open(f)
-			img.load()
-		except:
-			logging.critical("Unable to load image: " + f)
-
-		m = re.match(r"images/i_([^\.]+)", f)
-		if( m ):        
-			scanPageNum = m.group(1)
-			anchorID = "i"+scanPageNum
-			f = re.sub(r"images/", "", f)
-			illustrations[scanPageNum] = ({'anchorID':anchorID, 'fileName':f, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':"", 'usageCount':0 })
-			logging.debug("Adding image '" + f + "' " + str(img.size))
-		else:
-			logging.warning("Skipping file '" + f + "' does not match expected naming convention")
-
-	logging.info("------ Found " + str(len(illustrations)) + " illustrations")
-	
-	# Find and replace [Illustration: caption] markup
-	outBuf = []
-	lineNum = 0
-	currentScanPage = 0
-	illustrationTagCount = 0
-	asteriskIllustrationTagCount = 0
 		
-	logging.info("------ Processing [Illustration] tags")
-
-	while lineNum < len(inBuf):
-		# Keep track of active scanpage
-		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum])
-		if( m ):
-			currentScanPage = m.group(1)
-
-		# Copy until next illustration block
-		if( re.match(r"^\[Illustration", inBuf[lineNum]) or re.match(r"^\*\[Illustration", inBuf[lineNum]) ):
-			inBlock = []
-			outBlock = []
-		
-			# *[Illustration:] tags need to be handled manually afterward (can't reposition before or illustration will change page location)
-			if( re.match(r"^\*\[Illustration", inBuf[lineNum]) ):
-				asteriskIllustrationTagCount += 1
-			else:
-				illustrationTagCount += 1
-
-			# Copy illustration block
-			inBlock.append(inBuf[lineNum])
-			while( lineNum < len(inBuf)-1 and not re.search(r"]$", inBuf[lineNum]) ):
-				lineNum += 1
-				inBlock.append(inBuf[lineNum])
-			
-			lineNum += 1
-			
-			# Handle multiple illustrations per page 
-			if( currentScanPage in illustrations and illustrations[currentScanPage]['usageCount'] == 0 ):
-				illustrationKey = currentScanPage
-			elif( currentScanPage+'a' in illustrations and illustrations[currentScanPage+'a']['usageCount'] == 0 ):
-				illustrationKey = currentScanPage+'a'
-			elif( currentScanPage+'b' in illustrations and illustrations[currentScanPage+'b']['usageCount'] == 0 ):
-				illustrationKey = currentScanPage+'b'
-			elif( currentScanPage+'c' in illustrations and illustrations[currentScanPage+'c']['usageCount'] == 0 ):
-				illustrationKey = currentScanPage+'c'
-			elif( currentScanPage+'d' in illustrations and illustrations[currentScanPage+'d']['usageCount'] == 0 ):
-				illustrationKey = currentScanPage+'d'
-			elif( currentScanPage in illustrations ):
-				illustrationKey = currentScanPage
-			else:
-				logging.critical("No image file for illustration located on scan page " + currentScanPage + ".png");
-				
-			
-			# Convert to ppgen illustration block
-			# .il id=i_001 fn=i_001.jpg w=600 alt=''
-			outBlock.append( ".il id=i" + illustrationKey + " fn=" +  illustrations[illustrationKey]['fileName'] + " w=" + str(illustrations[illustrationKey]['dimensions'][0]) + " alt=''" )
-			illustrations[illustrationKey]['usageCount'] += 1
-			
-			# Extract caption from illustration block
-			captionBlock = []
-			for line in inBlock:
-				line = re.sub(r"^\[Illustration: ", "", line)
-				line = re.sub(r"^\[Illustration", "", line)
-				line = re.sub(r"]$", "", line)
-				captionBlock.append(line)
-
-		   # .ca SOUTHAMPTON BAR IN THE OLDEN TIME.
-			if( len(captionBlock) == 1 ):
-				# One line caption
-				outBlock.append(".ca " + captionBlock[0]);
-			else:
-				# Multiline caption
-				outBlock.append(".ca");
-				for line in captionBlock:
-					outBlock.append(line)
-				outBlock.append(".ca-");
-							
-			# Write out ppgen illustration block
-			for line in outBlock:
-				outBuf.append(line)
-			
-			if( doBoilerplate ):
-				# Write out boilerplate code for HTML version as comment in case .il is not sufficient
-				outBuf.append(".ig  // *** PPPREP BEGIN **************************************************************")
-				outBuf.append("// ******** Alternative inline HTML version for use when .il .ca are insufficient *****") 
-				outBuf.append(".if h")
-				outBuf.append(".de .customCSS { clear:left; float:left; margin:4% 4% 4% 0; }")
-				outBuf.append(".li")
-				outBuf.append("<div class='customCSS'>")
-				outBuf.append("<img src='" + illustrations[currentScanPage]['fileName'] + "' alt='' />")
-				outBuf.append("</div>")
-				outBuf.append(".li-")
-				outBuf.append(".if-")
-				outBuf.append(".if t")
-				for line in inBlock:
-					outBuf.append(line)
-				outBuf.append(".if-")           
-				outBuf.append(".ig- // *** END ***********************************************************************")
-			
-			logging.debug("Line " + str(lineNum) + ": ScanPage " + str(currentScanPage) + ": convert " + str(inBlock))
-
-		else:
-			outBuf.append(inBuf[lineNum])
-			lineNum += 1
-	
-	logging.info("------ Processed " + str(illustrationTagCount) + " [Illustrations] tags")
-	logging.warning("Found " + str(asteriskIllustrationTagCount) + " *[Illustrations] tags; ppgen .il/.ca statements have been generated, but relocation to paragraph break must be performed manually.")
-
-	return outBuf;
-		
-			
 def loadFile(fn):
 	inBuf = []
 	encoding = ""
@@ -475,19 +334,14 @@ def main():
 	inBuf = loadFile( infile )
 
 	# Process optional command line arguments
-	doBoilerplate = args['--boilerplate'];
 	doChapterHeadings = args['--chapters'];
 	doSectionHeadings = args['--sections'];
-	doIllustrations = args['--illustrations'];
 	doPages = args['--pages'];
 	
-	# Default to --all if no other processing options set
+	# Default "safe" options when no other processing options set
 	if( not doChapterHeadings and \
 		not doSectionHeadings and \
-		not doIllustrations and \
-		not doPages or \
-		args['--all'] ):
-		doIllustrations = True;
+		not doPages ):
 		doPages = True;
 			
 	# Configure logging
@@ -504,18 +358,12 @@ def main():
 	# Process source document
 	logging.info("Processing '" + infile + "' to '" + outfile + "'")
 	outBuf = []
-	if( doPages or doIllustrations ): # Illustration process requires // 001.png format
-		outBuf = processPageNumbers( inBuf )
+	if( doPages ):
+		outBuf = processBlankPages( inBuf )
 		inBuf = outBuf
 	if( doChapterHeadings or doSectionHeadings ):
 		outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
 		outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
-		inBuf = outBuf
-	if( doPages ):
-		outBuf = processBlankPages( inBuf )
-		inBuf = outBuf
-	if( doIllustrations ):
-		outBuf = processIllustrations( inBuf, doBoilerplate )
 		inBuf = outBuf
 
 	# Save file
