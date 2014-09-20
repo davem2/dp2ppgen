@@ -1,20 +1,8 @@
-- Add command line arguments to control what types of preparation options are performed
-
 - Generate report on what was done
 	- table of illustrations procesed in the form id|fileName|width|caption(line breaks converted to <br/>)
 	- outline of chapter/sections
 		id|CHAPTER I
 		...id|SECTION I
-
-- Where possible get rid of inBuf etc.. make non global
-
-- Maybe have inBuf, outBuf instead of infile, outfile as arguments to parse functions
-
-- Use multiline version of .ca instead of using <br/> seperators
-	.ca
-	"The evidence is compelling,"
-	accused the Sheriff."
-	.ca-
 
 - Need to worry about encoding?
 
@@ -24,10 +12,6 @@
 
 - Make find chapter heading and find section heading seperate command line options
 
-- Command line option to not include boilerplate code
+- End of line whitespace removal
+- Add option to squash paragraphs to one line
 
-- Add support for multiple illustrations on one page
-
-- Handle *[Illustration or flag it for manual resolution
-
-- Break off illustration stuff into seperate application ppimg

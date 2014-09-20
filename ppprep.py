@@ -32,6 +32,16 @@ import sys
 import logging
 
 
+# Removes trailing spaces and tabs from an array of strings
+def removeTrailingSpaces( inBuf ):
+	outBuf = {}
+	
+	for line in inBuf:
+		outBuf.append(line.rstrip(" \t"))
+	
+	return outBuf
+
+
 # Replace : [Blank Page]
 # with    : // [Blank Page]
 def processBlankPages( inBuf ):
@@ -358,11 +368,13 @@ def main():
 	# Process source document
 	logging.info("Processing '" + infile + "' to '" + outfile + "'")
 	outBuf = []
+	inBuf = removeTrailingSpaces( inBuf )	
 	if( doPages ):
 		outBuf = processBlankPages( inBuf )
 		inBuf = outBuf
+		outBuf = processPageNumbers( inBuf )
+		inBuf = outBuf
 	if( doChapterHeadings or doSectionHeadings ):
-		outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
 		outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
 		inBuf = outBuf
 
