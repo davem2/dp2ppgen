@@ -325,16 +325,11 @@ def loadFile(fn):
 	return inBuf;
 	
 	
-def createOutputFileName( infile ):
-	outfile = infile.split('.')[0] + "-src.txt"
-	return outfile
-
-
 def main():
 	args = docopt(__doc__, version='ppprep 0.1')
 
 	# Process required command line arguments
-	outfile = createOutputFileName( args['<infile>'] )
+	outfile = args['<infile>']
 	if( args['<outfile>'] ):
 		outfile = args['<outfile>']
 		
