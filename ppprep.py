@@ -381,7 +381,7 @@ def main():
 	# Save file
 	f = open(outfile,'w')
 	for line in outBuf:
-		f.write(line+'\n')
+		f.write(line+'\r\n')
 	f.close()
 	
 	return
