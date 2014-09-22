@@ -20,7 +20,7 @@ Options:
   -d, --dryrun         Run through conversions but do not write out result
   -e, --sections       Convert section headings into ppgen style section headings.
   -k, --keeporiginal   On any conversion keep original text as a comment
-  -p, --pages          Convert page breaks into ppgen // 001.png style and Comment out [Blank Page] lines.
+  -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
   -v, --verbose        Print more text.
   --version            Show version.
@@ -82,6 +82,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 			if( keepOriginal ):
 				outBuf.append("// *** PPPREP ORIGINAL: " + inBuf[lineNum])
 			outBuf.append("// " +  m.group(1))
+			outBuf.append(".pn +1")
 			logging.debug("Line " + str(lineNum) + ": convert " + inBuf[lineNum] + " ==> " + outBuf[-1])
 			lineNum += 1
 		
