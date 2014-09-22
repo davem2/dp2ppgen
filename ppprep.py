@@ -34,7 +34,7 @@ import logging
 
 # Removes trailing spaces and tabs from an array of strings
 def removeTrailingSpaces( inBuf ):
-	outBuf = {}
+	outBuf = []
 	
 	for line in inBuf:
 		outBuf.append(line.rstrip(" \t"))
