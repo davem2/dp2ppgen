@@ -3,8 +3,8 @@
 """ppprep
 
 Usage:
-  ppprep [-cepqv] <infile>
-  ppprep [-cepqv] <infile> <outfile>
+  ppprep [-cdepqv] <infile>
+  ppprep [-cdepqv] <infile> <outfile>
   ppprep -h | --help
   ppprep ---version
 
@@ -17,6 +17,7 @@ Examples:
 Options:
   -h --help            Show help.
   -c, --chapters       Convert chapter headings into ppgen style chapter headings.
+  -d, --dryrun         Run through conversions but do not write out result
   -e, --sections       Convert section headings into ppgen style section headings.
   -p, --pages          Convert page breaks into ppgen // 001.png style and Comment out [Blank Page] lines.
   -q, --quiet          Print less text.
@@ -373,11 +374,12 @@ def main():
 			outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
 			inBuf = outBuf
 
-		# Save file
-		f = open(outfile,'w')
-		for line in outBuf:
-			f.write(line+'\r\n')
-		f.close()
+		if( not args['--dryrun'] ):
+			# Save file
+			f = open(outfile,'w')
+			for line in outBuf:
+				f.write(line+'\r\n')
+			f.close()
 	
 	return
 
