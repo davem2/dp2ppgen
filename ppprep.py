@@ -3,8 +3,8 @@
 """ppprep
 
 Usage:
-  ppprep [-cdepqv] <infile>
-  ppprep [-cdepqv] <infile> <outfile>
+  ppprep [-cdekpqv] <infile>
+  ppprep [-cdekpqv] <infile> <outfile>
   ppprep -h | --help
   ppprep ---version
 
@@ -19,6 +19,7 @@ Options:
   -c, --chapters       Convert chapter headings into ppgen style chapter headings.
   -d, --dryrun         Run through conversions but do not write out result
   -e, --sections       Convert section headings into ppgen style section headings.
+  -k, --keeporiginal   On any conversion keep original text as a comment
   -p, --pages          Convert page breaks into ppgen // 001.png style and Comment out [Blank Page] lines.
   -q, --quiet          Print less text.
   -v, --verbose        Print more text.
@@ -45,7 +46,7 @@ def removeTrailingSpaces( inBuf ):
 
 # Replace : [Blank Page]
 # with    : // [Blank Page]
-def processBlankPages( inBuf ):
+def processBlankPages( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 	
@@ -54,6 +55,8 @@ def processBlankPages( inBuf ):
 	while lineNum < len(inBuf):
 		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
 		if( m ):        
+			if( keepOriginal ):
+				outBuf.append("// *** PPPREP ORIGINAL: " + inBuf[lineNum])
 			outBuf.append("// [Blank Page]")
 			logging.debug("Line " + str(lineNum) + ": convert " + inBuf[lineNum] + " ==> " + outBuf[-1])
 			lineNum += 1
@@ -67,7 +70,7 @@ def processBlankPages( inBuf ):
 	
 # Replace : -----File: 001.png---\sparkleshine\swankypup\Kipling\SeaRose\Scholar\------
 # with    : // 001.png
-def processPageNumbers( inBuf ):
+def processPageNumbers( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 	
@@ -76,6 +79,8 @@ def processPageNumbers( inBuf ):
 	while lineNum < len(inBuf):
 		m = re.match(r"^-----File: (\d\d\d\.png).*", inBuf[lineNum])
 		if( m ):        
+			if( keepOriginal ):
+				outBuf.append("// *** PPPREP ORIGINAL: " + inBuf[lineNum])
 			outBuf.append("// " +  m.group(1))
 			logging.debug("Line " + str(lineNum) + ": convert " + inBuf[lineNum] + " ==> " + outBuf[-1])
 			lineNum += 1
@@ -119,7 +124,7 @@ def findNextNonEmptyLine( buf, startLine ):
 	return lineNum
 	
 	
-def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
+def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal ):
 	outBuf = []
 	lineNum = 0 
 	consecutiveEmptyLineCount = 0
@@ -198,22 +203,23 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 			outBlock.append(chapterLine)
 			outBlock.append(".sp 2")
 
-			# Write out original as a comment
-			outBlock.append(".ig  // *** PPPREP BEGIN ORIGINAL ***********************************") 
-			outBlock.append("") 
-			outBlock.append("") 
-			outBlock.append("") 
-			outBlock.append("") 
-			for line in inBlock:
-				outBlock.append(line)
-			outBlock.append(".ig- // *** END *****************************************************")
+			if( keepOriginal ):
+				# Write out original as a comment
+				outBlock.append(".ig  // *** PPPREP BEGIN ORIGINAL ***********************************") 
+				outBlock.append("") 
+				outBlock.append("") 
+				outBlock.append("") 
+				outBlock.append("") 
+				for line in inBlock:
+					outBlock.append(line)
+				outBlock.append(".ig- // *** END *****************************************************")
 				
 			# Write out chapter heading block
 			for line in outBlock:
 				outBuf.append(line)
 			
 			# Log action
-			print(".h2 " + chapterLine)
+			logging.info("------ .h2 " + chapterLine)
 				
 		# Section heading
 		elif( doSectionHeadings and consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0 ):
@@ -252,20 +258,21 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings ):
 			outBlock.append(sectionLine)
 			outBlock.append(".sp 1")
 
-			# Write out original as a comment
-			outBlock.append(".ig  // *** PPPREP BEGIN ORIGINAL ***********************************") 
-			outBlock.append("") 
-			outBlock.append("") 
-			for line in inBlock:
-				outBlock.append(line)
-			outBlock.append(".ig- // *** END *****************************************************")
+			if( keepOriginal ):
+				# Write out original as a comment
+				outBlock.append(".ig  // *** PPPREP BEGIN ORIGINAL ***********************************") 
+				outBlock.append("") 
+				outBlock.append("") 
+				for line in inBlock:
+					outBlock.append(line)
+				outBlock.append(".ig- // *** END *****************************************************")
 				
 			# Write out chapter heading block
 			for line in outBlock:
 				outBuf.append(line)
 			
 			# Log action
-			print("  .h3 " + sectionID)
+			logging.info("------ .h3 " + sectionID)
 		else:
 			if( isLineBlank(inBuf[lineNum]) ):
 				consecutiveEmptyLineCount += 1
@@ -366,12 +373,12 @@ def main():
 		outBuf = []
 		inBuf = removeTrailingSpaces( inBuf )	
 		if( doPages ):
-			outBuf = processBlankPages( inBuf )
+			outBuf = processBlankPages( inBuf, args['--keeporiginal'] )
 			inBuf = outBuf
-			outBuf = processPageNumbers( inBuf )
+			outBuf = processPageNumbers( inBuf, args['--keeporiginal'] )
 			inBuf = outBuf
 		if( doChapterHeadings or doSectionHeadings ):
-			outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
+			outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'] )
 			inBuf = outBuf
 
 		if( not args['--dryrun'] ):
