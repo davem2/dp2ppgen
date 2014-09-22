@@ -343,17 +343,6 @@ def main():
 	# Open source file and represent as an array of lines
 	inBuf = loadFile( infile )
 
-	# Process optional command line arguments
-	doChapterHeadings = args['--chapters'];
-	doSectionHeadings = args['--sections'];
-	doPages = args['--pages'];
-	
-	# Default "safe" options when no other processing options set
-	if( not doChapterHeadings and \
-		not doSectionHeadings and \
-		not doPages ):
-		doPages = True;
-			
 	# Configure logging
 	logLevel = logging.INFO #default
 	if( args['--verbose'] ):
@@ -365,24 +354,35 @@ def main():
 			
 	logging.debug(args)
 			
-	# Process source document
-	logging.info("Processing '" + infile + "' to '" + outfile + "'")
-	outBuf = []
-	inBuf = removeTrailingSpaces( inBuf )	
-	if( doPages ):
-		outBuf = processBlankPages( inBuf )
-		inBuf = outBuf
-		outBuf = processPageNumbers( inBuf )
-		inBuf = outBuf
-	if( doChapterHeadings or doSectionHeadings ):
-		outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
-		inBuf = outBuf
+	# Process processing options
+	doChapterHeadings = args['--chapters'];
+	doSectionHeadings = args['--sections'];
+	doPages = args['--pages'];
+	
+	# Check that at least one processing options is set
+	if( not doChapterHeadings and \
+		not doSectionHeadings and \
+		not doPages ):
+		logging.error("No processing options set; run 'ppprep -h' for a list of available options")
+	else:
+		# Process source document
+		logging.info("Processing '" + infile + "' to '" + outfile + "'")
+		outBuf = []
+		inBuf = removeTrailingSpaces( inBuf )	
+		if( doPages ):
+			outBuf = processBlankPages( inBuf )
+			inBuf = outBuf
+			outBuf = processPageNumbers( inBuf )
+			inBuf = outBuf
+		if( doChapterHeadings or doSectionHeadings ):
+			outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings )
+			inBuf = outBuf
 
-	# Save file
-	f = open(outfile,'w')
-	for line in outBuf:
-		f.write(line+'\r\n')
-	f.close()
+		# Save file
+		f = open(outfile,'w')
+		for line in outBuf:
+			f.write(line+'\r\n')
+		f.close()
 	
 	return
 
