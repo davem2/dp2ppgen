@@ -15,3 +15,6 @@
 - End of line whitespace removal
 - Add option to squash paragraphs to one line
 
+- Add footnote processing
+  - Option to place footnote inline or at end of book
+

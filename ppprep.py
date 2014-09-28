@@ -15,7 +15,6 @@ Examples:
   ppprep book-src.txt book2-src.txt
 
 Options:
-  -h --help            Show help.
   -c, --chapters       Convert chapter headings into ppgen style chapter headings.
   -d, --dryrun         Run through conversions but do not write out result
   -e, --sections       Convert section headings into ppgen style section headings.
@@ -23,6 +22,7 @@ Options:
   -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
   -v, --verbose        Print more text.
+  -h, --help           Show help.
   --version            Show version.
 """  
 
@@ -334,11 +334,17 @@ def loadFile(fn):
 	return inBuf;
 	
 	
+def createOutputFileName( infile ):
+	# TODO make this smart.. is infile raw or ppgen source? maybe two functions needed
+	outfile = infile.split('.')[0] + "-out.txt"
+	return outfile
+
+
 def main():
 	args = docopt(__doc__, version='ppprep 0.1')
 
 	# Process required command line arguments
-	outfile = args['<infile>']
+	outfile = createOutputFileName( args['<infile>'] )
 	if( args['<outfile>'] ):
 		outfile = args['<outfile>']
 		
