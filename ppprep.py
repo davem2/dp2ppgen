@@ -614,50 +614,31 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 
 	elif( footnoteDestination == "chapterend" ):
 		logging.info("------ Adding ppgen style footnotes to end of chapters")	
-		curParagraphEnd = footnotes[-1]['paragraphEnd']
+		curChapterEnd = footnotes[-1]['chapterEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
 			
-			if( curParagraphEnd != fn['paragraphEnd'] ):
+			if( curChapterEnd != fn['chapterEnd'] ):
 				# finish off last group
-				outBuf.insert(curParagraphEnd, ".fm")
-				curParagraphEnd = fn['paragraphEnd']
+				outBuf.insert(curChapterEnd, ".fm")
+				curChapterEnd = fn['chapterEnd']
 
 			# build markup for this footnote
-#			print("{} {}".format(fn['paragraphEnd'],fn['fnText'][0]))
+#			print("{} {}".format(fn['chapterEnd'],fn['fnText'][0]))
 			fnMarkup.append(".fn {}".format(i+1))
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
 			
 			# insert it
-			outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
+			outBuf[curChapterEnd:curChapterEnd] = fnMarkup
 			fnMarkup = []
 
 		# finish off last group
-		outBuf.insert(curParagraphEnd, ".fm")
+		outBuf.insert(curChapterEnd, ".fm")
 
 	elif( footnoteDestination == "paragraphend" ):
 		logging.info("------ Adding ppgen style footnotes to end of paragraphs")
-		
-		# Add footnotes from end to start so that inserts don't impact paragraphEnd markers
-#		curParagraphEnd = footnotes[-1]['paragraphEnd']
-#		fnMarkup = []
-#		for i, fn in reversed(list(enumerate(footnotes))):
-			
-#			if( curParagraphEnd != fn['paragraphEnd'] ):
-				# write group of footnotes in this paragraph to outbuf
-#				fnMarkup.insert(0, ".fm")
-#				outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
-#				fnMarkup = []
-#				curParagraphEnd = fn['paragraphEnd']
-			
-			# build markup for group of footnotes in the same paragraph
-#			fnMarkup.append(".fn {}".format(i+1))
-#			for line in fn['fnText']:
-#				fnMarkup.append(line)
-#			fnMarkup.append(".fn-")
-		
 		curParagraphEnd = footnotes[-1]['paragraphEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
