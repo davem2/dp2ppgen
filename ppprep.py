@@ -413,11 +413,18 @@ def parseFootnotes( inBuf ):
 
 	footnotes = []
 	lineNum = 0
+	currentScanPage = 0;
 
 	logging.info("------ Parsing footnotes")
 	while lineNum < len(inBuf):
 		foundFootnote = False
 		
+		# Keep track of active scanpage, page numbers must be 
+		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum])
+		if( m ):
+			currentScanPage = m.group(1)
+#			logging.debug("------ Processing page "+currentScanPage)
+
 		needsJoining = False    
 		if( re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]) ):
 			logging.info("Footnote requires joining at line {}: {}".format(lineNum,inBuf[lineNum]))
@@ -456,7 +463,7 @@ def parseFootnotes( inBuf ):
 				fnText.append(line)
 			
 			# Add entry
-			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'needsJoining':needsJoining})
+			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'needsJoining':needsJoining, 'scanPageNum':currentScanPage})
 
 		lineNum += 1
 
@@ -496,15 +503,28 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	
 	# join broken footnotes
 	joinCount = 0
-	logging.info("------ Fixing broken footnotes")
 	i = 0
 	while i < len(footnotes):
 		if footnotes[i]['needsJoining']:
+			if( joinCount == 0 ):
+				logging.info("------ Fixing broken footnotes")
+			
+			# debug message
+			logging.debug("Merging footnote [{}]".format(i+1))
+			if( len(footnotes[i]['fnBlock']) > 1 ):
+				logging.debug("  ScanPg {}: {} ... {} ".format(footnotes[i]['scanPageNum'], footnotes[i]['fnBlock'][0], footnotes[i]['fnBlock'][-1]))
+			else:
+				logging.debug("  ScanPg {}: {}".format(footnotes[i]['scanPageNum'], footnotes[i]['fnBlock'][0]))
+			if( len(footnotes[i+1]['fnBlock']) > 1 ):
+				logging.debug("  ScanPg {}: {} ... {} ".format(footnotes[i+1]['scanPageNum'], footnotes[i+1]['fnBlock'][0], footnotes[i+1]['fnBlock'][-1]))
+			else:
+				logging.debug("  ScanPg {}: {}".format(footnotes[i+1]['scanPageNum'], footnotes[i+1]['fnBlock'][0]))
+				
 			# TODO: can footnotes span more than two pages?
 			if not footnotes[i+1]['needsJoining']:
 				logging.error("*** Attempt to join footnote failed! ***")
-				logging.error("*** Footnote {} ({}): {}".format(i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]) )
-				logging.error("*** Footnote {} ({}): {}".format(i+1,footnotes[i+1]['startLine']+1,footnotes[i+1]['fnBlock'][0]) )
+				logging.error("*** ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]) )
+				logging.error("*** ScanPg {} Footnote {} ({}): {}".format(footnotes[i+1]['scanPageNum'], i+1,footnotes[i+1]['startLine']+1,footnotes[i+1]['fnBlock'][0]) )
 			else:
 				# merge fnBlock and fnText from second into first
 				footnotes[i]['fnBlock'].extend(footnotes[i+1]['fnBlock'])
@@ -515,8 +535,9 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 
 		i += 1
 
-	logging.info("------ Joined {} broken footnotes".format(joinCount))
-	logging.info("------ {} footnotes after joining".format(len(footnotes)))
+	if( joinCount > 0 ):
+		logging.info("------ Merged {} broken footnote(s)".format(joinCount))
+	logging.info("------ {} total footnotes after joining".format(len(footnotes)))
 	
 	# process footnote anchors 
 	fnAnchorCount = 0
@@ -532,7 +553,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 			newAnchor = "[{}]".format(fnAnchorCount)
 			#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
 			
-			logging.debug("{:>5s}: ...{}... ".format(newAnchor, outBuf[lineNum]))
+			logging.debug("{:>5s}: ScanPg {} ...{}... ".format(newAnchor, footnotes[fnAnchorCount-1]['scanPageNum'], outBuf[lineNum]))
 			for l in footnotes[fnAnchorCount-1]['fnText']:
 				logging.debug("       {}".format(l))
 			
