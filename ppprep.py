@@ -538,16 +538,39 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	if( len(footnotes) != fnAnchorCount ):
 		logging.error("Footnote anchor count does not match footnote count")
 	
-	# add ppgen footnote markup 
+	# generate ppgen footnote markup 
 	if( footnoteDestination == "bookend" ):
 		fnMarkup = []
-		fnMarkup.append(".fm") #TODO: use HTML for end of book footmarker block
+		fnMarkup.append(".pb")
+		fnMarkup.append(".if t")	
+		fnMarkup.append(".sp 4")
+		fnMarkup.append(".ce")
+		fnMarkup.append("FOOTNOTES:")
+		fnMarkup.append(".sp 2")
+		fnMarkup.append(".if-")
+		
+		fnMarkup.append(".if h")
+		fnMarkup.append(".de div.footnotes { border: dashed 1px #aaaaaa; padding: 1.5em; }")
+		fnMarkup.append(".li")
+		fnMarkup.append('<div class="footnotes">')
+		fnMarkup.append(".li-")
+		fnMarkup.append(".ce")
+		fnMarkup.append("<xl>FOOTNOTES:</xl>")
+		fnMarkup.append(".sp 2") #TODO: current ppgen doesn't add space (pvs not applied to .fn I bet)
+		fnMarkup.append(".if-")
+
 		for i, fn in enumerate(footnotes):
 			fnMarkup.append(".fn {}".format(i+1))
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
 			
+		fnMarkup.append(".if h")
+		fnMarkup.append(".li")
+		fnMarkup.append('</div>')
+		fnMarkup.append(".li-")
+		fnMarkup.append(".if-")
+
 		outBuf.extend(fnMarkup)
 		print("bookend")
 
@@ -557,7 +580,6 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	if( footnoteDestination == "chapterend" ):
 		print("chapterend")
 		
-	
 	# strip [Footnote markup
 	#TODO: better to do this during parsing?
 	outBuf = stripFootnoteMarkup( outBuf )
