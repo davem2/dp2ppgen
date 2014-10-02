@@ -3,8 +3,7 @@
 """ppprep
 
 Usage:
-  ppprep [-cdefkpqv] <infile>
-  ppprep [-cdefkpqv] [--setfndest=<fndest>] <infile> <outfile>
+  ppprep [-cdefkpqv] [--fndest=<fndest>] <infile> [<outfile>]
   ppprep -h | --help
   ppprep ---version
 
@@ -19,7 +18,7 @@ Options:
   -d, --dryrun         Run through conversions but do not write out result.
   -e, --sections       Convert section headings into ppgen style section headings.
   -f, --footnotes      Convert footnotes into ppgen format.
-  --setfndest=<fndest> Where to relocate footnotes (paragraphend, chapterend, bookend)
+  --fndest=<fndest>    Where to relocate footnotes (paragraphend, chapterend, bookend)
   -k, --keeporiginal   On any conversion keep original text as a comment.
   -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
@@ -491,25 +490,9 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	footnotes = parseFootnotes( outBuf )
 #	print(footnotes)
 
-	# renumber footnote anchors 
-	fnAnchorCount = 0
-	lineNum = 0
-	logging.info("------ Renumber footnote anchors [1] or [A]")
-	while lineNum < len(outBuf):
-		#TODO: need to handle case where there is more than one anchor on a line (use re.findall)
-		m = re.search("\[([A-Z]|[0-9]+)\]", outBuf[lineNum])
-		if( m ):
-			fnAnchorCount += 1
-			# replace [1] or [A] with [n]
-			curAnchor = "\[{}\]".format(m.group(1))
-			newAnchor = "[{}]".format(fnAnchorCount)
-			#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
-			logging.debug("{}: {}".format(newAnchor, outBuf[lineNum]))
-			outBuf[lineNum] = re.sub( curAnchor, newAnchor, outBuf[lineNum] )
-			
-		lineNum += 1
-
-	logging.info("------ Replaced {} footnote anchors".format(fnAnchorCount))
+	# strip [Footnote markup
+	#TODO: better to do this during parsing?
+	outBuf = stripFootnoteMarkup( outBuf )
 	
 	# join broken footnotes
 	joinCount = 0
@@ -535,11 +518,46 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	logging.info("------ Joined {} broken footnotes".format(joinCount))
 	logging.info("------ {} footnotes after joining".format(len(footnotes)))
 	
+	# process footnote anchors 
+	fnAnchorCount = 0
+	lineNum = 0
+	logging.info("------ Processing footnote anchors")
+	while lineNum < len(outBuf):
+		#TODO: need to handle case where there is more than one anchor on a line (use re.findall)
+		m = re.search("\[([A-Z]|[0-9]+)\]", outBuf[lineNum])
+		if( m ):
+			fnAnchorCount += 1
+			# replace [1] or [A] with [n]
+			curAnchor = "\[{}\]".format(m.group(1))
+			newAnchor = "[{}]".format(fnAnchorCount)
+			#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
+			
+			logging.debug("{:>5s}: ...{}... ".format(newAnchor, outBuf[lineNum]))
+			for l in footnotes[fnAnchorCount-1]['fnText']:
+				logging.debug("       {}".format(l))
+			
+			outBuf[lineNum] = re.sub( curAnchor, newAnchor, outBuf[lineNum] )
+			
+			# update paragraphEnd and chapterEnd so they are relative to anchor and not [Footnote
+			# Find end of paragraph
+			paragraphEnd = findNextEmptyLine( outBuf, lineNum )
+			footnotes[fnAnchorCount-1]['paragraphEnd'] = paragraphEnd
+
+			# Find end of chapter (line after last line of last paragraph)
+			chapterEnd = findNextChapter( outBuf, lineNum )
+			chapterEnd = findPreviousLineOfText( outBuf, chapterEnd ) + 1
+			footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
+			
+		lineNum += 1
+
+	logging.info("------ Processed {} footnote anchors".format(fnAnchorCount))
+	
 	if( len(footnotes) != fnAnchorCount ):
 		logging.error("Footnote anchor count does not match footnote count")
 	
 	# generate ppgen footnote markup 
 	if( footnoteDestination == "bookend" ):
+		logging.info("------ Adding ppgen style footnotes to end of book")
 		fnMarkup = []
 		fnMarkup.append(".pb")
 		fnMarkup.append(".if t")	
@@ -572,18 +590,76 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 		fnMarkup.append(".if-")
 
 		outBuf.extend(fnMarkup)
-		print("bookend")
 
-	if( footnoteDestination == "paragraphend" ):
-		print("paragraphend")
+	elif( footnoteDestination == "chapterend" ):
+		logging.info("------ Adding ppgen style footnotes to end of chapters")	
+		curParagraphEnd = footnotes[-1]['paragraphEnd']
+		fnMarkup = []
+		for i, fn in reversed(list(enumerate(footnotes))):
+			
+			if( curParagraphEnd != fn['paragraphEnd'] ):
+				# finish off last group
+				outBuf.insert(curParagraphEnd, ".fm")
+				curParagraphEnd = fn['paragraphEnd']
 
-	if( footnoteDestination == "chapterend" ):
-		print("chapterend")
+			# build markup for this footnote
+#			print("{} {}".format(fn['paragraphEnd'],fn['fnText'][0]))
+			fnMarkup.append(".fn {}".format(i+1))
+			for line in fn['fnText']:
+				fnMarkup.append(line)
+			fnMarkup.append(".fn-")
+			
+			# insert it
+			outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
+			fnMarkup = []
+
+		# finish off last group
+		outBuf.insert(curParagraphEnd, ".fm")
+
+	elif( footnoteDestination == "paragraphend" ):
+		logging.info("------ Adding ppgen style footnotes to end of paragraphs")
 		
-	# strip [Footnote markup
-	#TODO: better to do this during parsing?
-	outBuf = stripFootnoteMarkup( outBuf )
-	
+		# Add footnotes from end to start so that inserts don't impact paragraphEnd markers
+#		curParagraphEnd = footnotes[-1]['paragraphEnd']
+#		fnMarkup = []
+#		for i, fn in reversed(list(enumerate(footnotes))):
+			
+#			if( curParagraphEnd != fn['paragraphEnd'] ):
+				# write group of footnotes in this paragraph to outbuf
+#				fnMarkup.insert(0, ".fm")
+#				outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
+#				fnMarkup = []
+#				curParagraphEnd = fn['paragraphEnd']
+			
+			# build markup for group of footnotes in the same paragraph
+#			fnMarkup.append(".fn {}".format(i+1))
+#			for line in fn['fnText']:
+#				fnMarkup.append(line)
+#			fnMarkup.append(".fn-")
+		
+		curParagraphEnd = footnotes[-1]['paragraphEnd']
+		fnMarkup = []
+		for i, fn in reversed(list(enumerate(footnotes))):
+			
+			if( curParagraphEnd != fn['paragraphEnd'] ):
+				# finish off last group
+				outBuf.insert(curParagraphEnd, ".fm")
+				curParagraphEnd = fn['paragraphEnd']
+
+			# build markup for this footnote
+#			print("{} {}".format(fn['paragraphEnd'],fn['fnText'][0]))
+			fnMarkup.append(".fn {}".format(i+1))
+			for line in fn['fnText']:
+				fnMarkup.append(line)
+			fnMarkup.append(".fn-")
+			
+			# insert it
+			outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
+			fnMarkup = []
+
+		# finish off last group
+		outBuf.insert(curParagraphEnd, ".fm")
+
 	return outBuf
 
 
@@ -638,8 +714,8 @@ def main():
 			inBuf = outBuf
 		if( doFootnotes ):
 			footnoteDestination = "bookend"
-			if( args['--setfndest'] ):
-				footnoteDestination = args['--setfndest']
+			if( args['--fndest'] ):
+				footnoteDestination = args['--fndest']
 
 			outBuf = processFootnotes( inBuf, footnoteDestination, args['--keeporiginal'] )
 			inBuf = outBuf
