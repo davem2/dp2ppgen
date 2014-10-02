@@ -387,12 +387,28 @@ def createOutputFileName( infile ):
 	outfile = infile.split('.')[0] + "-out.txt"
 	return outfile
 
+def stripFootnoteMarkup( inBuf ):
+	outBuf = []
+	lineNum = 0
+	
+	while lineNum < len(inBuf):
+		# copy inBuf to outBuf throwing away all footnote markup [Footnote...]
+		if( re.match(r"[\*]*\[Footnote", inBuf[lineNum]) ):
+			while( lineNum < len(inBuf) and not re.search(r"][\*]*$", inBuf[lineNum]) ):
+				lineNum += 1			
+			lineNum += 1
+		else:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+	
+	return outBuf
 
 def parseFootnotes( inBuf ):
 # parse footnotes into a list of dictionaries with the following properties for each entry
 # 	startLine - line number of [Footnote start
 #	endLine - line number of last line of [Footnote] block
 #	fnBlock - list of lines containing full [Footnote:]
+#	fnText - list of lines containing footnote text
 # 	paragraphEnd - line number of the blank line following the paragraph this footnote is located in
 # 	chapterEnd - line number of the blank line following the last paragraph in the chapter this footnote is located in
 
@@ -401,18 +417,24 @@ def parseFootnotes( inBuf ):
 
 	logging.info("------ Parsing footnotes")
 	while lineNum < len(inBuf):
-		if( re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"]\*$", inBuf[lineNum]) ):
-			logging.error("Footnote requires joining at line {}: {}".format(lineNum,inBuf[lineNum]))
-			# TODO: automatic joining?
+		foundFootnote = False
+		
+		needsJoining = False    
+		if( re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]) ):
+			logging.info("Footnote requires joining at line {}: {}".format(lineNum,inBuf[lineNum]))
+			needsJoining = True
+			foundFootnote = True
 
-		m = re.match(r"\[Footnote", inBuf[lineNum])
-		if( m ):
+		if( re.match(r"\[Footnote", inBuf[lineNum]) ):
+			foundFootnote = True
+		
+		if( foundFootnote ):
 			startLine = lineNum
 
 			# Copy footnote block
 			fnBlock = []
 			fnBlock.append(inBuf[lineNum])
-			while( lineNum < len(inBuf)-1 and not re.search(r"]$", inBuf[lineNum]) ):
+			while( lineNum < len(inBuf)-1 and not re.search(r"][\*]*$", inBuf[lineNum]) ):
 				lineNum += 1
 				fnBlock.append(inBuf[lineNum])
 
@@ -425,12 +447,21 @@ def parseFootnotes( inBuf ):
 			chapterEnd = findNextChapter( inBuf, lineNum )
 			chapterEnd = findPreviousLineOfText( inBuf, chapterEnd ) + 1
 
+			# Extract footnote text from [Footnote] block
+			fnText = []
+			for line in fnBlock:
+				line = re.sub(r"^\*\[Footnote: ", "", line)
+				line = re.sub(r"^\[Footnote [A-Z]: ", "", line)
+				line = re.sub(r"^\[Footnote \d+: ", "", line)
+				line = re.sub(r"][\*]*$", "", line)
+				fnText.append(line)
+			
 			# Add entry
-			footnotes.append({'fnBlock':fnBlock, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd})
+			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'needsJoining':needsJoining})
 
 		lineNum += 1
 
-	logging.info("--------- Found {} footnotes".format(len(footnotes)))
+	logging.info("--------- Parsed {} footnotes".format(len(footnotes)))
 
 	return footnotes;
 
@@ -442,6 +473,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 
 	# strip empty lines before [Footnotes], *[Footnote
 	lineNum = 0
+	logging.info("------ Remove blank lines before [Footnotes]")
 	while lineNum < len(inBuf):
 		if( re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]) ):
 			# delete previous blank line(s)
@@ -450,15 +482,86 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
-
 	inBuf = outBuf
 
 #	for line in inBuf:
 #		print(line)
 
-	footnotes = parseFootnotes( inBuf )
-	print(footnotes)
+	# parse footnotes into list of dictionaries
+	footnotes = parseFootnotes( outBuf )
+#	print(footnotes)
 
+	# renumber footnote anchors 
+	fnAnchorCount = 0
+	lineNum = 0
+	logging.info("------ Renumber footnote anchors [1] or [A]")
+	while lineNum < len(outBuf):
+		#TODO: need to handle case where there is more than one anchor on a line (use re.findall)
+		m = re.search("\[([A-Z]|[0-9]+)\]", outBuf[lineNum])
+		if( m ):
+			fnAnchorCount += 1
+			# replace [1] or [A] with [n]
+			curAnchor = "\[{}\]".format(m.group(1))
+			newAnchor = "[{}]".format(fnAnchorCount)
+			#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
+			logging.debug("{}: {}".format(newAnchor, outBuf[lineNum]))
+			outBuf[lineNum] = re.sub( curAnchor, newAnchor, outBuf[lineNum] )
+			
+		lineNum += 1
+
+	logging.info("------ Replaced {} footnote anchors".format(fnAnchorCount))
+	
+	# join broken footnotes
+	joinCount = 0
+	logging.info("------ Fixing broken footnotes")
+	i = 0
+	while i < len(footnotes):
+		if footnotes[i]['needsJoining']:
+			# TODO: can footnotes span more than two pages?
+			if not footnotes[i+1]['needsJoining']:
+				logging.error("*** Attempt to join footnote failed! ***")
+				logging.error("*** Footnote {} ({}): {}".format(i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]) )
+				logging.error("*** Footnote {} ({}): {}".format(i+1,footnotes[i+1]['startLine']+1,footnotes[i+1]['fnBlock'][0]) )
+			else:
+				# merge fnBlock and fnText from second into first
+				footnotes[i]['fnBlock'].extend(footnotes[i+1]['fnBlock'])
+				footnotes[i]['fnText'].extend(footnotes[i+1]['fnText'])			
+				footnotes[i]['needsJoining'] = False
+				del footnotes[i+1]
+				joinCount += 1
+
+		i += 1
+
+	logging.info("------ Joined {} broken footnotes".format(joinCount))
+	logging.info("------ {} footnotes after joining".format(len(footnotes)))
+	
+	if( len(footnotes) != fnAnchorCount ):
+		logging.error("Footnote anchor count does not match footnote count")
+	
+	# add ppgen footnote markup 
+	if( footnoteDestination == "bookend" ):
+		fnMarkup = []
+		fnMarkup.append(".fm") #TODO: use HTML for end of book footmarker block
+		for i, fn in enumerate(footnotes):
+			fnMarkup.append(".fn {}".format(i+1))
+			for line in fn['fnText']:
+				fnMarkup.append(line)
+			fnMarkup.append(".fn-")
+			
+		outBuf.extend(fnMarkup)
+		print("bookend")
+
+	if( footnoteDestination == "paragraphend" ):
+		print("paragraphend")
+
+	if( footnoteDestination == "chapterend" ):
+		print("chapterend")
+		
+	
+	# strip [Footnote markup
+	#TODO: better to do this during parsing?
+	outBuf = stripFootnoteMarkup( outBuf )
+	
 	return outBuf
 
 
