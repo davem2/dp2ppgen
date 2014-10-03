@@ -78,7 +78,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 	logging.info("--- Processing page numbers")
 
 	while lineNum < len(inBuf):
-		m = re.match(r"^-----File: (\d\d\d\.png).*", inBuf[lineNum])
+		m = re.match(r"-----File: (\d+\.png).*", inBuf[lineNum])
 		if( m ):
 			if( keepOriginal ):
 				outBuf.append("// *** PPPREP ORIGINAL: " + inBuf[lineNum])
@@ -114,7 +114,6 @@ def findNextEmptyLine( buf, startLine ):
 	lineNum = startLine
 	while lineNum < len(buf)-1 and not isLineBlank(buf[lineNum]):
 		lineNum += 1
-#		print("findNextEmptyLine({})".format(lineNum))
 	return lineNum
 
 
@@ -122,7 +121,6 @@ def findPreviousEmptyLine( buf, startLine ):
 	lineNum = startLine
 	while lineNum >= 0 and not isLineBlank(buf[lineNum]):
 		lineNum -= 1
-#		print("findPreviousEmptyLine({})".format(lineNum))
 	return lineNum
 
 
@@ -130,7 +128,6 @@ def findNextNonEmptyLine( buf, startLine ):
 	lineNum = startLine
 	while lineNum < len(buf)-1 and isLineBlank(buf[lineNum]):
 		lineNum += 1
-#		print("findNextNonEmptyLine({})".format(lineNum))
 	return lineNum
 
 
@@ -138,7 +135,6 @@ def findPreviousNonEmptyLine( buf, startLine ):
 	lineNum = startLine
 	while lineNum >= 0 and isLineBlank(buf[lineNum]):
 		lineNum -= 1
-#		print("findPreviousNonEmptyLine({})".format(lineNum))
 	return lineNum
 
 
@@ -147,7 +143,6 @@ def findPreviousLineOfText( buf, startLine ):
 	lineNum = findPreviousNonEmptyLine( buf, startLine )
 	while( lineNum > 0 and re.match(r"[\.\*\#\/\[]", buf[lineNum]) ):
 		lineNum = findPreviousNonEmptyLine( buf, lineNum-1 )
-#		print("findPreviousLineOfText({})".format(lineNum))
 	return lineNum
 
 
@@ -156,7 +151,6 @@ def findNextLineOfText( buf, startLine ):
 	lineNum = findNextNonEmptyLine( buf, startLine )
 	while( lineNum < len(buf)-1 and re.match(r"[\.\*\#\/\[]", buf[lineNum]) ):
 		lineNum = findNextNonEmptyLine( buf, lineNum+1 )
-#		print("findNextLineOfText({})".format(lineNum))
 	return lineNum
 
 
@@ -447,11 +441,9 @@ def parseFootnotes( inBuf ):
 			endLine = lineNum
 
 			# Find end of paragraph
-			paragraphEnd = findNextEmptyLine( inBuf, lineNum )
-
+			paragraphEnd = -1 # This must be done during footnote anchor processing as paragraph end is relative to anchor and not [Footnote] markup
 			# Find end of chapter (line after last line of last paragraph)
-			chapterEnd = findNextChapter( inBuf, lineNum )
-			chapterEnd = findPreviousLineOfText( inBuf, chapterEnd ) + 1
+			chapterEnd = -1 # This must be done during footnote anchor processing as chapter end is relative to anchor and not [Footnote] markup
 
 			# Extract footnote text from [Footnote] block
 			fnText = []
@@ -542,22 +534,37 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	# process footnote anchors 
 	fnAnchorCount = 0
 	lineNum = 0
+	currentScanPage = 0
 	logging.info("------ Processing footnote anchors")
 	while lineNum < len(outBuf):
-		#TODO: need to handle case where there is more than one anchor on a line (use re.findall)
-		m = re.search("\[([A-Z]|[0-9]+)\]", outBuf[lineNum])
+		
+		# Keep track of active scanpage, page numbers must be 
+		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", outBuf[lineNum])
 		if( m ):
+			currentScanPage = m.group(1)
+#			logging.debug("------ Processing page "+currentScanPage)
+
+		#TODO: allowing bad format here.. maybe warn or handle some other way?
+		#TODO: maybe change search so that only scan pages with [Footnotes] are scanned for anchors, and only anchors referenced in [Footnotes] are looked for. Real easy to get out of sync with current setup
+		m = re.findall("\[([A-Z]|[0-9]{1,2})\]", outBuf[lineNum])
+		for anchor in m:
 			fnAnchorCount += 1
 			# replace [1] or [A] with [n]
-			curAnchor = "\[{}\]".format(m.group(1))
+			curAnchor = "\[{}\]".format(anchor)
 			newAnchor = "[{}]".format(fnAnchorCount)
 			#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
 			
-			logging.debug("{:>5s}: ScanPg {} ...{}... ".format(newAnchor, footnotes[fnAnchorCount-1]['scanPageNum'], outBuf[lineNum]))
+			logging.debug("{:>5s}: ScanPg {} ...{}... ".format(newAnchor, currentScanPage, outBuf[lineNum]))
 			for l in footnotes[fnAnchorCount-1]['fnText']:
 				logging.debug("       {}".format(l))
 			
+			# sanity check (anchor and footnote should be on same scan page)
+			if( currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum'] ):
+				logging.warning("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
+
+			# replace anchor
 			outBuf[lineNum] = re.sub( curAnchor, newAnchor, outBuf[lineNum] )
+			
 			
 			# update paragraphEnd and chapterEnd so they are relative to anchor and not [Footnote
 			# Find end of paragraph
