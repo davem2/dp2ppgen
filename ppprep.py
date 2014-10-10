@@ -332,7 +332,7 @@ def loadFile(fn):
 	encoding = ""
 
 	if not os.path.isfile(fn):
-		logging.critical("specified file {} not found" + format(fn))
+		logging.critical("specified file {} not found".format(fn))
 
 	if encoding == "":
 		try:

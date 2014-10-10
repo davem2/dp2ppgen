@@ -6,15 +6,28 @@
 
 - Need to worry about encoding?
 
-- Add .pg tags when doing pages
-
 - Add "aggresiveness" parameter for heading detection option
 
-- Make find chapter heading and find section heading seperate command line options
-
-- End of line whitespace removal
-- Add option to squash paragraphs to one line
+- Add option to squash paragraphs to one line .. now sure this would be useful?
 
 - Add footnote processing
-  - Option to place footnote inline or at end of book
+  - Option to place footnote inline 
 
+- New feature (maybe a whole new tool in itself) to help resolve -* issues
+    - generate report on all -* words
+    - use google ngram api to get statistics on hyphen-ated vs hyphenated
+	https://github.com/econpy/google-ngrams
+	http://www.culturomics.org/Resources/get-ngrams
+    - search for usage withing text to get statistics
+    - generate report
+    - autofix?
+
+- Autojoin -* *- cases due to line breaks (just move to same line and leave -* in place)
+
+- Sidenotes
+
+- Automate section id naming
+
+- Check that --keeporiginal works with all operations (doesnt with --footnotes for example)
+
+- Standardize if statements and other similar to use () or not..
