@@ -35,6 +35,12 @@ import sys
 import logging
 
 
+# Format helper function, truncate to width and indicate truncation occured with ...
+def truncate(string, width):
+    if len(string) > width:
+        string = string[:width-3] + '...'
+    return string
+
 # Removes trailing spaces and tabs from an array of strings
 def removeTrailingSpaces( inBuf ):
 	outBuf = []
@@ -59,7 +65,7 @@ def processBlankPages( inBuf, keepOriginal ):
 			if keepOriginal:
 				outBuf.append("// *** PPPREP ORIGINAL: {}".format(inBuf[lineNum]))
 			outBuf.append("// [Blank Page]")
-			logging.debug("Line {:>5}: convert '{}' to '{}'".format(str(lineNum),inBuf[lineNum],outBuf[-1]))
+			logging.debug("{:>{:d}}: '{}' to '{}'".format(str(lineNum),len(str(len(inBuf))),inBuf[lineNum],outBuf[-1]))
 			lineNum += 1
 
 		else:
@@ -84,7 +90,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 				outBuf.append("// *** PPPREP ORIGINAL: {}".format(inBuf[lineNum]))
 			outBuf.append("// {}".format(m.group(1)))
 			outBuf.append(".pn +1")
-			logging.debug("Line {:>5}: convert '{}' to '{}'".format(str(lineNum),inBuf[lineNum],outBuf[-1]))
+			logging.debug("{:>{:d}}: '{}' to '{}, {}'".format(str(lineNum),len(str(len(inBuf))),inBuf[lineNum],outBuf[-2],outBuf[-1]))
 			lineNum += 1
 
 		else:
@@ -237,8 +243,6 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				chapterLine += "|"
 			chapterLine = chapterLine[:-1]
 
-			logging.debug("Found chapter heading: {}".format(chapterLine))
-
 			outBlock.append("// ******** PPPREP GENERATED ****************************************")
 			outBlock.append(".sp 4")
 			outBlock.append(".h2 id={}".format(chapterID))
@@ -292,8 +296,6 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				sectionLine += "|"
 			sectionLine = sectionLine[:-1]
 
-			logging.debug("Found section heading: ".format(sectionLine))
-
 			outBlock.append("// ******** PPPREP GENERATED ****************************************")
 			outBlock.append(".sp 2")
 			outBlock.append(".h3 id={}".format(sectionID))
@@ -314,7 +316,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBuf.append(line)
 
 			# Log action
-			logging.info("------ .h3 {}".format(sectionID))
+			logging.info("--------- .h3 {}".format(sectionID))
 		else:
 			if isLineBlank(inBuf[lineNum]):
 				consecutiveEmptyLineCount += 1
@@ -417,7 +419,7 @@ def parseFootnotes( inBuf ):
 		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum])
 		if m:
 			currentScanPage = m.group(1)
-#			logging.debug("------ Processing page "+currentScanPage)
+#			logging.debug("Processing page "+currentScanPage)
 
 		needsJoining = False    
 		if re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]):
@@ -535,16 +537,18 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	fnAnchorCount = 0
 	lineNum = 0
 	currentScanPage = 0
+	currentScanPageLabel = ""
 	logging.info("------ Processing footnote anchors")
 	while lineNum < len(outBuf):
 		
-		# Keep track of active scanpage, page numbers must be 
+		# Keep track of active scanpage
 		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", outBuf[lineNum])
 		if m:
 			currentScanPage = m.group(1)
+			currentScanPageLabel = re.sub(r"\/\/ ","", outBuf[lineNum])
 #			logging.debug("------ Processing page "+currentScanPage)
 
-		#TODO: allowing bad format here.. maybe warn or handle some other way?
+		#TODO: allowing bad format here like [a-z]? maybe warn or handle some other way?
 		#TODO: maybe change search so that only scan pages with [Footnotes] are scanned for anchors, and only anchors referenced in [Footnotes] are looked for. Real easy to get out of sync with current setup
 		m = re.findall("\[([A-Z]|[0-9]{1,2})\]", outBuf[lineNum])
 		for anchor in m:
@@ -554,7 +558,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 			newAnchor = "[{}]".format(fnAnchorCount)
 			#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
 			
-			logging.debug("{:>5s}: ScanPg {} ...{}... ".format(newAnchor, currentScanPage, outBuf[lineNum]))
+			logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor,lineNum,currentScanPageLabel,outBuf[lineNum]))
 			for l in footnotes[fnAnchorCount-1]['fnText']:
 				logging.debug("       {}".format(l))
 			
