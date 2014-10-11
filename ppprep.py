@@ -55,8 +55,8 @@ def processBlankPages( inBuf, keepOriginal ):
 
 	while lineNum < len(inBuf):
 		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
-		if( m ):
-			if( keepOriginal ):
+		if m:
+			if keepOriginal:
 				outBuf.append("// *** PPPREP ORIGINAL: {}".format(inBuf[lineNum]))
 			outBuf.append("// [Blank Page]")
 			logging.debug("Line {:>5}: convert '{}' to '{}'".format(str(lineNum),inBuf[lineNum],outBuf[-1]))
@@ -79,8 +79,8 @@ def processPageNumbers( inBuf, keepOriginal ):
 
 	while lineNum < len(inBuf):
 		m = re.match(r"-----File: (\d+\.png).*", inBuf[lineNum])
-		if( m ):
-			if( keepOriginal ):
+		if m:
+			if keepOriginal:
 				outBuf.append("// *** PPPREP ORIGINAL: {}".format(inBuf[lineNum]))
 			outBuf.append("// {}".format(m.group(1)))
 			outBuf.append(".pn +1")
@@ -95,11 +95,11 @@ def processPageNumbers( inBuf, keepOriginal ):
 
 
 def isLineBlank( line ):
-	return re.match( r"^\s*$", line )
+	return re.match(r"^\s*$", line)
 
 
 def isLineComment( line ):
-	return re.match( r"^\/\/ *$", line )
+	return re.match(r"^\/\/ *$", line)
 
 
 def formatAsID( s ):
@@ -140,23 +140,23 @@ def findPreviousNonEmptyLine( buf, startLine ):
 
 # find previous line that contains original book text (ignore ppgen markup, proofing markup, blank lines)
 def findPreviousLineOfText( buf, startLine ):
-	lineNum = findPreviousNonEmptyLine( buf, startLine )
-	while( lineNum > 0 and re.match(r"[\.\*\#\/\[]", buf[lineNum]) ):
-		lineNum = findPreviousNonEmptyLine( buf, lineNum-1 )
+	lineNum = findPreviousNonEmptyLine(buf, startLine)
+	while lineNum > 0 and re.match(r"[\.\*\#\/\[]", buf[lineNum]):
+		lineNum = findPreviousNonEmptyLine(buf, lineNum-1)
 	return lineNum
 
 
 # find next line that contains original book text (ignore ppgen markup, proofing markup, blank lines)
 def findNextLineOfText( buf, startLine ):
-	lineNum = findNextNonEmptyLine( buf, startLine )
-	while( lineNum < len(buf)-1 and re.match(r"[\.\*\#\/\[]", buf[lineNum]) ):
-		lineNum = findNextNonEmptyLine( buf, lineNum+1 )
+	lineNum = findNextNonEmptyLine(buf, startLine)
+	while lineNum < len(buf)-1 and re.match(r"[\.\*\#\/\[]", buf[lineNum]):
+		lineNum = findNextNonEmptyLine(buf, lineNum+1)
 	return lineNum
 
 
 def findNextChapter( buf, startLine ):
 	lineNum = startLine
-	while( lineNum < len(buf)-1 and not re.match(r"\.h2", buf[lineNum]) ):
+	while lineNum < len(buf)-1 and not re.match(r"\.h2", buf[lineNum]):
 		lineNum += 1
 	return lineNum
 		
@@ -168,11 +168,11 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 	rewrapLevel = 0
 	foundChapterHeadingStart = False
 
-	if( doChapterHeadings and doSectionHeadings ):
+	if doChapterHeadings and doSectionHeadings:
 		logging.info("--- Processing chapter and section headings")
-	if( doChapterHeadings ):
+	if doChapterHeadings:
 		logging.info("--- Processing chapter headings")
-	if( doSectionHeadings ):
+	if doSectionHeadings:
 		logging.info("--- Processing section headings")
 
 	while lineNum < len(inBuf):
@@ -192,29 +192,29 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			# (1 empty line)
 
 		# Detect when inside out-of-line formatting block /# #/ /* */
-		if( re.match(r"^\/\*$", inBuf[lineNum]) or re.match(r"^\/\#$", inBuf[lineNum]) ):
+		if re.match(r"^\/\*$", inBuf[lineNum]) or re.match(r"^\/\#$", inBuf[lineNum]):
 			rewrapLevel += 1
-		elif( re.match(r"^\*\/$", inBuf[lineNum]) or re.match(r"^\#\/$", inBuf[lineNum]) ):
+		elif re.match(r"^\*\/$", inBuf[lineNum]) or re.match(r"^\#\/$", inBuf[lineNum]):
 			rewrapLevel -= 1
 
 		# Chapter heading
-		if( doChapterHeadings and consecutiveEmptyLineCount == 4 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0 ):
+		if doChapterHeadings and consecutiveEmptyLineCount == 4 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0:
 			inBlock = []
 			outBlock = []
 			foundChapterHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
 
 			# Copy chapter heading block to inBlock
-			while( lineNum < len(inBuf) and not foundChapterHeadingEnd ):
-				if( isLineBlank(inBuf[lineNum]) ):
+			while lineNum < len(inBuf) and not foundChapterHeadingEnd:
+				if isLineBlank(inBuf[lineNum]):
 					consecutiveEmptyLineCount += 1
-					if( consecutiveEmptyLineCount == 2 ):
+					if consecutiveEmptyLineCount == 2:
 						foundChapterHeadingEnd = True
 						consecutiveEmptyLineCount = 0
 				else:
 					consecutiveEmptyLineCount = 0
 
-				if( foundChapterHeadingEnd ):
+				if foundChapterHeadingEnd:
 					# Remove trailing empty lines from chapter heading block
 					inBlock = inBlock[:-1]
 					# Rewind parser (to handle back to back chapter headings)
@@ -245,7 +245,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			outBlock.append(chapterLine)
 			outBlock.append(".sp 2")
 
-			if( keepOriginal ):
+			if keepOriginal:
 				# Write out original as a comment
 				outBlock.append(".ig  // *** PPPREP BEGIN ORIGINAL ***********************************")
 				outBlock.append("")
@@ -264,15 +264,15 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			logging.info("------ .h2 {}".format(chapterLine))
 
 		# Section heading
-		elif( doSectionHeadings and consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0 ):
+		elif doSectionHeadings and consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0:
 			inBlock = []
 			outBlock = []
 			foundSectionHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
 
 			# Copy section heading block to inBlock
-			while( lineNum < len(inBuf) and not foundSectionHeadingEnd ):
-				if( isLineBlank(inBuf[lineNum]) ):
+			while lineNum < len(inBuf) and not foundSectionHeadingEnd:
+				if isLineBlank(inBuf[lineNum]):
 					foundSectionHeadingEnd = True
 				else:
 					inBlock.append(inBuf[lineNum])
@@ -300,7 +300,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			outBlock.append(sectionLine)
 			outBlock.append(".sp 1")
 
-			if( keepOriginal ):
+			if keepOriginal:
 				# Write out original as a comment
 				outBlock.append(".ig  // *** PPPREP BEGIN ORIGINAL ***********************************")
 				outBlock.append("")
@@ -316,7 +316,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			# Log action
 			logging.info("------ .h3 {}".format(sectionID))
 		else:
-			if( isLineBlank(inBuf[lineNum]) ):
+			if isLineBlank(inBuf[lineNum]):
 				consecutiveEmptyLineCount += 1
 			else:
 				consecutiveEmptyLineCount = 0
@@ -386,8 +386,8 @@ def stripFootnoteMarkup( inBuf ):
 	
 	while lineNum < len(inBuf):
 		# copy inBuf to outBuf throwing away all footnote markup [Footnote...]
-		if( re.match(r"[\*]*\[Footnote", inBuf[lineNum]) ):
-			while( lineNum < len(inBuf) and not re.search(r"][\*]*$", inBuf[lineNum]) ):
+		if re.match(r"[\*]*\[Footnote", inBuf[lineNum]):
+			while lineNum < len(inBuf) and not re.search(r"][\*]*$", inBuf[lineNum]):
 				lineNum += 1			
 			lineNum += 1
 		else:
@@ -415,26 +415,26 @@ def parseFootnotes( inBuf ):
 		
 		# Keep track of active scanpage, page numbers must be 
 		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum])
-		if( m ):
+		if m:
 			currentScanPage = m.group(1)
 #			logging.debug("------ Processing page "+currentScanPage)
 
 		needsJoining = False    
-		if( re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]) ):
+		if re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]):
 			logging.info("Footnote requires joining at line {}: {}".format(lineNum,inBuf[lineNum]))
 			needsJoining = True
 			foundFootnote = True
 
-		if( re.match(r"\[Footnote", inBuf[lineNum]) ):
+		if re.match(r"\[Footnote", inBuf[lineNum]):
 			foundFootnote = True
 		
-		if( foundFootnote ):
+		if foundFootnote:
 			startLine = lineNum
 
 			# Copy footnote block
 			fnBlock = []
 			fnBlock.append(inBuf[lineNum])
-			while( lineNum < len(inBuf)-1 and not re.search(r"][\*]*$", inBuf[lineNum]) ):
+			while lineNum < len(inBuf)-1 and not re.search(r"][\*]*$", inBuf[lineNum]):
 				lineNum += 1
 				fnBlock.append(inBuf[lineNum])
 
@@ -473,9 +473,9 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	lineNum = 0
 	logging.info("------ Remove blank lines before [Footnotes]")
 	while lineNum < len(inBuf):
-		if( re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]) ):
+		if re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]):
 			# delete previous blank line(s)
-			while( isLineBlank(outBuf[-1]) ):
+			while isLineBlank(outBuf[-1]):
 				del outBuf[-1]
 
 		outBuf.append(inBuf[lineNum])
@@ -486,28 +486,28 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 #		print(line)
 
 	# parse footnotes into list of dictionaries
-	footnotes = parseFootnotes( outBuf )
+	footnotes = parseFootnotes(outBuf)
 #	print(footnotes)
 
 	# strip [Footnote markup
 	#TODO: better to do this during parsing?
-	outBuf = stripFootnoteMarkup( outBuf )
+	outBuf = stripFootnoteMarkup(outBuf)
 	
 	# join broken footnotes
 	joinCount = 0
 	i = 0
 	while i < len(footnotes):
 		if footnotes[i]['needsJoining']:
-			if( joinCount == 0 ):
+			if joinCount == 0:
 				logging.info("------ Fixing broken footnotes")
 			
 			# debug message
 			logging.debug("Merging footnote [{}]".format(i+1))
-			if( len(footnotes[i]['fnBlock']) > 1 ):
+			if len(footnotes[i]['fnBlock']) > 1:
 				logging.debug("  ScanPg {}: {} ... {} ".format(footnotes[i]['scanPageNum'], footnotes[i]['fnBlock'][0], footnotes[i]['fnBlock'][-1]))
 			else:
 				logging.debug("  ScanPg {}: {}".format(footnotes[i]['scanPageNum'], footnotes[i]['fnBlock'][0]))
-			if( len(footnotes[i+1]['fnBlock']) > 1 ):
+			if len(footnotes[i+1]['fnBlock']) > 1:
 				logging.debug("  ScanPg {}: {} ... {} ".format(footnotes[i+1]['scanPageNum'], footnotes[i+1]['fnBlock'][0], footnotes[i+1]['fnBlock'][-1]))
 			else:
 				logging.debug("  ScanPg {}: {}".format(footnotes[i+1]['scanPageNum'], footnotes[i+1]['fnBlock'][0]))
@@ -515,8 +515,8 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 			# TODO: can footnotes span more than two pages?
 			if not footnotes[i+1]['needsJoining']:
 				logging.error("*** Attempt to join footnote failed! ***")
-				logging.error("*** ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]) )
-				logging.error("*** ScanPg {} Footnote {} ({}): {}".format(footnotes[i+1]['scanPageNum'], i+1,footnotes[i+1]['startLine']+1,footnotes[i+1]['fnBlock'][0]) )
+				logging.error("*** ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]))
+				logging.error("*** ScanPg {} Footnote {} ({}): {}".format(footnotes[i+1]['scanPageNum'], i+1,footnotes[i+1]['startLine']+1,footnotes[i+1]['fnBlock'][0]))
 			else:
 				# merge fnBlock and fnText from second into first
 				footnotes[i]['fnBlock'].extend(footnotes[i+1]['fnBlock'])
@@ -527,7 +527,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 
 		i += 1
 
-	if( joinCount > 0 ):
+	if joinCount > 0:
 		logging.info("------ Merged {} broken footnote(s)".format(joinCount))
 	logging.info("------ {} total footnotes after joining".format(len(footnotes)))
 	
@@ -540,7 +540,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 		
 		# Keep track of active scanpage, page numbers must be 
 		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", outBuf[lineNum])
-		if( m ):
+		if m:
 			currentScanPage = m.group(1)
 #			logging.debug("------ Processing page "+currentScanPage)
 
@@ -559,32 +559,32 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 				logging.debug("       {}".format(l))
 			
 			# sanity check (anchor and footnote should be on same scan page)
-			if( currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum'] ):
+			if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
 				logging.warning("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
 
 			# replace anchor
-			outBuf[lineNum] = re.sub( curAnchor, newAnchor, outBuf[lineNum] )
+			outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])
 			
 			
 			# update paragraphEnd and chapterEnd so they are relative to anchor and not [Footnote
 			# Find end of paragraph
-			paragraphEnd = findNextEmptyLine( outBuf, lineNum )
+			paragraphEnd = findNextEmptyLine(outBuf, lineNum)
 			footnotes[fnAnchorCount-1]['paragraphEnd'] = paragraphEnd
 
 			# Find end of chapter (line after last line of last paragraph)
-			chapterEnd = findNextChapter( outBuf, lineNum )
-			chapterEnd = findPreviousLineOfText( outBuf, chapterEnd ) + 1
+			chapterEnd = findNextChapter(outBuf, lineNum)
+			chapterEnd = findPreviousLineOfText(outBuf, chapterEnd) + 1
 			footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
 			
 		lineNum += 1
 
 	logging.info("------ Processed {} footnote anchors".format(fnAnchorCount))
 	
-	if( len(footnotes) != fnAnchorCount ):
+	if len(footnotes) != fnAnchorCount:
 		logging.error("Footnote anchor count does not match footnote count")
 	
 	# generate ppgen footnote markup 
-	if( footnoteDestination == "bookend" ):
+	if footnoteDestination == "bookend":
 		logging.info("------ Adding ppgen style footnotes to end of book")
 		fnMarkup = []
 		fnMarkup.append(".pb")
@@ -619,13 +619,13 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 
 		outBuf.extend(fnMarkup)
 
-	elif( footnoteDestination == "chapterend" ):
+	elif footnoteDestination == "chapterend":
 		logging.info("------ Adding ppgen style footnotes to end of chapters")	
 		curChapterEnd = footnotes[-1]['chapterEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
 			
-			if( curChapterEnd != fn['chapterEnd'] ):
+			if curChapterEnd != fn['chapterEnd']:
 				# finish off last group
 				outBuf.insert(curChapterEnd, ".fm")
 				curChapterEnd = fn['chapterEnd']
@@ -644,13 +644,13 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 		# finish off last group
 		outBuf.insert(curChapterEnd, ".fm")
 
-	elif( footnoteDestination == "paragraphend" ):
+	elif footnoteDestination == "paragraphend":
 		logging.info("------ Adding ppgen style footnotes to end of paragraphs")
 		curParagraphEnd = footnotes[-1]['paragraphEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
 			
-			if( curParagraphEnd != fn['paragraphEnd'] ):
+			if curParagraphEnd != fn['paragraphEnd']:
 				# finish off last group
 				outBuf.insert(curParagraphEnd, ".fm")
 				curParagraphEnd = fn['paragraphEnd']
@@ -676,20 +676,20 @@ def main():
 	args = docopt(__doc__, version='ppprep 0.1')
 
 	# Process required command line arguments
-	outfile = createOutputFileName( args['<infile>'] )
-	if( args['<outfile>'] ):
+	outfile = createOutputFileName(args['<infile>'])
+	if args['<outfile>']:
 		outfile = args['<outfile>']
 
 	infile = args['<infile>']
 
 	# Open source file and represent as an array of lines
-	inBuf = loadFile( infile )
+	inBuf = loadFile(infile)
 
 	# Configure logging
 	logLevel = logging.INFO #default
-	if( args['--verbose'] ):
+	if args['--verbose']:
 		logLevel = logging.DEBUG
-	elif( args['--quiet'] ):
+	elif args['--quiet']:
 		logLevel = logging.ERROR
 
 	logging.basicConfig(format='%(levelname)s: %(message)s', level=logLevel)
@@ -703,33 +703,33 @@ def main():
 	doPages = args['--pages'];
 
 	# Check that at least one processing options is set
-	if( not doChapterHeadings and \
+	if not doChapterHeadings and \
 		not doSectionHeadings and \
 		not doFootnotes and \
-		not doPages ):
+		not doPages:
 		logging.error("No processing options set; run 'ppprep -h' for a list of available options")
 	else:
 		# Process source document
 		logging.info("Processing '{}' to '{}'".format(infile,outfile))
 		outBuf = []
-		inBuf = removeTrailingSpaces( inBuf )
-		if( doPages ):
-			outBuf = processBlankPages( inBuf, args['--keeporiginal'] )
+		inBuf = removeTrailingSpaces(inBuf)
+		if doPages:
+			outBuf = processBlankPages(inBuf, args['--keeporiginal'])
 			inBuf = outBuf
-			outBuf = processPageNumbers( inBuf, args['--keeporiginal'] )
+			outBuf = processPageNumbers(inBuf, args['--keeporiginal'])
 			inBuf = outBuf
-		if( doChapterHeadings or doSectionHeadings ):
-			outBuf = processHeadings( inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'] )
+		if doChapterHeadings or doSectionHeadings:
+			outBuf = processHeadings(inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
 			inBuf = outBuf
-		if( doFootnotes ):
+		if doFootnotes:
 			footnoteDestination = "bookend"
-			if( args['--fndest'] ):
+			if args['--fndest']:
 				footnoteDestination = args['--fndest']
 
-			outBuf = processFootnotes( inBuf, footnoteDestination, args['--keeporiginal'] )
+			outBuf = processFootnotes(inBuf, footnoteDestination, args['--keeporiginal'])
 			inBuf = outBuf
 
-		if( not args['--dryrun'] ):
+		if not args['--dryrun']:
 			# Save file
 			f = open(outfile,'w')
 			for line in outBuf:
