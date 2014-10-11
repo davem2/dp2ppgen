@@ -57,9 +57,9 @@ def processBlankPages( inBuf, keepOriginal ):
 		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
 		if( m ):
 			if( keepOriginal ):
-				outBuf.append("// *** PPPREP ORIGINAL: " + inBuf[lineNum])
+				outBuf.append("// *** PPPREP ORIGINAL: {}".format(inBuf[lineNum]))
 			outBuf.append("// [Blank Page]")
-			logging.debug("Line " + str(lineNum) + ": convert " + inBuf[lineNum] + " ==> " + outBuf[-1])
+			logging.debug("Line {:>5}: convert '{}' to '{}'".format(str(lineNum),inBuf[lineNum],outBuf[-1]))
 			lineNum += 1
 
 		else:
@@ -81,10 +81,10 @@ def processPageNumbers( inBuf, keepOriginal ):
 		m = re.match(r"-----File: (\d+\.png).*", inBuf[lineNum])
 		if( m ):
 			if( keepOriginal ):
-				outBuf.append("// *** PPPREP ORIGINAL: " + inBuf[lineNum])
-			outBuf.append("// " +  m.group(1))
+				outBuf.append("// *** PPPREP ORIGINAL: {}".format(inBuf[lineNum]))
+			outBuf.append("// {}".format(m.group(1)))
 			outBuf.append(".pn +1")
-			logging.debug("Line " + str(lineNum) + ": convert " + inBuf[lineNum] + " ==> " + outBuf[-1])
+			logging.debug("Line {:>5}: convert '{}' to '{}'".format(str(lineNum),inBuf[lineNum],outBuf[-1]))
 			lineNum += 1
 
 		else:
@@ -191,7 +191,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			# can span more than one line
 			# (1 empty line)
 
-		# Out-of-line formatting /# #/ /* */
+		# Detect when inside out-of-line formatting block /# #/ /* */
 		if( re.match(r"^\/\*$", inBuf[lineNum]) or re.match(r"^\/\#$", inBuf[lineNum]) ):
 			rewrapLevel += 1
 		elif( re.match(r"^\*\/$", inBuf[lineNum]) or re.match(r"^\#\/$", inBuf[lineNum]) ):
@@ -237,11 +237,11 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				chapterLine += "|"
 			chapterLine = chapterLine[:-1]
 
-			logging.debug("Found chapter heading: " + chapterLine)
+			logging.debug("Found chapter heading: {}".format(chapterLine))
 
 			outBlock.append("// ******** PPPREP GENERATED ****************************************")
 			outBlock.append(".sp 4")
-			outBlock.append(".h2 id=" + chapterID )
+			outBlock.append(".h2 id={}".format(chapterID))
 			outBlock.append(chapterLine)
 			outBlock.append(".sp 2")
 
@@ -261,7 +261,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBuf.append(line)
 
 			# Log action
-			logging.info("------ .h2 " + chapterLine)
+			logging.info("------ .h2 {}".format(chapterLine))
 
 		# Section heading
 		elif( doSectionHeadings and consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0 ):
@@ -292,11 +292,11 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				sectionLine += "|"
 			sectionLine = sectionLine[:-1]
 
-			logging.debug("Found section heading: " + sectionLine)
+			logging.debug("Found section heading: ".format(sectionLine))
 
 			outBlock.append("// ******** PPPREP GENERATED ****************************************")
 			outBlock.append(".sp 2")
-			outBlock.append(".h3 id=" + sectionID )
+			outBlock.append(".h3 id={}".format(sectionID))
 			outBlock.append(sectionLine)
 			outBlock.append(".sp 1")
 
@@ -314,7 +314,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBuf.append(line)
 
 			# Log action
-			logging.info("------ .h3 " + sectionID)
+			logging.info("------ .h3 {}".format(sectionID))
 		else:
 			if( isLineBlank(inBuf[lineNum]) ):
 				consecutiveEmptyLineCount += 1
@@ -377,7 +377,7 @@ def loadFile(fn):
 
 def createOutputFileName( infile ):
 	# TODO make this smart.. is infile raw or ppgen source? maybe two functions needed
-	outfile = infile.split('.')[0] + "-out.txt"
+	outfile = "{}-out.txt".format(infile.split('.')[0]) 
 	return outfile
 
 def stripFootnoteMarkup( inBuf ):
@@ -710,7 +710,7 @@ def main():
 		logging.error("No processing options set; run 'ppprep -h' for a list of available options")
 	else:
 		# Process source document
-		logging.info("Processing '" + infile + "' to '" + outfile + "'")
+		logging.info("Processing '{}' to '{}'".format(infile,outfile))
 		outBuf = []
 		inBuf = removeTrailingSpaces( inBuf )
 		if( doPages ):
