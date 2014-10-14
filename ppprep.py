@@ -41,7 +41,7 @@ def validateDpMarkup( inBuf ):
 	
 	# TODO, someone must have written a more thorough version of this already.. use that instead
 	
-	logging.info("--- Checking input for markup errors")
+	logging.info("--- Checking input file for markup errors")
 
 	inBuf = removeTrailingSpaces(inBuf)
 	
@@ -135,7 +135,7 @@ def validateDpMarkup( inBuf ):
 	if len(formattingStack) > 0:
 		errorCount += 1
 		logging.error("Reached end of file with unresolved formatting markup, (probably due to previous markup error(s))")
-	
+		logging.debug("{}".format(formattingStack))
 
 	if errorCount > 0:
 		logging.info("--- Found {} markup errors".format(errorCount) )
@@ -814,46 +814,50 @@ def main():
 	doFootnotes = args['--footnotes'];
 	doPages = args['--pages'];
 
-	# Check that at least one processing options is set
+	# Use default options if no processing options are set
 	if not doChapterHeadings and \
 		not doSectionHeadings and \
 		not doFootnotes and \
 		not doPages:
-		logging.error("No processing options set; run 'ppprep -h' for a list of available options")
-	else:
-		# Process source document
-		logging.info("Processing '{}'".format(infile))
-		outBuf = []
-		inBuf = removeTrailingSpaces(inBuf)
-
-		errorCount = validateDpMarkup(inBuf)
-		if errorCount > 0 and not args['--force']:
-			logging.critical("Correct markup issues then re-run operation, or use --force to disregard markup errors")
 		
-		else:
-			if doPages:
-				outBuf = processBlankPages(inBuf, args['--keeporiginal'])
-				inBuf = outBuf
-				outBuf = processPageNumbers(inBuf, args['--keeporiginal'])
-				inBuf = outBuf
-			if doChapterHeadings or doSectionHeadings:
-				outBuf = processHeadings(inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
-				inBuf = outBuf
-			if doFootnotes:
-				footnoteDestination = "bookend"
-				if args['--fndest']:
-					footnoteDestination = args['--fndest']
+		logging.info("No processing options were given, using default set of options -pfc\n      Run 'ppprep -h' for a full list of options")
+		doPages = True
+		doChapterHeadings = True
+		doFootnotes = True
 
-				outBuf = processFootnotes(inBuf, footnoteDestination, args['--keeporiginal'])
-				inBuf = outBuf
+	# Process source document
+	logging.info("Processing '{}'".format(infile))
+	outBuf = []
+	inBuf = removeTrailingSpaces(inBuf)
 
-			if not args['--dryrun']:
-				logging.info("Saving output to '{}'".format(outfile))
-				# Save file
-				f = open(outfile,'w')
-				for line in outBuf:
-					f.write(line+'\n')
-				f.close()
+	errorCount = validateDpMarkup(inBuf)
+	if errorCount > 0 and not args['--force']:
+		logging.critical("Correct markup issues then re-run operation, or use --force to disregard markup errors")
+	
+	else:
+		if doPages:
+			outBuf = processBlankPages(inBuf, args['--keeporiginal'])
+			inBuf = outBuf
+			outBuf = processPageNumbers(inBuf, args['--keeporiginal'])
+			inBuf = outBuf
+		if doChapterHeadings or doSectionHeadings:
+			outBuf = processHeadings(inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
+			inBuf = outBuf
+		if doFootnotes:
+			footnoteDestination = "bookend"
+			if args['--fndest']:
+				footnoteDestination = args['--fndest']
+
+			outBuf = processFootnotes(inBuf, footnoteDestination, args['--keeporiginal'])
+			inBuf = outBuf
+
+		if not args['--dryrun']:
+			logging.info("Saving output to '{}'".format(outfile))
+			# Save file
+			f = open(outfile,'w')
+			for line in outBuf:
+				f.write(line+'\n')
+			f.close()
 
 	return
 
