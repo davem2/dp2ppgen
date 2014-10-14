@@ -79,14 +79,14 @@ def validateDpMarkup( inBuf ):
 				else:
 					formattingStack.pop()
 
-			elif v == ")": # closing markup
-				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "(":
-					errorCount += 1
-					if len(formattingStack) == 0:
-						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
-					else:
-						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
-						logging.debug("{}".format(formattingStack))
+#			elif v == ")": # closing markup
+#				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "(":
+#					errorCount += 1
+#					if len(formattingStack) == 0:
+#						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+#					else:
+#						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+#						logging.debug("{}".format(formattingStack))
 				else:
 					formattingStack.pop()
 
