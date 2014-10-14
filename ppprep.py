@@ -173,7 +173,7 @@ def processBlankPages( inBuf, keepOriginal ):
 			if keepOriginal:
 				outBuf.append("// *** PPPREP ORIGINAL: {}".format(inBuf[lineNum]))
 			outBuf.append("// [Blank Page]")
-			logging.debug("{:>{:d}}: '{}' to '{}'".format(str(lineNum),len(str(len(inBuf))),inBuf[lineNum],outBuf[-1]))
+			logging.debug("{:>{:d}}: '{}' to '{}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-1]))
 			lineNum += 1
 
 		else:
@@ -198,7 +198,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 				outBuf.append("// *** PPPREP ORIGINAL: {}".format(inBuf[lineNum]))
 			outBuf.append("// {}".format(m.group(1)))
 			outBuf.append(".pn +1")
-			logging.debug("{:>{:d}}: '{}' to '{}, {}'".format(str(lineNum),len(str(len(inBuf))),inBuf[lineNum],outBuf[-2],outBuf[-1]))
+			logging.debug("{:>{:d}}: '{}' to '{}, {}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-2],outBuf[-1]))
 			lineNum += 1
 
 		else:
@@ -514,6 +514,7 @@ def parseFootnotes( inBuf ):
 #	fnText - list of lines containing footnote text
 # 	paragraphEnd - line number of the blank line following the paragraph this footnote is located in
 # 	chapterEnd - line number of the blank line following the last paragraph in the chapter this footnote is located in
+# 	scanPageNumber - scan page this footnote is located on
 
 	footnotes = []
 	lineNum = 0
@@ -523,7 +524,7 @@ def parseFootnotes( inBuf ):
 	while lineNum < len(inBuf):
 		foundFootnote = False
 		
-		# Keep track of active scanpage, page numbers must be 
+		# Keep track of active scanpage
 		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum])
 		if m:
 			currentScanPage = m.group(1)
@@ -531,7 +532,7 @@ def parseFootnotes( inBuf ):
 
 		needsJoining = False    
 		if re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]):
-			logging.info("Footnote requires joining at line {}: {}".format(lineNum,inBuf[lineNum]))
+			logging.info("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
 			needsJoining = True
 			foundFootnote = True
 
@@ -666,9 +667,9 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 			newAnchor = "[{}]".format(fnAnchorCount)
 			#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
 			
-			logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor,lineNum,currentScanPageLabel,outBuf[lineNum]))
-			for l in footnotes[fnAnchorCount-1]['fnText']:
-				logging.debug("       {}".format(l))
+			logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor,lineNum+1,currentScanPageLabel,outBuf[lineNum]))
+			for line in footnotes[fnAnchorCount-1]['fnText']:
+				logging.debug("       {}".format(line))
 			
 			# sanity check (anchor and footnote should be on same scan page)
 			if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
