@@ -30,4 +30,16 @@
 
 - Check that --keeporiginal works with all operations (doesnt with --footnotes for example)
 
-- Standardize if statements and other similar to use () or not..
+- Generate TOC? Maybe detect certain style TOC and generate or have user pick.. user defined templates? Usefulness of this depends on how variable styles are for TOC
+
+- Check markup option that looks for errors in pgdp formatting markup? Does guiguts have something like this?
+
+- Check for syntax errors in pgdp markup before processing
+
+- Add configuration file to allow for more customizability
+
+- Add basic illustration conversion
+
+- <tb> to .tb
+
+- Replace lineNum with lineNum+1 when reporting (files use 1 based index, ppprep using 0 based)

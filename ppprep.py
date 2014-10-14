@@ -3,7 +3,7 @@
 """ppprep
 
 Usage:
-  ppprep [-cdefkpqv] [--fndest=<fndest>] <infile> [<outfile>]
+  ppprep [-cdefkpqv] [--force] [--fndest=<fndest>] <infile> [<outfile>]
   ppprep -h | --help
   ppprep ---version
 
@@ -19,6 +19,7 @@ Options:
   -e, --sections       Convert section headings into ppgen style section headings.
   -f, --footnotes      Convert footnotes into ppgen format.
   --fndest=<fndest>    Where to relocate footnotes (paragraphend, chapterend, bookend)
+  --force              Ignore markup errors and force operation .
   -k, --keeporiginal   On any conversion keep original text as a comment.
   -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
@@ -35,8 +36,115 @@ import sys
 import logging
 
 
+# Limited check for syntax errors in dp markup of input file
+def validateDpMarkup( inBuf ):
+	
+	# TODO, someone must have written a more thorough version of this already.. use that instead
+	
+	logging.info("--- Checking input for markup errors")
+
+	inBuf = removeTrailingSpaces(inBuf)
+	
+	formattingStack = []	
+	lineNum = 0
+	errorCount = 0
+	while lineNum < len(inBuf):
+	
+		# Check balance of <i></i>, [], {}
+		m = re.findall(r"(\[|\]|\{|\}|\(|\)|<\/?\w+>)", inBuf[lineNum])
+		for v in m:
+			
+			if v == "<tb>": # ignore
+				pass
+			
+			elif v == "]": # closing markup
+				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "[":
+					errorCount += 1
+					if len(formattingStack) == 0:
+						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+					else:
+						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+						logging.debug("{}".format(formattingStack))
+				else:
+					formattingStack.pop()
+
+			elif v == "}": # closing markup
+				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "{":
+					errorCount += 1
+					if len(formattingStack) == 0:
+						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+					else:
+						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+						logging.debug("{}".format(formattingStack))
+				else:
+					formattingStack.pop()
+
+			elif v == ")": # closing markup
+				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "(":
+					errorCount += 1
+					if len(formattingStack) == 0:
+						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+					else:
+						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+						logging.debug("{}".format(formattingStack))
+				else:
+					formattingStack.pop()
+
+			elif "/" in v: # closing markup
+				v2 = re.sub("/","",v)
+				if len(formattingStack) == 0 or formattingStack[-1]['v'] != v2:
+					errorCount += 1
+					if len(formattingStack) == 0:
+						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+					else:
+						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+						logging.debug("{}".format(formattingStack))
+				else:
+					formattingStack.pop()
+
+			else:
+				d = ({'ln':lineNum+1,'v':v})
+				formattingStack.append(d)
+				
+
+		# Detect unbalanced out-of-line formatting markup /# #/ /* */
+		m = re.match(r"^\/(\*|\#)$", inBuf[lineNum])
+		if m:
+			d = ({'ln':lineNum+1,'v':"/{}".format(m.group(1))})
+			formattingStack.append(d)
+			
+		m = re.match(r"^(\*|\#)\/$", inBuf[lineNum])
+		if m:
+			v = m.group(1)
+			if len(formattingStack) == 0 or formattingStack[-1]['v'] != "/{}".format(v):
+				errorCount += 1
+				if len(formattingStack) == 0:
+					logging.error("Line {}: Unexpected {}/".format(lineNum+1,v))
+				else:
+					logging.error("Line {}: Unexpected {}/, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+					logging.debug("{}".format(formattingStack))
+			else:
+				formattingStack.pop()
+
+		lineNum += 1
+			
+		# Chapters
+		# Sections	
+		
+	# Look for unresolved <i></i>, [], {}
+	if len(formattingStack) > 0:
+		errorCount += 1
+		logging.error("Reached end of file with unresolved formatting markup, (probably due to previous markup error(s))")
+	
+
+	if errorCount > 0:
+		logging.info("--- Found {} markup errors".format(errorCount) )
+
+	return errorCount
+	
+
 # Format helper function, truncate to width and indicate truncation occured with ...
-def truncate(string, width):
+def truncate( string, width ):
     if len(string) > width:
         string = string[:width-3] + '...'
     return string
@@ -316,7 +424,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBuf.append(line)
 
 			# Log action
-			logging.info("--------- .h3 {}".format(sectionID))
+			logging.info("------ .h3 {}".format(sectionID))
 		else:
 			if isLineBlank(inBuf[lineNum]):
 				consecutiveEmptyLineCount += 1
@@ -714,31 +822,38 @@ def main():
 		logging.error("No processing options set; run 'ppprep -h' for a list of available options")
 	else:
 		# Process source document
-		logging.info("Processing '{}' to '{}'".format(infile,outfile))
+		logging.info("Processing '{}'".format(infile))
 		outBuf = []
 		inBuf = removeTrailingSpaces(inBuf)
-		if doPages:
-			outBuf = processBlankPages(inBuf, args['--keeporiginal'])
-			inBuf = outBuf
-			outBuf = processPageNumbers(inBuf, args['--keeporiginal'])
-			inBuf = outBuf
-		if doChapterHeadings or doSectionHeadings:
-			outBuf = processHeadings(inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
-			inBuf = outBuf
-		if doFootnotes:
-			footnoteDestination = "bookend"
-			if args['--fndest']:
-				footnoteDestination = args['--fndest']
 
-			outBuf = processFootnotes(inBuf, footnoteDestination, args['--keeporiginal'])
-			inBuf = outBuf
+		errorCount = validateDpMarkup(inBuf)
+		if errorCount > 0 and not args['--force']:
+			logging.critical("Correct markup issues then re-run operation, or use --force to disregard markup errors")
+		
+		else:
+			if doPages:
+				outBuf = processBlankPages(inBuf, args['--keeporiginal'])
+				inBuf = outBuf
+				outBuf = processPageNumbers(inBuf, args['--keeporiginal'])
+				inBuf = outBuf
+			if doChapterHeadings or doSectionHeadings:
+				outBuf = processHeadings(inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
+				inBuf = outBuf
+			if doFootnotes:
+				footnoteDestination = "bookend"
+				if args['--fndest']:
+					footnoteDestination = args['--fndest']
 
-		if not args['--dryrun']:
-			# Save file
-			f = open(outfile,'w')
-			for line in outBuf:
-				f.write(line+'\n')
-			f.close()
+				outBuf = processFootnotes(inBuf, footnoteDestination, args['--keeporiginal'])
+				inBuf = outBuf
+
+			if not args['--dryrun']:
+				logging.info("Saving output to '{}'".format(outfile))
+				# Save file
+				f = open(outfile,'w')
+				for line in outBuf:
+					f.write(line+'\n')
+				f.close()
 
 	return
 
