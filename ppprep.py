@@ -51,7 +51,8 @@ def validateDpMarkup( inBuf ):
 	while lineNum < len(inBuf):
 	
 		# Check balance of <i></i>, [], {}
-		m = re.findall(r"(\[|\]|\{|\}|\(|\)|<\/?\w+>)", inBuf[lineNum])
+#		m = re.findall(r"(\[|\]|\{|\}|\(|\)|<\/?\w+>)", inBuf[lineNum])
+		m = re.findall(r"(\[|\]|\{|\}|<\/?\w+>)", inBuf[lineNum])
 		for v in m:
 			
 			if v == "<tb>": # ignore
@@ -87,8 +88,8 @@ def validateDpMarkup( inBuf ):
 #					else:
 #						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
 #						logging.debug("{}".format(formattingStack))
-				else:
-					formattingStack.pop()
+#				else:
+#					formattingStack.pop()
 
 			elif "/" in v: # closing markup
 				v2 = re.sub("/","",v)
@@ -556,6 +557,11 @@ def parseFootnotes( inBuf ):
 			# Find end of chapter (line after last line of last paragraph)
 			chapterEnd = -1 # This must be done during footnote anchor processing as chapter end is relative to anchor and not [Footnote] markup
 
+			# Extract footnote ID
+			m = re.search(r"^\[Footnote (\w{1,2}):", fnBlock[0])
+			if m:
+				fnID = m.group(1);
+
 			# Extract footnote text from [Footnote] block
 			fnText = []
 			for line in fnBlock:
@@ -566,51 +572,19 @@ def parseFootnotes( inBuf ):
 				fnText.append(line)
 			
 			# Add entry
-			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'needsJoining':needsJoining, 'scanPageNum':currentScanPage})
+			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'fnID':fnID, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'needsJoining':needsJoining, 'scanPageNum':currentScanPage})
 
 		lineNum += 1
 
-	logging.info("--------- Parsed {} footnotes".format(len(footnotes)))
+	logging.info("------ Parsed {} footnotes".format(len(footnotes)))
 
-	return footnotes;
-
-
-def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
-	outBuf = []
-
-	logging.info("--- Processing footnotes")
-
-	# strip empty lines before [Footnotes], *[Footnote
-	lineNum = 0
-	logging.info("------ Remove blank lines before [Footnotes]")
-	while lineNum < len(inBuf):
-		if re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]):
-			# delete previous blank line(s)
-			while isLineBlank(outBuf[-1]):
-				del outBuf[-1]
-
-		outBuf.append(inBuf[lineNum])
-		lineNum += 1
-	inBuf = outBuf
-
-#	for line in inBuf:
-#		print(line)
-
-	# parse footnotes into list of dictionaries
-	footnotes = parseFootnotes(outBuf)
-#	print(footnotes)
-
-	# strip [Footnote markup
-	#TODO: better to do this during parsing?
-	outBuf = stripFootnoteMarkup(outBuf)
-	
-	# join broken footnotes
+	# Join footnotes marked above during parsing
 	joinCount = 0
 	i = 0
 	while i < len(footnotes):
 		if footnotes[i]['needsJoining']:
 			if joinCount == 0:
-				logging.info("------ Fixing broken footnotes")
+				logging.info("------ Joining footnotes")
 			
 			# debug message
 			logging.debug("Merging footnote [{}]".format(i+1))
@@ -642,11 +616,21 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 		logging.info("------ Merged {} broken footnote(s)".format(joinCount))
 	logging.info("------ {} total footnotes after joining".format(len(footnotes)))
 	
+
+	return footnotes;
+
+
+def processFootnoteAnchors( inBuf, footnotes ):
+	
+	outBuf = inBuf
+	
 	# process footnote anchors 
 	fnAnchorCount = 0
 	lineNum = 0
 	currentScanPage = 0
 	currentScanPageLabel = ""
+	fnIDs = []
+	r = []
 	logging.info("------ Processing footnote anchors")
 	while lineNum < len(outBuf):
 		
@@ -657,46 +641,100 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 			currentScanPageLabel = re.sub(r"\/\/ ","", outBuf[lineNum])
 #			logging.debug("------ Processing page "+currentScanPage)
 
-		#TODO: allowing bad format here like [a-z]? maybe warn or handle some other way?
-		#TODO: maybe change search so that only scan pages with [Footnotes] are scanned for anchors, and only anchors referenced in [Footnotes] are looked for. Real easy to get out of sync with current setup
-		m = re.findall("\[([A-Z]|[0-9]{1,2})\]", outBuf[lineNum])
+			# Make list of footnotes found on this page
+			fnIDs = []
+			for fn in footnotes:
+				if fn['scanPageNum'] == currentScanPage:
+					fnIDs.append(fn['fnID'])
+				
+			# Build regex for footnote anchors that can be found on this scanpage
+#			if len(fnIDs) > 0:
+#				r = "|".join(fnIDs)
+#				r = r"\[({})\]".format(r)
+
+		m = re.findall("\[([A-Z][a-z]|[0-9]{1,2})\]", outBuf[lineNum])
 		for anchor in m:
-			fnAnchorCount += 1
-			# replace [1] or [A] with [n]
-			curAnchor = "\[{}\]".format(anchor)
-			newAnchor = "[{}]".format(fnAnchorCount)
-			#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
 			
-			logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor,lineNum+1,currentScanPageLabel,outBuf[lineNum]))
-			for line in footnotes[fnAnchorCount-1]['fnText']:
-				logging.debug("       {}".format(line))
-			
-			# sanity check (anchor and footnote should be on same scan page)
-			if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
-				logging.warning("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
+			# Check that anchor found belongs to a footnote on this page
+			if not anchor in fnIDs:
+				logging.error("Footnote anchor {} on scan page {} has no matching footnote".format(anchor,currentScanPage))
+				logging.debug(fnIDs)
+				
+			else:
+				fnAnchorCount += 1
+				# replace [1] or [A] with [n]
+				curAnchor = "\[{}\]".format(anchor)
+				newAnchor = "[{}]".format(fnAnchorCount)
+				#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
+				
+				logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor,lineNum+1,currentScanPageLabel,outBuf[lineNum]))
+				for line in footnotes[fnAnchorCount-1]['fnText']:
+					logging.debug("       {}".format(line))
+				
+				# sanity check (anchor and footnote should be on same scan page)
+				if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
+					logging.warning("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
 
-			# replace anchor
-			outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])
-			
-			
-			# update paragraphEnd and chapterEnd so they are relative to anchor and not [Footnote
-			# Find end of paragraph
-			paragraphEnd = findNextEmptyLine(outBuf, lineNum)
-			footnotes[fnAnchorCount-1]['paragraphEnd'] = paragraphEnd
+				# replace anchor
+				outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])		
+				
+				# update paragraphEnd and chapterEnd so they are relative to anchor and not [Footnote
+				# Find end of paragraph
+				paragraphEnd = findNextEmptyLine(outBuf, lineNum)
+				footnotes[fnAnchorCount-1]['paragraphEnd'] = paragraphEnd
 
-			# Find end of chapter (line after last line of last paragraph)
-			chapterEnd = findNextChapter(outBuf, lineNum)
-			chapterEnd = findPreviousLineOfText(outBuf, chapterEnd) + 1
-			footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
+				# Find end of chapter (line after last line of last paragraph)
+				chapterEnd = findNextChapter(outBuf, lineNum)
+				chapterEnd = findPreviousLineOfText(outBuf, chapterEnd) + 1
+				footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
 			
 		lineNum += 1
 
 	logging.info("------ Processed {} footnote anchors".format(fnAnchorCount))
 	
+	return outBuf, fnAnchorCount
+
+
+def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
+	outBuf = []
+
+	logging.info("--- Processing footnotes")
+
+	# strip empty lines before [Footnotes], *[Footnote
+	lineNum = 0
+	logging.info("------ Remove blank lines before [Footnotes]")
+	while lineNum < len(inBuf):
+		if re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]):
+			# delete previous blank line(s)
+			while isLineBlank(outBuf[-1]):
+				del outBuf[-1]
+
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+	inBuf = outBuf
+
+	# parse footnotes into list of dictionaries
+	footnotes = parseFootnotes(outBuf)
+
+	# strip [Footnote markup
+	outBuf = stripFootnoteMarkup(outBuf)
+	
+	# find and markup footnote anchors 
+	outBuf, fnAnchorCount = processFootnoteAnchors(outBuf, footnotes)
+	
 	if len(footnotes) != fnAnchorCount:
 		logging.error("Footnote anchor count does not match footnote count")
 	
-	# generate ppgen footnote markup 
+	outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination)
+	
+	return outBuf
+
+
+# Generate ppgen footnote markup 
+def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
+	
+	outBuf = inBuf
+	
 	if footnoteDestination == "bookend":
 		logging.info("------ Adding ppgen style footnotes to end of book")
 		fnMarkup = []

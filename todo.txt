@@ -8,7 +8,7 @@
 
 - Add "aggresiveness" parameter for heading detection option
 
-- Add option to squash paragraphs to one line .. now sure this would be useful?
+- Add option to squash paragraphs to one line .. not sure this would be useful?
 
 - Add footnote processing
   - Option to place footnote inline 
@@ -32,9 +32,7 @@
 
 - Generate TOC? Maybe detect certain style TOC and generate or have user pick.. user defined templates? Usefulness of this depends on how variable styles are for TOC
 
-- Check markup option that looks for errors in pgdp formatting markup? Does guiguts have something like this?
-
-- Check for syntax errors in pgdp markup before processing
+- More comprehensive error check on pgdp markup
 
 - Add configuration file to allow for more customizability
 
@@ -42,4 +40,5 @@
 
 - <tb> to .tb
 
-- Replace lineNum with lineNum+1 when reporting (files use 1 based index, ppprep using 0 based)
+- Refactor footnote processing function
+
