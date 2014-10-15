@@ -18,8 +18,8 @@ Options:
   -d, --dryrun         Run through conversions but do not write out result.
   -e, --sections       Convert section headings into ppgen style section headings.
   -f, --footnotes      Convert footnotes into ppgen format.
-  --fndest=<fndest>    Where to relocate footnotes (paragraphend, chapterend, bookend)
-  --force              Ignore markup errors and force operation .
+  --fndest=<fndest>    Where to relocate footnotes (paragraphend, chapterend, bookend, inline).
+  --force              Ignore markup errors and force operation.
   -k, --keeporiginal   On any conversion keep original text as a comment.
   -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
@@ -80,7 +80,7 @@ def validateDpMarkup( inBuf ):
 				else:
 					formattingStack.pop()
 
-#			elif v == ")": # closing markup
+			# Disabled as this will get false positives from diacratic markup [)x] and won't affect conversion anyways
 #				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "(":
 #					errorCount += 1
 #					if len(formattingStack) == 0:
@@ -127,6 +127,15 @@ def validateDpMarkup( inBuf ):
 			else:
 				formattingStack.pop()
 
+		# Check for specific issues that have caused conversion issues in the past
+		
+		# Single line [Footnote] does not end at closing ]
+		# ex. [Footnote 1: Duine, <i>Saints de Domnonée</i>, pp. 5-12].
+		if re.match(r"\*?\[Footnote(.*)\]\*?.*$", inBuf[lineNum]):
+			if inBuf[lineNum].count('[') - inBuf[lineNum].count(']') == 0: # ignore multiline footnotes with proofer notes or some other [] markup within them
+				if not (inBuf[lineNum][-1] == ']' or inBuf[lineNum][-2:] == ']*'):
+					logging.error("Line {}: Extra characters found after closing ']' in [Footnote]\n       {}".format(lineNum+1,inBuf[lineNum]))
+	
 		lineNum += 1
 			
 		# Chapters
@@ -138,6 +147,9 @@ def validateDpMarkup( inBuf ):
 		logging.error("Reached end of file with unresolved formatting markup, (probably due to previous markup error(s))")
 		logging.debug("{}".format(formattingStack))
 
+	
+	
+	
 	if errorCount > 0:
 		logging.info("--- Found {} markup errors".format(errorCount) )
 
@@ -533,7 +545,7 @@ def parseFootnotes( inBuf ):
 
 		needsJoining = False    
 		if re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]):
-			logging.info("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
+			logging.info("--------- Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
 			needsJoining = True
 			foundFootnote = True
 
@@ -630,7 +642,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 	currentScanPage = 0
 	currentScanPageLabel = ""
 	fnIDs = []
-	r = []
+#	r = []
 	logging.info("------ Processing footnote anchors")
 	while lineNum < len(outBuf):
 		
@@ -652,12 +664,12 @@ def processFootnoteAnchors( inBuf, footnotes ):
 #				r = "|".join(fnIDs)
 #				r = r"\[({})\]".format(r)
 
+#		print("{}: {}".format(lineNum,outBuf[lineNum]))
 		m = re.findall("\[([A-Z][a-z]|[0-9]{1,2})\]", outBuf[lineNum])
 		for anchor in m:
-			
 			# Check that anchor found belongs to a footnote on this page
 			if not anchor in fnIDs:
-				logging.error("Footnote anchor {} on scan page {} has no matching footnote".format(anchor,currentScanPage))
+				logging.error("No matching footnote for anchor [{}] on scan page {} (line {} in output file):\n       {}".format(anchor,currentScanPage,lineNum+1,outBuf[lineNum]))
 				logging.debug(fnIDs)
 				
 			else:
@@ -672,8 +684,8 @@ def processFootnoteAnchors( inBuf, footnotes ):
 					logging.debug("       {}".format(line))
 				
 				# sanity check (anchor and footnote should be on same scan page)
-				if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
-					logging.warning("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
+#				if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
+#					logging.warning("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
 
 				# replace anchor
 				outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])		
