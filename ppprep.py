@@ -341,9 +341,14 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				else:
 					consecutiveEmptyLineCount = 0
 
+				# chapters don't span pages
+				if re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum]):
+					foundChapterHeadingEnd = True
+
 				if foundChapterHeadingEnd:
-					# Remove trailing empty lines from chapter heading block
-					inBlock = inBlock[:-1]
+					# Remove empty lines from end of chapter heading block
+					while isLineBlank(inBlock[-1]):
+						inBlock = inBlock[:-1]
 					# Rewind parser (to handle back to back chapter headings)
 					lineNum = findPreviousNonEmptyLine(inBuf, lineNum) + 1
 				else:
@@ -364,6 +369,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				chapterLine += "|"
 			chapterLine = chapterLine[:-1]
 
+			outBlock.append("")
 			outBlock.append("// ******** PPPREP GENERATED ****************************************")
 			outBlock.append(".sp 4")
 			outBlock.append(".h2 id={}".format(chapterID))
@@ -373,7 +379,6 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			if keepOriginal:
 				# Write out original as a comment
 				outBlock.append(".ig  // *** PPPREP BEGIN ORIGINAL ***********************************")
-				outBlock.append("")
 				outBlock.append("")
 				outBlock.append("")
 				outBlock.append("")
@@ -611,9 +616,9 @@ def parseFootnotes( inBuf ):
 				
 			# TODO: can footnotes span more than two pages?
 			if not footnotes[i+1]['needsJoining']:
-				logging.error("*** Attempt to join footnote failed! ***")
-				logging.error("*** ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]))
-				logging.error("*** ScanPg {} Footnote {} ({}): {}".format(footnotes[i+1]['scanPageNum'], i+1,footnotes[i+1]['startLine']+1,footnotes[i+1]['fnBlock'][0]))
+				logging.error("Attempt to join footnote failed!")
+				logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]))
+				logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i+1]['scanPageNum'], i+1,footnotes[i+1]['startLine']+1,footnotes[i+1]['fnBlock'][0]))
 			else:
 				# merge fnBlock and fnText from second into first
 				footnotes[i]['fnBlock'].extend(footnotes[i+1]['fnBlock'])
