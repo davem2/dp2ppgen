@@ -41,7 +41,7 @@ def validateDpMarkup( inBuf ):
 	
 	# TODO, someone must have written a more thorough version of this already.. use that instead
 	
-	logging.info("--- Checking input file for markup errors")
+	logging.info("-- Checking input file for markup errors")
 
 	inBuf = removeTrailingSpaces(inBuf)
 	
@@ -151,7 +151,7 @@ def validateDpMarkup( inBuf ):
 	
 	
 	if errorCount > 0:
-		logging.info("--- Found {} markup errors".format(errorCount) )
+		logging.info("-- Found {} markup errors".format(errorCount) )
 
 	return errorCount
 	
@@ -178,7 +178,7 @@ def processBlankPages( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 
-	logging.info("--- Processing blank pages")
+	logging.info("-- Processing blank pages")
 
 	while lineNum < len(inBuf):
 		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
@@ -202,7 +202,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 
-	logging.info("--- Processing page numbers")
+	logging.info("-- Processing page numbers")
 
 	while lineNum < len(inBuf):
 		m = re.match(r"-----File: (\d+\.png).*", inBuf[lineNum])
@@ -296,11 +296,11 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 	foundChapterHeadingStart = False
 
 	if doChapterHeadings and doSectionHeadings:
-		logging.info("--- Processing chapter and section headings")
+		logging.info("-- Processing chapter and section headings")
 	if doChapterHeadings:
-		logging.info("--- Processing chapter headings")
+		logging.info("-- Processing chapter headings")
 	if doSectionHeadings:
-		logging.info("--- Processing section headings")
+		logging.info("-- Processing section headings")
 
 	while lineNum < len(inBuf):
 		# Chapter heading blocks are in the form:
@@ -386,7 +386,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBuf.append(line)
 
 			# Log action
-			logging.info("------ .h2 {}".format(chapterLine))
+			logging.info("--- .h2 {}".format(chapterLine))
 
 		# Section heading
 		elif doSectionHeadings and consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0:
@@ -437,7 +437,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBuf.append(line)
 
 			# Log action
-			logging.info("------ .h3 {}".format(sectionID))
+			logging.info("--- .h3 {}".format(sectionID))
 		else:
 			if isLineBlank(inBuf[lineNum]):
 				consecutiveEmptyLineCount += 1
@@ -533,7 +533,7 @@ def parseFootnotes( inBuf ):
 	lineNum = 0
 	currentScanPage = 0;
 
-	logging.info("------ Parsing footnotes")
+	logging.info("--- Parsing footnotes")
 	while lineNum < len(inBuf):
 		foundFootnote = False
 		
@@ -545,7 +545,7 @@ def parseFootnotes( inBuf ):
 
 		needsJoining = False    
 		if re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]):
-			logging.info("--------- Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
+			logging.info("----- Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
 			needsJoining = True
 			foundFootnote = True
 
@@ -588,7 +588,7 @@ def parseFootnotes( inBuf ):
 
 		lineNum += 1
 
-	logging.info("------ Parsed {} footnotes".format(len(footnotes)))
+	logging.info("--- Parsed {} footnotes".format(len(footnotes)))
 
 	# Join footnotes marked above during parsing
 	joinCount = 0
@@ -596,7 +596,7 @@ def parseFootnotes( inBuf ):
 	while i < len(footnotes):
 		if footnotes[i]['needsJoining']:
 			if joinCount == 0:
-				logging.info("------ Joining footnotes")
+				logging.info("--- Joining footnotes")
 			
 			# debug message
 			logging.debug("Merging footnote [{}]".format(i+1))
@@ -625,8 +625,8 @@ def parseFootnotes( inBuf ):
 		i += 1
 
 	if joinCount > 0:
-		logging.info("------ Merged {} broken footnote(s)".format(joinCount))
-	logging.info("------ {} total footnotes after joining".format(len(footnotes)))
+		logging.info("--- Merged {} broken footnote(s)".format(joinCount))
+	logging.info("--- {} total footnotes after joining".format(len(footnotes)))
 	
 
 	return footnotes;
@@ -643,7 +643,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 	currentScanPageLabel = ""
 	fnIDs = []
 #	r = []
-	logging.info("------ Processing footnote anchors")
+	logging.info("--- Processing footnote anchors")
 	while lineNum < len(outBuf):
 		
 		# Keep track of active scanpage
@@ -651,7 +651,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 		if m:
 			currentScanPage = m.group(1)
 			currentScanPageLabel = re.sub(r"\/\/ ","", outBuf[lineNum])
-#			logging.debug("------ Processing page "+currentScanPage)
+#			logging.debug("--- Processing page "+currentScanPage)
 
 			# Make list of footnotes found on this page
 			fnIDs = []
@@ -702,7 +702,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 			
 		lineNum += 1
 
-	logging.info("------ Processed {} footnote anchors".format(fnAnchorCount))
+	logging.info("--- Processed {} footnote anchors".format(fnAnchorCount))
 	
 	return outBuf, fnAnchorCount
 
@@ -710,11 +710,11 @@ def processFootnoteAnchors( inBuf, footnotes ):
 def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	outBuf = []
 
-	logging.info("--- Processing footnotes")
+	logging.info("-- Processing footnotes")
 
 	# strip empty lines before [Footnotes], *[Footnote
 	lineNum = 0
-	logging.info("------ Remove blank lines before [Footnotes]")
+	logging.info("--- Remove blank lines before [Footnotes]")
 	while lineNum < len(inBuf):
 		if re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]):
 			# delete previous blank line(s)
@@ -748,7 +748,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 	outBuf = inBuf
 	
 	if footnoteDestination == "bookend":
-		logging.info("------ Adding ppgen style footnotes to end of book")
+		logging.info("--- Adding ppgen style footnotes to end of book")
 		fnMarkup = []
 		fnMarkup.append(".pb")
 		fnMarkup.append(".if t")	
@@ -783,7 +783,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		outBuf.extend(fnMarkup)
 
 	elif footnoteDestination == "chapterend":
-		logging.info("------ Adding ppgen style footnotes to end of chapters")	
+		logging.info("--- Adding ppgen style footnotes to end of chapters")	
 		curChapterEnd = footnotes[-1]['chapterEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
@@ -808,7 +808,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		outBuf.insert(curChapterEnd, ".fm")
 
 	elif footnoteDestination == "paragraphend":
-		logging.info("------ Adding ppgen style footnotes to end of paragraphs")
+		logging.info("--- Adding ppgen style footnotes to end of paragraphs")
 		curParagraphEnd = footnotes[-1]['paragraphEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
