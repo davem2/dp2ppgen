@@ -461,6 +461,7 @@ def loadFile(fn):
 
 	if not os.path.isfile(fn):
 		logging.critical("specified file {} not found".format(fn))
+		exit(1)
 
 	if encoding == "":
 		try:
@@ -742,7 +743,8 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	if len(footnotes) != fnAnchorCount:
 		logging.error("Footnote anchor count does not match footnote count")
 	
-	outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination)
+	if len(footnotes) > 0:
+		outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination)
 	
 	return outBuf
 
