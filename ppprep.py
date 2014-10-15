@@ -109,12 +109,12 @@ def validateDpMarkup( inBuf ):
 				
 
 		# Detect unbalanced out-of-line formatting markup /# #/ /* */
-		m = re.match(r"^\/(\*|\#)$", inBuf[lineNum])
+		m = re.match(r"^\/(\*|\#)", inBuf[lineNum])
 		if m:
 			d = ({'ln':lineNum+1,'v':"/{}".format(m.group(1))})
 			formattingStack.append(d)
 			
-		m = re.match(r"^(\*|\#)\/$", inBuf[lineNum])
+		m = re.match(r"^(\*|\#)\/", inBuf[lineNum])
 		if m:
 			v = m.group(1)
 			if len(formattingStack) == 0 or formattingStack[-1]['v'] != "/{}".format(v):
@@ -319,9 +319,9 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			# (1 empty line)
 
 		# Detect when inside out-of-line formatting block /# #/ /* */
-		if re.match(r"^\/\*$", inBuf[lineNum]) or re.match(r"^\/\#$", inBuf[lineNum]):
+		if re.match(r"^\/\*", inBuf[lineNum]) or re.match(r"^\/\#", inBuf[lineNum]):
 			rewrapLevel += 1
-		elif re.match(r"^\*\/$", inBuf[lineNum]) or re.match(r"^\#\/$", inBuf[lineNum]):
+		elif re.match(r"^\*\/", inBuf[lineNum]) or re.match(r"^\#\/", inBuf[lineNum]):
 			rewrapLevel -= 1
 
 		# Chapter heading
