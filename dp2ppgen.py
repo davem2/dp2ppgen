@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-"""ppprep
+"""dp2ppgen
 
 Usage:
-  ppprep [-cdefjkpqv] [--force] [--fndest=<fndest>] <infile> [<outfile>]
-  ppprep -h | --help
-  ppprep ---version
+  dp2ppgen [-cdefjkpqv] [--force] [--fndest=<fndest>] <infile> [<outfile>]
+  dp2ppgen -h | --help
+  dp2ppgen ---version
 
-Automates various tasks in the post-processing of books for pgdp.org using the ppgen post-processing tool.  Run ppprep as a first step on an unedited book text.
+Translates pgdp.org formatted text files into ppgen syntax.
 
 Examples:
-  ppprep book.txt
-  ppprep book-src.txt book2-src.txt
+  dp2ppgen book.txt
+  dp2ppgen book.txt book-src.txt
 
 Options:
   -c, --chapters       Convert chapter headings into ppgen style chapter headings.
@@ -956,7 +956,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 
 
 def main():
-	args = docopt(__doc__, version='ppprep 0.1')
+	args = docopt(__doc__, version='dp2ppgen 0.1')
 
 	# Process required command line arguments
 	outfile = createOutputFileName(args['<infile>'])
@@ -993,7 +993,7 @@ def main():
 		not doPages and \
 		not doJoinSpanned:
 		
-		logging.info("No processing options were given, using default set of options -pcfj\n      Run 'ppprep -h' for a full list of options")
+		logging.info("No processing options were given, using default set of options -pcfj\n      Run 'dp2ppgen -h' for a full list of options")
 		doPages = True
 		doChapterHeadings = True
 		doFootnotes = True
