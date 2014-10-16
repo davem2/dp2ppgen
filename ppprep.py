@@ -3,7 +3,7 @@
 """ppprep
 
 Usage:
-  ppprep [-cdefkpqv] [--force] [--fndest=<fndest>] <infile> [<outfile>]
+  ppprep [-cdefjkpqv] [--force] [--fndest=<fndest>] <infile> [<outfile>]
   ppprep -h | --help
   ppprep ---version
 
@@ -20,6 +20,7 @@ Options:
   -f, --footnotes      Convert footnotes into ppgen format.
   --fndest=<fndest>    Where to relocate footnotes (paragraphend, chapterend, bookend, inline).
   --force              Ignore markup errors and force operation.
+  -j, --joinspanned    Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
   -k, --keeporiginal   On any conversion keep original text as a comment.
   -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
@@ -851,6 +852,62 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 	return outBuf
 
 
+
+def joinSpannedFormatting( inBuf, keepOriginal ):
+	outBuf = []
+
+	logging.info("-- Joining spanned out-of-line formatting markup")
+
+	# Find:
+	# 1: */
+	# 2: // 010.png
+	# 3: 
+	# 4: /*
+	
+	# Replace with:
+	# 2: // 010.png
+	# 3: 
+
+	lineNum = 0
+	while lineNum < len(inBuf):
+		joinWasMade = False
+		
+		m = re.match(r"^(\*\/|\#\/)$", inBuf[lineNum])
+		if m:
+			outBlock = []
+			ln = lineNum + 1
+			joinEndLineRegex = r"^\/\{}$".format(m.group(1)[0])
+			while ln < len(inBuf) and isLineBlank(inBuf[ln]):
+				outBlock.append(inBuf[ln])
+				ln += 1
+
+			if ln < len(inBuf) and re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[ln]):
+				outBlock.append(inBuf[ln])
+				ln += 1
+				while ln < len(inBuf) and isLineBlank(inBuf[ln]) or re.match(r".pn",inBuf[ln]) or re.match(r"\/\/",inBuf[ln]):
+					outBlock.append(inBuf[ln])
+					ln += 1
+				
+				if re.match(joinEndLineRegex, inBuf[ln]):
+					for line in outBlock:
+						outBuf.append(line)
+					joinWasMade = True
+					logging.debug("Lines {}, {}: Joined spanned markup /{} {}/".format(lineNum,ln,m.group(1)[0],m.group(1)[0]))
+					lineNum = ln + 1
+			
+		if not joinWasMade:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+		
+	return outBuf
+
+
+def joinSpannedHyphenations( inBuf, keepOriginal ):
+	outBuf = inBuf
+	#TODO
+	return outBuf
+
+
 def main():
 	args = docopt(__doc__, version='ppprep 0.1')
 
@@ -880,17 +937,20 @@ def main():
 	doSectionHeadings = args['--sections'];
 	doFootnotes = args['--footnotes'];
 	doPages = args['--pages'];
+	doJoinSpanned = args['--joinspanned'];
 
 	# Use default options if no processing options are set
 	if not doChapterHeadings and \
 		not doSectionHeadings and \
 		not doFootnotes and \
-		not doPages:
+		not doPages and \
+		not doJoinSpanned:
 		
-		logging.info("No processing options were given, using default set of options -pfc\n      Run 'ppprep -h' for a full list of options")
+		logging.info("No processing options were given, using default set of options -pcfj\n      Run 'ppprep -h' for a full list of options")
 		doPages = True
 		doChapterHeadings = True
 		doFootnotes = True
+		doJoinSpanned = True
 
 	# Process source document
 	logging.info("Processing '{}'".format(infile))
@@ -902,10 +962,15 @@ def main():
 		logging.critical("Correct markup issues then re-run operation, or use --force to ignore markup errors")
 	
 	else:
-		if doPages:
+		if doPages or doJoinSpanned or doChapterHeadings or doSectionHeadings or doFootnotes:
 			outBuf = processBlankPages(inBuf, args['--keeporiginal'])
 			inBuf = outBuf
 			outBuf = processPageNumbers(inBuf, args['--keeporiginal'])
+			inBuf = outBuf
+		if doJoinSpanned:
+			outBuf = joinSpannedFormatting(inBuf, args['--keeporiginal'])
+			inBuf = outBuf
+			outBuf = joinSpannedHyphenations(inBuf, args['--keeporiginal'])
 			inBuf = outBuf
 		if doChapterHeadings or doSectionHeadings:
 			outBuf = processHeadings(inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
@@ -914,10 +979,9 @@ def main():
 			footnoteDestination = "bookend"
 			if args['--fndest']:
 				footnoteDestination = args['--fndest']
-
 			outBuf = processFootnotes(inBuf, footnoteDestination, args['--keeporiginal'])
 			inBuf = outBuf
-
+			
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))
 			# Save file
