@@ -1,4 +1,4 @@
-#ppprep
+#dp2ppgen.py
 
 Assists in the post-processing of books for pgdp.org by converting raw proofed text into ppgen code 
 
