@@ -42,3 +42,6 @@
 
 - Refactor footnote processing function
 
+- Convert lines like "*/\n// Pg xx\n/*" to "// Pg xx\n"
+
+- New application that performs all checks in "make errorcheck" and generates an html report with the full text that was scanned included in the report. All issues are hyperlinked to the line/column in document that they reference. Maybe split view with error report on one side and document on other (like guiguts but in a browser). Have original be editable in browser so corrections could be made as well would be bonus. Another bonus would be to map errors from scanned doc (book-utf8) back into ppgen source file (book-src.txt) and be able to navigate/make corrections directly to source file.

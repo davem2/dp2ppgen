@@ -50,6 +50,27 @@ def validateDpMarkup( inBuf ):
 	errorCount = 0
 	while lineNum < len(inBuf):
 	
+
+		# Detect unbalanced out-of-line formatting markup /# #/ /* */
+		m = re.match(r"^\/(\*|\#)", inBuf[lineNum])
+		if m:
+			d = ({'ln':lineNum+1,'v':"/{}".format(m.group(1))})
+			formattingStack.append(d)
+			
+		m = re.match(r"^(\*|\#)\/", inBuf[lineNum])
+		if m:
+			v = m.group(1)
+			if len(formattingStack) == 0 or formattingStack[-1]['v'] != "/{}".format(v):
+				errorCount += 1
+				if len(formattingStack) == 0:
+					logging.error("Line {}: Unexpected {}/".format(lineNum+1,v))
+				else:
+					logging.error("Line {}: Unexpected {}/, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+					logging.debug("{}".format(formattingStack))
+			else:
+				formattingStack.pop()
+
+
 		# Check balance of <i></i>, [], {}
 #		m = re.findall(r"(\[|\]|\{|\}|\(|\)|<\/?\w+>)", inBuf[lineNum])
 		m = re.findall(r"(\[|\]|\{|\}|<\/?\w+>)", inBuf[lineNum])
@@ -108,25 +129,6 @@ def validateDpMarkup( inBuf ):
 				formattingStack.append(d)
 				
 
-		# Detect unbalanced out-of-line formatting markup /# #/ /* */
-		m = re.match(r"^\/(\*|\#)", inBuf[lineNum])
-		if m:
-			d = ({'ln':lineNum+1,'v':"/{}".format(m.group(1))})
-			formattingStack.append(d)
-			
-		m = re.match(r"^(\*|\#)\/", inBuf[lineNum])
-		if m:
-			v = m.group(1)
-			if len(formattingStack) == 0 or formattingStack[-1]['v'] != "/{}".format(v):
-				errorCount += 1
-				if len(formattingStack) == 0:
-					logging.error("Line {}: Unexpected {}/".format(lineNum+1,v))
-				else:
-					logging.error("Line {}: Unexpected {}/, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
-					logging.debug("{}".format(formattingStack))
-			else:
-				formattingStack.pop()
-
 		# Check for specific issues that have caused conversion issues in the past
 		
 		# Single line [Footnote] does not end at closing ]
@@ -134,7 +136,14 @@ def validateDpMarkup( inBuf ):
 		if re.match(r"\*?\[Footnote(.*)\]\*?.*$", inBuf[lineNum]):
 			if inBuf[lineNum].count('[') - inBuf[lineNum].count(']') == 0: # ignore multiline footnotes with proofer notes or some other [] markup within them
 				if not (inBuf[lineNum][-1] == ']' or inBuf[lineNum][-2:] == ']*'):
+					errorCount += 1
 					logging.error("Line {}: Extra characters found after closing ']' in [Footnote]\n       {}".format(lineNum+1,inBuf[lineNum]))
+	
+		# Extra text after out-of-line formatting markup
+		# ex. /*[**new stanza?]
+		if re.match(r"^(\/\*|\/\#|\*\/|\#\/).+", inBuf[lineNum]):
+			errorCount += 1
+			logging.error("Line {}: Extra text after out-of-line formatting markup\n       {}".format(lineNum+1,inBuf[lineNum]))
 	
 		lineNum += 1
 			
@@ -890,7 +899,7 @@ def main():
 
 	errorCount = validateDpMarkup(inBuf)
 	if errorCount > 0 and not args['--force']:
-		logging.critical("Correct markup issues then re-run operation, or use --force to disregard markup errors")
+		logging.critical("Correct markup issues then re-run operation, or use --force to ignore markup errors")
 	
 	else:
 		if doPages:
