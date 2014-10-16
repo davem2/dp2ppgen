@@ -564,13 +564,7 @@ def parseFootnotes( inBuf ):
 			currentScanPage = m.group(1)
 #			logging.debug("Processing page "+currentScanPage)
 
-		needsJoining = False    
-		if re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]):
-			logging.debug("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
-			needsJoining = True
-			foundFootnote = True
-
-		if re.match(r"\[Footnote", inBuf[lineNum]):
+		if re.match(r"\*?\[Footnote", inBuf[lineNum]):
 			foundFootnote = True
 		
 		if foundFootnote:
@@ -584,6 +578,13 @@ def parseFootnotes( inBuf ):
 				fnBlock.append(inBuf[lineNum])
 
 			endLine = lineNum
+
+			# Is footnote part of a multipage footnote?
+			needsJoining = False    
+			if re.match(r"\*\[Footnote", fnBlock[0]) or re.search(r"\]\*$", fnBlock[-1]):
+				logging.debug("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
+				needsJoining = True
+				foundFootnote = True
 
 			# Find end of paragraph
 			paragraphEnd = -1 # This must be done during footnote anchor processing as paragraph end is relative to anchor and not [Footnote] markup
@@ -610,6 +611,8 @@ def parseFootnotes( inBuf ):
 		lineNum += 1
 
 	logging.info("--- Parsed {} footnotes".format(len(footnotes)))
+
+#	print(footnotes)
 
 	# Join footnotes marked above during parsing
 	joinCount = 0
