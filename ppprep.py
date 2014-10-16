@@ -566,7 +566,7 @@ def parseFootnotes( inBuf ):
 
 		needsJoining = False    
 		if re.match(r"\*\[Footnote", inBuf[lineNum]) or re.search(r"\]\*$", inBuf[lineNum]):
-			logging.info("----- Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
+			logging.debug("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
 			needsJoining = True
 			foundFootnote = True
 
@@ -874,6 +874,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 	# 3: 
 
 	lineNum = 0
+	joinCount = 0
 	while lineNum < len(inBuf):
 		joinWasMade = False
 		
@@ -897,6 +898,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 					for line in outBlock:
 						outBuf.append(line)
 					joinWasMade = True
+					joinCount += 1
 					logging.debug("Lines {}, {}: Joined spanned markup /{} {}/".format(lineNum,ln,m.group(1)[0],m.group(1)[0]))
 					lineNum = ln + 1
 			
@@ -904,6 +906,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 		
+	logging.info("-- Joined {} instances of spanned out-of-line formatting markup".format(joinCount))
 	return outBuf
 
 
@@ -923,6 +926,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	# 3: on the line below
 
 	lineNum = 0
+	joinCount = 0
 	while lineNum < len(inBuf):
 		joinWasMade = False
 		
@@ -933,14 +937,16 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				secondPart = (inBuf[ln].split(' ',1)[0])[1:]
 				inBuf[ln] = inBuf[ln].split(' ',1)[1]
 				inBuf[lineNum] = inBuf[lineNum] + secondPart
-				logging.info("Line {}: Resolved hyphenation, ... '{}'".format(lineNum+1,inBuf[lineNum][-30:]))	
+				logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(lineNum+1,inBuf[lineNum][-30:]))	
 #				logging.info("Line {}: Resolved hyphenation\n      '{}'".format(lineNum+1,inBuf[lineNum]))	
+				joinCount += 1
 			else:
 				logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1,inBuf[lineNum],inBuf[ln]))	
 
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
 		
+	logging.info("-- Joined {} instances of spanned hyphenations".format(joinCount))
 	return outBuf
 
 
