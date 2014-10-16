@@ -925,7 +925,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	# 3: *-inued. on the line below
 	
 	# Replace with:
-	# 1: the last word on this line is cont-*inued. 
+	# 1: the last word on this line is cont-**inued. 
 	# 2: // 010.png
 	# 3: on the line below
 
@@ -938,7 +938,8 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 			ln = findNextLineOfText(inBuf,lineNum+1)
 			if inBuf[ln][0] == '*':
 				# Remove first word from last line (secondPart) and join append it to first line
-				secondPart = (inBuf[ln].split(' ',1)[0])[1:]
+#				secondPart = (inBuf[ln].split(' ',1)[0])[1:] # strip first word with leading * removed
+				secondPart = inBuf[ln].split(' ',1)[0] 
 				inBuf[ln] = inBuf[ln].split(' ',1)[1]
 				inBuf[lineNum] = inBuf[lineNum] + secondPart
 				logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(lineNum+1,inBuf[lineNum][-30:]))	
