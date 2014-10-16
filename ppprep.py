@@ -239,6 +239,11 @@ def isLineComment( line ):
 	return re.match(r"^\/\/ *$", line)
 
 
+#TODO: implement me
+#def isLinePageBreak( line ):
+#	return
+
+
 def formatAsID( s ):
 	s = re.sub(r" ", '_', s)        # Replace spaces with underscore
 	s = re.sub(r"[^\w\s]", '', s)   # Strip everything but alphanumeric and _
@@ -286,7 +291,7 @@ def findPreviousLineOfText( buf, startLine ):
 # find next line that contains original book text (ignore ppgen markup, proofing markup, blank lines)
 def findNextLineOfText( buf, startLine ):
 	lineNum = findNextNonEmptyLine(buf, startLine)
-	while lineNum < len(buf)-1 and re.match(r"[\.\*\#\/\[]", buf[lineNum]):
+	while lineNum < len(buf)-1 and re.match(r"(\.[a-z0-9]{2} |[\*\#]\/|\/[\*\#]|\[\w+|\/\/)", buf[lineNum]):
 		lineNum = findNextNonEmptyLine(buf, lineNum+1)
 	return lineNum
 
@@ -903,8 +908,39 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 
 
 def joinSpannedHyphenations( inBuf, keepOriginal ):
-	outBuf = inBuf
-	#TODO
+	outBuf = []
+
+	logging.info("-- Joining spanned hyphenations")
+
+	# Find:
+	# 1: the last word on this line is cont-*
+	# 2: // 010.png
+	# 3: *-inued. on the line below
+	
+	# Replace with:
+	# 1: the last word on this line is cont-*inued. 
+	# 2: // 010.png
+	# 3: on the line below
+
+	lineNum = 0
+	while lineNum < len(inBuf):
+		joinWasMade = False
+		
+		if re.search(r"\-\*$", inBuf[lineNum]) and re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum+1]):
+			ln = findNextLineOfText(inBuf,lineNum+1)
+			if inBuf[ln][0] == '*':
+				# Remove first word from last line (secondPart) and join append it to first line
+				secondPart = (inBuf[ln].split(' ',1)[0])[1:]
+				inBuf[ln] = inBuf[ln].split(' ',1)[1]
+				inBuf[lineNum] = inBuf[lineNum] + secondPart
+				logging.info("Line {}: Resolved hyphenation, ... '{}'".format(lineNum+1,inBuf[lineNum][-30:]))	
+#				logging.info("Line {}: Resolved hyphenation\n      '{}'".format(lineNum+1,inBuf[lineNum]))	
+			else:
+				logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1,inBuf[lineNum],inBuf[ln]))	
+
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+		
 	return outBuf
 
 
