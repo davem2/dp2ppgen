@@ -37,6 +37,9 @@ import sys
 import logging
 
 
+VERSION="0.1"
+
+
 # Limited check for syntax errors in dp markup of input file
 def validateDpMarkup( inBuf ):
 	
@@ -956,7 +959,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 
 
 def main():
-	args = docopt(__doc__, version='dp2ppgen 0.1')
+	args = docopt(__doc__, version="dp2ppgen v{}".format(VERSION))
 
 	# Process required command line arguments
 	outfile = createOutputFileName(args['<infile>'])
