@@ -689,7 +689,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 #				r = r"\[({})\]".format(r)
 
 #		print("{}: {}".format(lineNum,outBuf[lineNum]))
-		m = re.findall("\[([A-Z][a-z]|[0-9]{1,2})\]", outBuf[lineNum])
+		m = re.findall("\[([A-Za-z]|[0-9]{1,2})\]", outBuf[lineNum])
 		for anchor in m:
 			# Check that anchor found belongs to a footnote on this page
 			if not anchor in fnIDs:
