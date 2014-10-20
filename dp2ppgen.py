@@ -251,6 +251,23 @@ def isLineComment( line ):
 	return re.match(r"^\/\/ *$", line)
 
 
+def isLinePageBreak( line ):
+	isLinePageBreak = False
+	scanPageNum = ""
+	
+	m = re.match(r"-----File: (\d+\.[png|jpg|jpeg]).*", line)
+	if m:
+		isLinePageBreak = True
+		scanPageNum = m.group(1)
+
+	m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", line)
+	if m:
+		isLinePageBreak = True
+		scanPageNum = m.group(1)
+	
+	return isLinePageBreak, scanPageNum
+
+
 def formatAsID( s ):
 	s = re.sub(r"<\/?\w+>", "", s)  # Remove inline markup
 	s = re.sub(r" ", "_", s)        # Replace spaces with underscore
@@ -367,7 +384,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 					consecutiveEmptyLineCount = 0
 
 				# chapters don't span pages
-				if re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum]):
+				if isLinePageBreak(inBuf[lineNum])
 					foundChapterHeadingEnd = True
 
 				if foundChapterHeadingEnd:
@@ -578,9 +595,9 @@ def parseFootnotes( inBuf ):
 		foundFootnote = False
 		
 		# Keep track of active scanpage
-		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum])
-		if m:
-			currentScanPage = m.group(1)
+		isPageBreak, scanPage = isLinePageBreak(inBuf[lineNum])
+		if isPageBreak:
+			currentScanPage = scanPage
 #			logging.debug("Processing page "+currentScanPage)
 
 		if re.match(r"\*?\[Footnote", inBuf[lineNum]):
@@ -690,9 +707,9 @@ def processFootnoteAnchors( inBuf, footnotes ):
 	while lineNum < len(outBuf):
 		
 		# Keep track of active scanpage
-		m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", outBuf[lineNum])
-		if m:
-			currentScanPage = m.group(1)
+		isPageBreak, scanPage = isLinePageBreak(outBuf[lineNum])
+		if isPageBreak:
+			currentScanPage = scanPage
 			currentScanPageLabel = re.sub(r"\/\/ ","", outBuf[lineNum])
 #			logging.debug("--- Processing page "+currentScanPage)
 
@@ -909,7 +926,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 				outBlock.append(inBuf[ln])
 				ln += 1
 
-			if ln < len(inBuf) and re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[ln]):
+			if ln < len(inBuf) and isLinePageBreak(inBuf[ln]):
 				outBlock.append(inBuf[ln])
 				ln += 1
 				while ln < len(inBuf)-1 and isLineBlank(inBuf[ln]) or re.match(r".pn",inBuf[ln]) or re.match(r"\/\/",inBuf[ln]):
@@ -952,7 +969,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	while lineNum < len(inBuf):
 		joinWasMade = False
 		
-		if re.search(r"\-\*$", inBuf[lineNum]) and re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[lineNum+1]):
+		if re.search(r"\-\*$", inBuf[lineNum]) and isLinePageBreak(inBuf[lineNum+1]):
 			ln = findNextLineOfText(inBuf,lineNum+1)
 			if inBuf[ln][0] == '*':
 				# Remove first word from last line (secondPart) and join append it to first line
@@ -1031,11 +1048,20 @@ def removeBlankLinesAtPageEnds( inBuf ):
 def doStandardConversions( inBuf, keepOriginal ):
 	outBuf = inBuf
 
+#    Tabs are converted to 4 spaces
+#    [oe]/[OE] are translated to their unicode equivalents (If --latin not specified)
+#    -- becomes a unicode mdash (---- becomes 2 unicode mdashes) (If --latin not specified)
+#    Some symbols are escaped with a backslash: \, `, _, *, and optionally
+#    Since asterisks are escaped, search for \* to find any remaining notes or conditional hyphens
+#    Trailing spaces removed
+#    Blank Lines at the ends of pages removed
+#    --File: separators removed
+
 	outBuf = tabsToSpaces(outBuf, 4)
 	outBuf = removeTrailingSpaces(outBuf)
 	outBuf = convertUTF8(outBuf)
 	outBuf = convertThoughtBreaks(outBuf)
-#	outBuf = removeBlankLinesAtPageEnds(outBuf)
+	outBuf = removeBlankLinesAtPageEnds(outBuf)
 	
 	return outBuf
 	
