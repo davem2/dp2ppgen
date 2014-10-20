@@ -40,6 +40,8 @@
 
 - <tb> to .tb
 
+- Convert UTF8?
+
 - Refactor footnote processing function
 
 - Convert lines like "*/\n// Pg xx\n/*" to "// Pg xx\n"
@@ -50,4 +52,5 @@
 
 - Generate index?
 
-- Automatically convert /# /* to nf
+- Automatically convert /# /* to nf/.in,.ll
+

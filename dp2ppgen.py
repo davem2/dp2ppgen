@@ -175,6 +175,7 @@ def truncate( string, width ):
         string = string[:width-3] + '...'
     return string
 
+
 # Removes trailing spaces and tabs from an array of strings
 def removeTrailingSpaces( inBuf ):
 	outBuf = []
@@ -190,6 +191,7 @@ def removeTrailingSpaces( inBuf ):
 def processBlankPages( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
+	count = 0
 
 	logging.info("-- Processing blank pages")
 
@@ -201,10 +203,13 @@ def processBlankPages( inBuf, keepOriginal ):
 			outBuf.append("// [Blank Page]")
 			logging.debug("{:>{:d}}: '{}' to '{}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-1]))
 			lineNum += 1
+			count += 1
 
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
+
+	logging.info("-- Processed {} blank pages".format(count))
 
 	return outBuf;
 
@@ -214,6 +219,7 @@ def processBlankPages( inBuf, keepOriginal ):
 def processPageNumbers( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
+	count = 0
 
 	logging.info("-- Processing page numbers")
 
@@ -226,10 +232,13 @@ def processPageNumbers( inBuf, keepOriginal ):
 			outBuf.append(".pn +1")
 			logging.debug("{:>{:d}}: '{}' to '{}, {}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-2],outBuf[-1]))
 			lineNum += 1
+			count += 1
 
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
+
+	logging.info("-- Processed {} page numbers".format(count))
 
 	return outBuf;
 
@@ -313,6 +322,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 	consecutiveEmptyLineCount = 0
 	rewrapLevel = 0
 	foundChapterHeadingStart = False
+	chapterCount = 0
+	sectionCount = 0
 
 	if doChapterHeadings and doSectionHeadings:
 		logging.info("-- Processing chapter and section headings")
@@ -411,6 +422,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 
 			# Log action
 			logging.info("--- .h2 {}".format(chapterLine))
+			chapterCount += 1
 
 		# Section heading
 		elif doSectionHeadings and consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0:
@@ -462,6 +474,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 
 			# Log action
 			logging.info("--- .h3 {}".format(sectionID))
+			sectionCount += 1
+			
 		else:
 			if isLineBlank(inBuf[lineNum]):
 				consecutiveEmptyLineCount += 1
@@ -470,6 +484,12 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
+
+	if doChapterHeadings:
+		logging.info("-- Processed {} chapters".format(chapterCount))
+	
+	if doSectionHeadings:
+		logging.info("-- Processed {} sections".format(sectionCount))	
 
 	return outBuf;
 
@@ -654,7 +674,7 @@ def parseFootnotes( inBuf ):
 
 	if joinCount > 0:
 		logging.info("--- Merged {} broken footnote(s)".format(joinCount))
-	logging.info("--- {} total footnotes after joining".format(len(footnotes)))
+		logging.info("--- {} total footnotes after joining".format(len(footnotes)))
 	
 
 	return footnotes;
@@ -897,7 +917,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 			if ln < len(inBuf) and re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", inBuf[ln]):
 				outBlock.append(inBuf[ln])
 				ln += 1
-				while ln < len(inBuf) and isLineBlank(inBuf[ln]) or re.match(r".pn",inBuf[ln]) or re.match(r"\/\/",inBuf[ln]):
+				while ln < len(inBuf)-1 and isLineBlank(inBuf[ln]) or re.match(r".pn",inBuf[ln]) or re.match(r"\/\/",inBuf[ln]):
 					outBlock.append(inBuf[ln])
 					ln += 1
 				
