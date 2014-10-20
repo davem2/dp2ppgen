@@ -224,7 +224,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 	logging.info("-- Processing page numbers")
 
 	while lineNum < len(inBuf):
-		m = re.match(r"-----File: (\d+\.png).*", inBuf[lineNum])
+		m = re.match(r"-----File: (\d+\.png|jpg|jpeg).*", inBuf[lineNum])
 		if m:
 			if keepOriginal:
 				outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
@@ -252,20 +252,21 @@ def isLineComment( line ):
 
 
 def isLinePageBreak( line ):
-	isLinePageBreak = False
-	scanPageNum = ""
+	return re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", line) or re.match(r"\/\/ (\d+\.(png|jpg|jpeg))", line)
+
+
+def parseScanPage( line ):
+	scanPageNum = None
 	
-	m = re.match(r"-----File: (\d+\.[png|jpg|jpeg]).*", line)
+	m = re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", line)
 	if m:
-		isLinePageBreak = True
 		scanPageNum = m.group(1)
 
-	m = re.match(r"\/\/ (\d+)\.[png|jpg|jpeg]", line)
+	m = re.match(r"\/\/ (\d+\.(png|jpg|jpeg))", line)
 	if m:
-		isLinePageBreak = True
 		scanPageNum = m.group(1)
 	
-	return isLinePageBreak, scanPageNum
+	return scanPageNum
 
 
 def formatAsID( s ):
@@ -384,7 +385,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 					consecutiveEmptyLineCount = 0
 
 				# chapters don't span pages
-				if isLinePageBreak(inBuf[lineNum])
+				if isLinePageBreak(inBuf[lineNum]):
 					foundChapterHeadingEnd = True
 
 				if foundChapterHeadingEnd:
@@ -595,9 +596,8 @@ def parseFootnotes( inBuf ):
 		foundFootnote = False
 		
 		# Keep track of active scanpage
-		isPageBreak, scanPage = isLinePageBreak(inBuf[lineNum])
-		if isPageBreak:
-			currentScanPage = scanPage
+		if isLinePageBreak(inBuf[lineNum]):
+			currentScanPage = parseScanPage(inBuf[lineNum])
 #			logging.debug("Processing page "+currentScanPage)
 
 		if re.match(r"\*?\[Footnote", inBuf[lineNum]):
@@ -707,9 +707,8 @@ def processFootnoteAnchors( inBuf, footnotes ):
 	while lineNum < len(outBuf):
 		
 		# Keep track of active scanpage
-		isPageBreak, scanPage = isLinePageBreak(outBuf[lineNum])
-		if isPageBreak:
-			currentScanPage = scanPage
+		if isLinePageBreak(outBuf[lineNum]):
+			currentScanPage = parseScanPage(inBuf[lineNum])
 			currentScanPageLabel = re.sub(r"\/\/ ","", outBuf[lineNum])
 #			logging.debug("--- Processing page "+currentScanPage)
 
@@ -1005,11 +1004,12 @@ def convertUTF8( inBuf ):
 	outBuf = []
 
 	for line in inBuf:
-		# -- becomes a unicode mdash, ---- becomes 2 unicode mdashes
-		line = re.sub(r"(?<!-)-{2}(?!-)","—", line)
-		line = re.sub(r"(?<!-)-{4}(?!-)","——", line)
-		if "--" in line:
-			logging.warn("Unconverted dashes: {}".format(line)) 
+		if not isLinePageBreak(line):
+			# -- becomes a unicode mdash, ---- becomes 2 unicode mdashes
+			line = re.sub(r"(?<!-)-{2}(?!-)","—", line)
+			line = re.sub(r"(?<!-)-{4}(?!-)","——", line)
+			if "--" in line:
+				logging.warn("Unconverted dashes: {}".format(line)) 
 		
 		# [oe] becomes œ
 		# [OE] becomes Œ
@@ -1040,6 +1040,7 @@ def removeBlankLinesAtPageEnds( inBuf ):
 		if isLinePageBreak(line):
 			while outBuf and isLineBlank(outBuf[-1]): 
 				outBuf.pop()
+
 		outBuf.append(line)
 	
 	return outBuf
@@ -1113,18 +1114,20 @@ def main():
 	# Process source document
 	logging.info("Processing '{}'".format(infile))
 	outBuf = []
-	inBuf = doStandardConversions(inBuf, args['--keeporiginal'])
 
 	errorCount = validateDpMarkup(inBuf)
 	if errorCount > 0 and not args['--force']:
 		logging.critical("Correct markup issues then re-run operation, or use --force to ignore markup errors")
 	
 	else:
-		if doPages or doJoinSpanned or doChapterHeadings or doSectionHeadings or doFootnotes:
+		if doPages:
 			outBuf = processBlankPages(inBuf, args['--keeporiginal'])
 			inBuf = outBuf
 			outBuf = processPageNumbers(inBuf, args['--keeporiginal'])
-			inBuf = outBuf
+			inBuf = outBuf		
+
+		inBuf = doStandardConversions(inBuf, args['--keeporiginal'])
+		
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(inBuf, args['--keeporiginal'])
 			inBuf = outBuf
