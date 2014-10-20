@@ -251,11 +251,6 @@ def isLineComment( line ):
 	return re.match(r"^\/\/ *$", line)
 
 
-#TODO: implement me
-#def isLinePageBreak( line ):
-#	return
-
-
 def formatAsID( s ):
 	s = re.sub(r"<\/?\w+>", "", s)  # Remove inline markup
 	s = re.sub(r" ", "_", s)        # Replace spaces with underscore
@@ -978,6 +973,73 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	return outBuf
 
 
+def tabsToSpaces( inBuf, tabSize ):
+	outBuf = []
+
+	for line in inBuf:
+		spaces = " " * tabSize
+		line = line.replace("\t", spaces)
+		outBuf.append(line)
+
+	return outBuf
+
+
+def convertUTF8( inBuf ):
+	outBuf = []
+
+	for line in inBuf:
+		# -- becomes a unicode mdash, ---- becomes 2 unicode mdashes
+		line = re.sub(r"(?<!-)-{2}(?!-)","—", line)
+		line = re.sub(r"(?<!-)-{4}(?!-)","——", line)
+		if "--" in line:
+			logging.warn("Unconverted dashes: {}".format(line)) 
+		
+		# [oe] becomes œ
+		# [OE] becomes Œ
+		line = line.replace("[oe]", "œ")
+		line = line.replace("[OE]", "Œ")		
+		outBuf.append(line)
+
+		# Fractions?
+
+	return outBuf
+
+
+def convertThoughtBreaks( inBuf ):
+	outBuf = []
+
+	for line in inBuf:
+		# <tb> to .tb
+		line = re.sub(r"^<tb>$",".tb", line)
+		outBuf.append(line)
+		
+	return outBuf
+
+
+def removeBlankLinesAtPageEnds( inBuf ):
+	outBuf = []
+	
+	for line in inBuf:
+		if isLinePageBreak(line):
+			while outBuf and isLineBlank(outBuf[-1]): 
+				outBuf.pop()
+		outBuf.append(line)
+	
+	return outBuf
+	
+
+def doStandardConversions( inBuf, keepOriginal ):
+	outBuf = inBuf
+
+	outBuf = tabsToSpaces(outBuf, 4)
+	outBuf = removeTrailingSpaces(outBuf)
+	outBuf = convertUTF8(outBuf)
+	outBuf = convertThoughtBreaks(outBuf)
+#	outBuf = removeBlankLinesAtPageEnds(outBuf)
+	
+	return outBuf
+	
+
 def main():
 	args = docopt(__doc__, version="dp2ppgen v{}".format(VERSION))
 
@@ -1025,7 +1087,7 @@ def main():
 	# Process source document
 	logging.info("Processing '{}'".format(infile))
 	outBuf = []
-	inBuf = removeTrailingSpaces(inBuf)
+	inBuf = doStandardConversions(inBuf, args['--keeporiginal'])
 
 	errorCount = validateDpMarkup(inBuf)
 	if errorCount > 0 and not args['--force']:
