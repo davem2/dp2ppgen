@@ -75,9 +75,14 @@ def validateDpMarkup( inBuf ):
 				formattingStack.pop()
 
 
-		# Check balance of <i></i>, [], {}
+#		# Check balance of <i></i>, [], {}
+#		m = re.findall(r"(\[|\]|\{|\}|<\/?\w+>)", inBuf[lineNum])
+
+#		# Check balance of <i></i>, [], {}, ()
 #		m = re.findall(r"(\[|\]|\{|\}|\(|\)|<\/?\w+>)", inBuf[lineNum])
-		m = re.findall(r"(\[|\]|\{|\}|<\/?\w+>)", inBuf[lineNum])
+
+		# Check balance of <i></i>, []
+		m = re.findall(r"(\[|\]|<\/?\w+>)", inBuf[lineNum])
 		for v in m:
 			
 			if v == "<tb>": # ignore
@@ -1088,7 +1093,6 @@ def main():
 		logLevel = logging.ERROR
 
 	logging.basicConfig(format='%(levelname)s: %(message)s', level=logLevel)
-
 	logging.debug(args)
 
 	# Process processing options
