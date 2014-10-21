@@ -56,18 +56,20 @@
 
 - Add --fixup option that performs guiguts fixup function:
     • Remove spaces at end of line.
+    • Remove blank lines at end of pages.
     • Remove spaces on either side of hyphens.
     • Remove space before periods.
     • Remove space before exclamation points.
     • Remove space before question marks.
     • Remove space before commas.
     • Remove space before semicolons.
-    • Remove space after opening and before closing brackets.
+    • Remove space before colons.
+    • Remove space after opening and before closing brackets. () [] {} 
     • Remove space after open angle quote and before close angle quote.
     • Remove space after beginning and before ending double quote.
     • Ensure space before ellipses except after period.
     • Format any line that contains only 5 *s and whitespace to be the standard 5 asterisk thought break.
-    • Convert multiple space to singe space.
+    • Convert multiple space to single space.
     • Fix obvious l<-->1 problems.
     You can also specify whether to skip text inside the /* */ markers or not.
 

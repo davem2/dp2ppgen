@@ -70,7 +70,6 @@ def validateDpMarkup( inBuf ):
 					logging.error("Line {}: Unexpected {}/".format(lineNum+1,v))
 				else:
 					logging.error("Line {}: Unexpected {}/, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
-					logging.debug("{}".format(formattingStack))
 			else:
 				formattingStack.pop()
 
@@ -95,20 +94,19 @@ def validateDpMarkup( inBuf ):
 						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
 					else:
 						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
-						logging.debug("{}".format(formattingStack))
 				else:
 					formattingStack.pop()
 
-			elif v == "}": # closing markup
-				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "{":
-					errorCount += 1
-					if len(formattingStack) == 0:
-						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
-					else:
-						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
-						logging.debug("{}".format(formattingStack))
-				else:
-					formattingStack.pop()
+#			elif v == "}": # closing markup
+#				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "{":
+#					errorCount += 1
+#					if len(formattingStack) == 0:
+#						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+#					else:
+#						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+#						logging.debug("{}".format(formattingStack))
+#				else:
+#					formattingStack.pop()
 
 			# Disabled as this will get false positives from diacratic markup [)x] and won't affect conversion anyways
 #				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "(":
@@ -129,7 +127,6 @@ def validateDpMarkup( inBuf ):
 						logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
 					else:
 						logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
-						logging.debug("{}".format(formattingStack))
 				else:
 					formattingStack.pop()
 
@@ -163,11 +160,16 @@ def validateDpMarkup( inBuf ):
 	if len(formattingStack) > 0:
 		errorCount += 1
 		logging.error("Reached end of file with unresolved formatting markup, (probably due to previous markup error(s))")
-		logging.debug("{}".format(formattingStack))
 
-	
-	
-	
+		if errorCount == 1:
+			logging.error("Unresolved markup:")
+			s = "Line {}: '{}'".format(formattingStack[0]['ln'],formattingStack[0]['v'])
+			for v in formattingStack[1:]:
+				s += ", Line {}: '{}'".format(v['ln'],v['v'])
+			logging.error(s)
+		else:
+			logging.debug(formattingStack)
+
 	if errorCount > 0:
 		logging.info("-- Found {} markup errors".format(errorCount) )
 
