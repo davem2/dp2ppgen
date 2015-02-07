@@ -237,7 +237,8 @@ def processPageNumbers( inBuf, keepOriginal ):
 		if m:
 			if keepOriginal:
 				outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
-			outBuf.append("// {}".format(m.group(1)))
+#			outBuf.append("// {}".format(m.group(1)))
+			outBuf.append(".bn {}".format(m.group(1)))
 			outBuf.append(".pn +1")
 			logging.debug("{:>{:d}}: '{}' to '{}, {}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-2],outBuf[-1]))
 			lineNum += 1
