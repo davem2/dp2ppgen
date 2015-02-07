@@ -262,7 +262,7 @@ def isLineComment( line ):
 
 
 def isLinePageBreak( line ):
-	return (parseScanPage != None)
+	return (parseScanPage(line) != None)
 
 def parseScanPage( line ):
 	scanPageNum = None
