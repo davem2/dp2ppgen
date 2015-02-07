@@ -76,3 +76,5 @@
 - Add support for guiguts style formatting markup /p /f .. /toc? /*[4] /#[6,53] /#[4.6,70]
 
 - Split off general "fixup" type functions that are not ppgen specific into a seperate application?
+
+- Change design so that instead of parsing the whole file per operation do one pass. Change functions to take line instead of file buffer.. (for single line conversions..).. maybe pass group of lines?

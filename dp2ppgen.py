@@ -3,9 +3,9 @@
 """dp2ppgen
 
 Usage:
-  dp2ppgen [-cdefjkpqv] [--force] [--fndest=<fndest>] <infile> [<outfile>]
+  dp2ppgen [options] <infile> [<outfile>]
   dp2ppgen -h | --help
-  dp2ppgen ---version
+  dp2ppgen --version
 
 Translates pgdp.org formatted text files into ppgen syntax.
 
@@ -19,6 +19,7 @@ Options:
   -e, --sections       Convert section headings into ppgen style section headings.
   -f, --footnotes      Convert footnotes into ppgen format.
   --fndest=<fndest>    Where to relocate footnotes (paragraphend, chapterend, bookend, inline).
+  --fixup              Perform guiguts style fixup operations.
   --force              Ignore markup errors and force operation.
   -j, --joinspanned    Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
   -k, --keeporiginal   On any conversion keep original text as a comment.
@@ -26,6 +27,7 @@ Options:
   -q, --quiet          Print less text.
   -v, --verbose        Print more text.
   -h, --help           Show help.
+  --utf8               Convert characters to UTF8
   --version            Show version.
 """
 
@@ -37,7 +39,7 @@ import sys
 import logging
 
 
-VERSION="0.1"
+VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
 
 
 # Limited check for syntax errors in dp markup of input file
@@ -74,13 +76,13 @@ def validateDpMarkup( inBuf ):
 				formattingStack.pop()
 
 
-#		# Check balance of <i></i>, [], {}
-#		m = re.findall(r"(\[|\]|\{|\}|<\/?\w+>)", inBuf[lineNum])
-
-#		# Check balance of <i></i>, [], {}, ()
+#		# Check balance of [], {}, (), <i></i>
 #		m = re.findall(r"(\[|\]|\{|\}|\(|\)|<\/?\w+>)", inBuf[lineNum])
 
-		# Check balance of <i></i>, []
+#		# Check balance of [], {}, <i></i>
+#		m = re.findall(r"(\[|\]|\{|\}|<\/?\w+>)", inBuf[lineNum])
+
+		# Check balance of [], <i></i>
 		m = re.findall(r"(\[|\]|<\/?\w+>)", inBuf[lineNum])
 		for v in m:
 			
@@ -1051,25 +1053,204 @@ def removeBlankLinesAtPageEnds( inBuf ):
 		outBuf.append(line)
 	
 	return outBuf
+
+
+# TODO: Make this a tool in itself? 
+def fixup( inBuf, keepOriginal ):
+#    • Remove spaces at end of line.
+#    • Remove blank lines at end of pages.
+#    • Remove spaces on either side of hyphens.
+#    • Remove space before periods.
+#    • Remove space before exclamation points.
+#    • Remove space before question marks.
+#    • Remove space before commas.
+#    • Remove space before semicolons.
+#    • Remove space before colons.
+#    • Remove space after opening and before closing brackets. () [] {} 
+#    • Remove space after open angle quote and before close angle quote.
+#    • Remove space after beginning and before ending double quote.
+#    • Ensure space before ellipses except after period.
+#    • Format any line that contains only 5 *s and whitespace to be the standard 5 asterisk thought break.
+#    • Convert multiple space to single space.
+#    • Fix obvious l<-->1 problems.
+#    You can also specify whether to skip text inside the /* */ markers or not.
+
+
+	outBuf = inBuf
 	
+	outBuf = tabsToSpaces(outBuf, 4)
+	outBuf = removeTrailingSpaces(outBuf)
+	outBuf = convertThoughtBreaks(outBuf)
+	outBuf = removeBlankLinesAtPageEnds(outBuf)
+#	outBuf = removeExtraSpaces(outBuf)
+
+	return outBuf
+	
+#TODO: Full guiguts fixit seems error prone.. maybe only do safe defaults or break off into seperate tool with each setting configurable, does gutsweeper do this already?
+#def removeExtraSpaces( inBuf ):
+#    • Remove spaces on either side of hyphens.
+#    • Remove space before periods.
+#    • Remove space before exclamation points.
+#    • Remove space before question marks.
+#    • Remove space before commas.
+#    • Remove space before semicolons.
+#    • Remove space before colons.
+#    • Remove space after opening and before closing brackets. () [] {} 
+#    • Remove space after open angle quote and before close angle quote.
+#    • Remove space after beginning and before ending double quote.
+#    • Ensure space before ellipses except after period.
+#	rewrapLevel = 0
+#	for line in inBuf:
+#		# Detect when inside out-of-line formatting block /# #/ /* */
+#		if re.match(r"^\/[\*\#]", inBuf[lineNum]):
+#			rewrapLevel += 1
+#		elif re.match(r"^[\*\#]\/", inBuf[lineNum]):
+#			rewrapLevel -= 1
+#
+#		if rewrapLevel == 0:
+#			# Remove multiple spaces 
+#			# $line =~ s/(?<=\S)\s\s+(?=\S)/
+#			line = re.sub(r"(?<=\S)\s\s+(?=\S)","", line)
+#
+#			# Remove spaces on either side of hyphens.
+#			# Remove spaces before hyphen (only if hyphen isn't first on line, like poetry)
+#			# $line =~ s/(\S) +-/$1-/g;
+#			line = re.sub(r"(\S) +-","\1-", line)
+#
+#			# Remove space after hyphen
+#			# $line =~ s/- /-/g;
+#			line = re.sub(r"- ","-", line)
+#
+#			# Except leave a space after a string of three or more hyphens
+#			# $line =~ s/(?<![-])([-]*---)(?=[^\s\\"F-])/$1 /g
+#			line = re.sub(r'(?<!-)(-*---)(?=[^\s\\"F-])',"\1", line)
+#
+#		outBuf.append(line)
+#	
+#	return outBuf
+#			
+#				$edited++ if $line =~ s/- /-/g;    # Remove space after hyphen
+#				$edited++
+#				  if $line =~ s/(?<![-])([-]*---)(?=[^\s\\"F-])/$1 /g
+#				; # Except leave a space after a string of three or more hyphens
+#
+#
+#
+#			if ( ${ $::lglobal{fixopt} }[1] ) {
+#				; # Remove spaces before hyphen (only if hyphen isn't first on line, like poetry)
+#				$edited++ if $line =~ s/(\S) +-/$1-/g;
+#				$edited++ if $line =~ s/- /-/g;    # Remove space after hyphen
+#				$edited++
+#				  if $line =~ s/(?<![-])([-]*---)(?=[^\s\\"F-])/$1 /g
+#				; # Except leave a space after a string of three or more hyphens
+#			}
+#			if ( ${ $::lglobal{fixopt} }[3] ) {
+#				; # Remove space before periods (only if not first on line, like poetry's ellipses)
+#				$edited++ if $line =~ s/(\S) +\.(?=\D)/$1\./g;
+#			}
+#			;     # Get rid of space before periods
+#			if ( ${ $::lglobal{fixopt} }[4] ) {
+#				$edited++
+#				  if $line =~ s/ +!/!/g;
+#			}
+#			;     # Get rid of space before exclamation points
+#			if ( ${ $::lglobal{fixopt} }[5] ) {
+#				$edited++
+#				  if $line =~ s/ +\?/\?/g;
+#			}
+#			;     # Get rid of space before question marks
+#			if ( ${ $::lglobal{fixopt} }[6] ) {
+#				$edited++
+#				  if $line =~ s/ +\;/\;/g;
+#			}
+#			;     # Get rid of space before semicolons
+#			if ( ${ $::lglobal{fixopt} }[7] ) {
+#				$edited++
+#				  if $line =~ s/ +:/:/g;
+#			}
+#			;     # Get rid of space before colons
+#			if ( ${ $::lglobal{fixopt} }[8] ) {
+#				$edited++
+#				  if $line =~ s/ +,/,/g;
+#			}
+#			;     # Get rid of space before commas
+#			      # FIXME way to go on managing quotes
+#			if ( ${ $::lglobal{fixopt} }[9] ) {
+#				$edited++
+#				  if $line =~ s/^\" +/\"/
+#				; # Remove space after doublequote if it is the first character on a line
+#				$edited++
+#				  if $line =~ s/ +\"$/\"/
+#				; # Remove space before doublequote if it is the last character on a line
+#			}
+#			if ( ${ $::lglobal{fixopt} }[10] ) {
+#				$edited++
+#				  if $line =~ s/(?<=(\(|\{|\[)) //g
+#				;    # Get rid of space after opening brackets
+#				$edited++
+#				  if $line =~ s/ (?=(\)|\}|\]))//g
+#				;    # Get rid of space before closing brackets
+#			}
+#			;        # FIXME format to standard thought breaks - changed to <tb>
+#			if ( ${ $::lglobal{fixopt} }[11] ) {
+#				$edited++
+#
+#		   #				  if $line =~
+#		   # s/^\s*(\*\s*){5}$/       \*       \*       \*       \*       \*\n/;
+#				  if $line =~ s/^\s*(\*\s*){4,}$/<tb>\n/;
+#			}
+#			$edited++ if ( $line =~ s/ +$// );
+#			;        # Fix llth, lst
+#			if ( ${ $::lglobal{fixopt} }[12] ) {
+#				$edited++ if $line =~ s/llth/11th/g;
+#				$edited++ if $line =~ s/(?<=\d)lst/1st/g;
+#				$edited++ if $line =~ s/(?<=\s)lst/1st/g;
+#				$edited++ if $line =~ s/^lst/1st/;
+#			}
+#			;        # format ellipses correctly
+#			if ( ${ $::lglobal{fixopt} }[13] ) {
+#				$edited++ if $line =~ s/(?<![\.\!\?])\.{3}(?!\.)/ \.\.\./g;
+#				$edited++ if $line =~ s/^ \./\./;
+#			}
+#			;        # format guillemets correctly
+#			;        # french guillemets
+#			if ( ${ $::lglobal{fixopt} }[14] and ${ $::lglobal{fixopt} }[15] ) {
+#				$edited++ if $line =~ s/«\s+/«/g;
+#				$edited++ if $line =~ s/\s+»/»/g;
+#			}
+#			;        # german guillemets
+#			if ( ${ $::lglobal{fixopt} }[14] and !${ $::lglobal{fixopt} }[15] )
+#			{
+#				$edited++ if $line =~ s/\s+«/«/g;
+#				$edited++ if $line =~ s/»\s+/»/g;
+#			}
+#			$update++ if ( ( $index % 250 ) == 0 );
+#			$textwindow->see($index) if ( $edited || $update );
+#			if ($edited) {
+#				$textwindow->replacewith( $lastindex, $index, $line );
+#			}
+#		}
+#		$textwindow->markSet( 'insert', $index ) if $update;
+#		$textwindow->update   if ( $edited || $update );
+#		::update_indicators() if ( $edited || $update );
+#		$edited    = 0;
+#		$update    = 0;
+#		$lastindex = $index;
+#		$index++;
+#		$index .= '.0';
+#		if ( $index > $end ) { $index = $end }
+#		if ($::operationinterrupt) { $::operationinterrupt = 0; return }
+#	}
+#	$textwindow->markSet( 'insert', 'end' );
+#	$textwindow->see('end');
+#	::update_indicators();
+#}
 
 def doStandardConversions( inBuf, keepOriginal ):
 	outBuf = inBuf
 
-#    Tabs are converted to 4 spaces
-#    [oe]/[OE] are translated to their unicode equivalents (If --latin not specified)
-#    -- becomes a unicode mdash (---- becomes 2 unicode mdashes) (If --latin not specified)
-#    Some symbols are escaped with a backslash: \, `, _, *, and optionally
-#    Since asterisks are escaped, search for \* to find any remaining notes or conditional hyphens
-#    Trailing spaces removed
-#    Blank Lines at the ends of pages removed
-#    --File: separators removed
-
-	outBuf = tabsToSpaces(outBuf, 4)
 	outBuf = removeTrailingSpaces(outBuf)
-	outBuf = convertUTF8(outBuf)
 	outBuf = convertThoughtBreaks(outBuf)
-	outBuf = removeBlankLinesAtPageEnds(outBuf)
 	
 	return outBuf
 	
@@ -1103,51 +1284,54 @@ def main():
 	doFootnotes = args['--footnotes'];
 	doPages = args['--pages'];
 	doJoinSpanned = args['--joinspanned'];
+	doFixup = args['--fixup'];
+	doUTF8 = args['--utf8'];
 
 	# Use default options if no processing options are set
 	if not doChapterHeadings and \
 		not doSectionHeadings and \
 		not doFootnotes and \
 		not doPages and \
+		not doFixup and \
+		not doUTF8 and \
 		not doJoinSpanned:
 		
-		logging.info("No processing options were given, using default set of options -pcfj\n      Run 'dp2ppgen -h' for a full list of options")
+		logging.info("No processing options were given, using default set of options -pcfj --fixup --utf8\n      Run 'dp2ppgen -h' for a full list of options")
 		doPages = True
 		doChapterHeadings = True
 		doFootnotes = True
+		doFixup = False
+		doUTF8 = True
 		doJoinSpanned = True
 
 	# Process source document
 	logging.info("Processing '{}'".format(infile))
-	outBuf = []
+	outBuf = inBuf
 
 	errorCount = validateDpMarkup(inBuf)
 	if errorCount > 0 and not args['--force']:
 		logging.critical("Correct markup issues then re-run operation, or use --force to ignore markup errors")
 	
 	else:
-		if doPages:
-			outBuf = processBlankPages(inBuf, args['--keeporiginal'])
-			inBuf = outBuf
-			outBuf = processPageNumbers(inBuf, args['--keeporiginal'])
-			inBuf = outBuf		
-
-		inBuf = doStandardConversions(inBuf, args['--keeporiginal'])
+		outBuf = doStandardConversions(outBuf, args['--keeporiginal'])
 		
+		if doPages:
+			outBuf = processBlankPages(outBuf, args['--keeporiginal'])
+			outBuf = processPageNumbers(outBuf, args['--keeporiginal'])
+		if doFixup:
+			outBuf = fixup(outBuf, args['--keeporiginal'])
+		if doUTF8:
+			outBuf = convertUTF8(outBuf) 
 		if doJoinSpanned:
-			outBuf = joinSpannedFormatting(inBuf, args['--keeporiginal'])
-			inBuf = outBuf
-			outBuf = joinSpannedHyphenations(inBuf, args['--keeporiginal'])
-			inBuf = outBuf
+			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
+			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
 		if doChapterHeadings or doSectionHeadings:
-			outBuf = processHeadings(inBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
-			inBuf = outBuf
+			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
 		if doFootnotes:
 			footnoteDestination = "bookend"
 			if args['--fndest']:
 				footnoteDestination = args['--fndest']
-			outBuf = processFootnotes(inBuf, footnoteDestination, args['--keeporiginal'])
-			inBuf = outBuf
+			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'])
 			
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))
