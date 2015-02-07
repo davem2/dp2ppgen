@@ -258,7 +258,7 @@ def isLineBlank( line ):
 
 
 def isLineComment( line ):
-	return re.match(r"^\/\/ *$", line)
+	return re.match(r"^\/\/*$", line)
 
 
 def isLinePageBreak( line ):
