@@ -717,6 +717,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 		
 		# Keep track of active scanpage
 		if isLinePageBreak(outBuf[lineNum]):
+			anchorsThisPage = []
 			currentScanPage = parseScanPage(inBuf[lineNum])
 			currentScanPageLabel = re.sub(r"\/\/ ","", outBuf[lineNum])
 #			logging.debug("--- Processing page "+currentScanPage)
@@ -741,9 +742,13 @@ def processFootnoteAnchors( inBuf, footnotes ):
 				logging.debug(fnIDs)
 				
 			else:
-				fnAnchorCount += 1
 				# replace [1] or [A] with [n]
 				curAnchor = "\[{}\]".format(anchor)
+				logging.debug("curAnchor={} anchorsThisPage={}".format(curAnchor,anchorsThisPage))
+				if not curAnchor in anchorsThisPage:
+					fnAnchorCount += 1
+					anchorsThisPage.append(curAnchor)
+
 				newAnchor = "[{}]".format(fnAnchorCount)
 				#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
 				
@@ -752,8 +757,9 @@ def processFootnoteAnchors( inBuf, footnotes ):
 					logging.debug("       {}".format(line))
 				
 				# sanity check (anchor and footnote should be on same scan page)
-#				if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
-#					logging.warning("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
+				if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
+					logging.fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
+					exit(1)
 
 				# replace anchor
 				outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])		
