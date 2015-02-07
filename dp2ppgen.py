@@ -330,7 +330,7 @@ def findPreviousLineOfText( buf, startLine ):
 # find next line that contains original book text (ignore ppgen markup, proofing markup, blank lines)
 def findNextLineOfText( buf, startLine ):
 	lineNum = findNextNonEmptyLine(buf, startLine)
-	while lineNum < len(buf)-1 and re.match(r"(\.[a-z0-9]{2} |[\*\#]\/|\/[\*\#]|\[\w+|\/\/)", buf[lineNum]):
+	while lineNum < len(buf)-1 and re.match(r"(\.[a-z0-9]{2} |[\*\#]\/|\/[\*\#]|\*?\[\w+|\/\/)", buf[lineNum]):
 		lineNum = findNextNonEmptyLine(buf, lineNum+1)
 	return lineNum
 
@@ -1332,16 +1332,16 @@ def main():
 			outBuf = fixup(outBuf, args['--keeporiginal'])
 		if doUTF8:
 			outBuf = convertUTF8(outBuf) 
-		if doJoinSpanned:
-			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
-			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
-		if doChapterHeadings or doSectionHeadings:
-			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
 		if doFootnotes:
 			footnoteDestination = "bookend"
 			if args['--fndest']:
 				footnoteDestination = args['--fndest']
 			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'])
+		if doJoinSpanned:
+			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
+			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
+		if doChapterHeadings or doSectionHeadings:
+			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
 			
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))
