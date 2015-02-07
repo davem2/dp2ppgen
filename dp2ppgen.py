@@ -262,8 +262,7 @@ def isLineComment( line ):
 
 
 def isLinePageBreak( line ):
-	return re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", line) or re.match(r"\/\/ (\d+\.(png|jpg|jpeg))", line)
-
+	return (parseScanPage != None)
 
 def parseScanPage( line ):
 	scanPageNum = None
@@ -271,7 +270,7 @@ def parseScanPage( line ):
 	m = re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", line)
 	if m:
 		scanPageNum = m.group(1)
-
+		
 	m = re.match(r"\/\/ (\d+\.(png|jpg|jpeg))", line)
 	if m:
 		scanPageNum = m.group(1)
