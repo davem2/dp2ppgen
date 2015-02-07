@@ -276,6 +276,10 @@ def parseScanPage( line ):
 	if m:
 		scanPageNum = m.group(1)
 	
+	m = re.match(r"\.bn (\d+\.(png|jpg|jpeg))", line)
+	if m:
+		scanPageNum = m.group(1)
+	
 	return scanPageNum
 
 
