@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """dp2ppgen
@@ -775,6 +775,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 				footnotes[fnAnchorCount-1]['paragraphEnd'] = paragraphEnd
 
 				# Find end of chapter (line after last line of last paragraph)
+				# Chapter headings must be marked in ppgen format (.h2)
 				chapterEnd = findNextChapter(outBuf, lineNum)
 				chapterEnd = findPreviousLineOfText(outBuf, chapterEnd) + 1
 				footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
@@ -1333,6 +1334,8 @@ def main():
 			outBuf = fixup(outBuf, args['--keeporiginal'])
 		if doUTF8:
 			outBuf = convertUTF8(outBuf) 
+		if doChapterHeadings or doSectionHeadings:
+			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
 		if doFootnotes:
 			footnoteDestination = "bookend"
 			if args['--fndest']:
@@ -1341,8 +1344,6 @@ def main():
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
-		if doChapterHeadings or doSectionHeadings:
-			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
 			
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))
