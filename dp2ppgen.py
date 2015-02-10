@@ -46,25 +46,25 @@ VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
 
 # Limited check for syntax errors in dp markup of input file
 def validateDpMarkup( inBuf ):
-	
+
 	# TODO, someone must have written a more thorough version of this already.. use that instead
-	
+
 	logging.info("-- Checking input file for markup errors")
 
 	inBuf = removeTrailingSpaces(inBuf)
-	
-	formattingStack = []	
+
+	formattingStack = []
 	lineNum = 0
 	errorCount = 0
 	while lineNum < len(inBuf):
-	
+
 
 		# Detect unbalanced out-of-line formatting markup /# #/ /* */
 		m = re.match(r"^\/(\*|\#)", inBuf[lineNum])
 		if m:
 			d = ({'ln':lineNum+1,'v':"/{}".format(m.group(1))})
 			formattingStack.append(d)
-			
+
 		m = re.match(r"^(\*|\#)\/", inBuf[lineNum])
 		if m:
 			v = m.group(1)
@@ -87,10 +87,10 @@ def validateDpMarkup( inBuf ):
 		# Check balance of [], <i></i>
 		m = re.findall(r"(\[|\]|<\/?\w+>)", inBuf[lineNum])
 		for v in m:
-			
+
 			if v == "<tb>": # ignore
 				pass
-			
+
 			elif v == "]": # closing markup
 				if len(formattingStack) == 0 or formattingStack[-1]['v'] != "[":
 					errorCount += 1
@@ -137,10 +137,10 @@ def validateDpMarkup( inBuf ):
 			else:
 				d = ({'ln':lineNum+1,'v':v})
 				formattingStack.append(d)
-				
+
 
 		# Check for specific issues that have caused conversion issues in the past
-		
+
 		# Single line [Footnote] does not end at closing ]
 		# ex. [Footnote 1: Duine, <i>Saints de Domnonée</i>, pp. 5-12].
 		if re.match(r"\*?\[Footnote(.*)\]\*?.*$", inBuf[lineNum]):
@@ -148,18 +148,18 @@ def validateDpMarkup( inBuf ):
 				if not (inBuf[lineNum][-1] == ']' or inBuf[lineNum][-2:] == ']*'):
 					errorCount += 1
 					logging.error("Line {}: Extra characters found after closing ']' in [Footnote]\n       {}".format(lineNum+1,inBuf[lineNum]))
-	
+
 		# Extra text after out-of-line formatting markup
 		# ex. /*[**new stanza?]
 		if re.match(r"^(\/\*|\/\#|\*\/|\#\/).+", inBuf[lineNum]):
 			errorCount += 1
 			logging.error("Line {}: Extra text after out-of-line formatting markup\n       {}".format(lineNum+1,inBuf[lineNum]))
-	
+
 		lineNum += 1
-			
+
 		# Chapters
-		# Sections	
-		
+		# Sections
+
 	# Look for unresolved <i></i>, [], {}
 	if len(formattingStack) > 0:
 		errorCount += 1
@@ -178,7 +178,7 @@ def validateDpMarkup( inBuf ):
 		logging.info("-- Found {} markup errors".format(errorCount) )
 
 	return errorCount
-	
+
 
 # Format helper function, truncate to width and indicate truncation occured with ...
 def truncate( string, width ):
@@ -268,19 +268,19 @@ def isLinePageBreak( line ):
 
 def parseScanPage( line ):
 	scanPageNum = None
-	
+
 	m = re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", line)
 	if m:
 		scanPageNum = m.group(1)
-		
+
 	m = re.match(r"\/\/ (\d+\.(png|jpg|jpeg))", line)
 	if m:
 		scanPageNum = m.group(1)
-	
+
 	m = re.match(r"\.bn (\d+\.(png|jpg|jpeg))", line)
 	if m:
 		scanPageNum = m.group(1)
-	
+
 	return scanPageNum
 
 
@@ -342,7 +342,7 @@ def findNextChapter( buf, startLine ):
 	while lineNum < len(buf)-1 and not re.match(r"\.h2", buf[lineNum]):
 		lineNum += 1
 	return lineNum
-		
+
 
 def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal ):
 	outBuf = []
@@ -503,7 +503,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			# Log action
 			logging.info("--- .h3 {}".format(sectionID))
 			sectionCount += 1
-			
+
 		else:
 			if isLineBlank(inBuf[lineNum]):
 				consecutiveEmptyLineCount += 1
@@ -515,9 +515,9 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 
 	if doChapterHeadings:
 		logging.info("-- Processed {} chapters".format(chapterCount))
-	
+
 	if doSectionHeadings:
-		logging.info("-- Processed {} sections".format(sectionCount))	
+		logging.info("-- Processed {} sections".format(sectionCount))
 
 	return outBuf;
 
@@ -573,23 +573,23 @@ def loadFile(fn):
 
 def createOutputFileName( infile ):
 	# TODO make this smart.. is infile raw or ppgen source? maybe two functions needed
-	outfile = "{}-out.txt".format(infile.split('.')[0]) 
+	outfile = "{}-out.txt".format(infile.split('.')[0])
 	return outfile
 
 def stripFootnoteMarkup( inBuf ):
 	outBuf = []
 	lineNum = 0
-	
+
 	while lineNum < len(inBuf):
 		# copy inBuf to outBuf throwing away all footnote markup [Footnote...]
 		if re.match(r"[\*]*\[Footnote", inBuf[lineNum]):
 			while lineNum < len(inBuf) and not re.search(r"][\*]*$", inBuf[lineNum]):
-				lineNum += 1			
+				lineNum += 1
 			lineNum += 1
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
-	
+
 	return outBuf
 
 def processSidenotes( inBuf, keepOriginal ):
@@ -599,9 +599,9 @@ def processSidenotes( inBuf, keepOriginal ):
 
 	logging.info("--- Processing sidenotes")
 	while lineNum < len(inBuf):
-		
+
 		# Search for sidenotes
-		if re.match(r"\*?\[Sidenote", inBuf[lineNum]): 
+		if re.match(r"\*?\[Sidenote", inBuf[lineNum]):
 			startLine = lineNum
 
 			# Copy sidenote block
@@ -619,7 +619,7 @@ def processSidenotes( inBuf, keepOriginal ):
 				line = re.sub(r"^\*?\[Sidenote: ?", "", line)
 				line = re.sub(r"]$", "", line)
 				snText.append(line)
-			
+
 			# Ouput ppgen style sidenote
 			s = ".sn {}".format(' '.join(snText))
 			outBuf.append(s)
@@ -652,7 +652,7 @@ def parseFootnotes( inBuf ):
 	logging.info("--- Parsing footnotes")
 	while lineNum < len(inBuf):
 		foundFootnote = False
-		
+
 		# Keep track of active scanpage
 		if isLinePageBreak(inBuf[lineNum]):
 			currentScanPage = parseScanPage(inBuf[lineNum])
@@ -660,7 +660,7 @@ def parseFootnotes( inBuf ):
 
 		if re.match(r"\*?\[Footnote", inBuf[lineNum]):
 			foundFootnote = True
-		
+
 		if foundFootnote:
 			startLine = lineNum
 
@@ -674,7 +674,7 @@ def parseFootnotes( inBuf ):
 			endLine = lineNum
 
 			# Is footnote part of a multipage footnote?
-			needsJoining = False    
+			needsJoining = False
 			if re.match(r"\*\[Footnote", fnBlock[0]) or re.search(r"\]\*$", fnBlock[-1]):
 				logging.debug("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
 				needsJoining = True
@@ -698,7 +698,7 @@ def parseFootnotes( inBuf ):
 				line = re.sub(r"^\[Footnote \d+: ?", "", line)
 				line = re.sub(r"][\*]*$", "", line)
 				fnText.append(line)
-			
+
 			# Add entry
 			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'fnID':fnID, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'needsJoining':needsJoining, 'scanPageNum':currentScanPage})
 
@@ -715,7 +715,7 @@ def parseFootnotes( inBuf ):
 		if footnotes[i]['needsJoining']:
 			if joinCount == 0:
 				logging.info("--- Joining footnotes")
-			
+
 			# debug message
 			logging.debug("Merging footnote [{}]".format(i+1))
 			if len(footnotes[i]['fnBlock']) > 1:
@@ -726,7 +726,7 @@ def parseFootnotes( inBuf ):
 				logging.debug("  ScanPg {}: {} ... {} ".format(footnotes[i+1]['scanPageNum'], footnotes[i+1]['fnBlock'][0], footnotes[i+1]['fnBlock'][-1]))
 			else:
 				logging.debug("  ScanPg {}: {}".format(footnotes[i+1]['scanPageNum'], footnotes[i+1]['fnBlock'][0]))
-				
+
 			# TODO: can footnotes span more than two pages?
 			if not footnotes[i+1]['needsJoining']:
 				logging.error("Attempt to join footnote failed!")
@@ -735,7 +735,7 @@ def parseFootnotes( inBuf ):
 			else:
 				# merge fnBlock and fnText from second into first
 				footnotes[i]['fnBlock'].extend(footnotes[i+1]['fnBlock'])
-				footnotes[i]['fnText'].extend(footnotes[i+1]['fnText'])			
+				footnotes[i]['fnText'].extend(footnotes[i+1]['fnText'])
 				footnotes[i]['needsJoining'] = False
 				del footnotes[i+1]
 				joinCount += 1
@@ -750,10 +750,10 @@ def parseFootnotes( inBuf ):
 
 
 def processFootnoteAnchors( inBuf, footnotes ):
-	
+
 	outBuf = inBuf
-	
-	# process footnote anchors 
+
+	# process footnote anchors
 	fnAnchorCount = 0
 	lineNum = 0
 	currentScanPage = 0
@@ -762,7 +762,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 #	r = []
 	logging.info("--- Processing footnote anchors")
 	while lineNum < len(outBuf):
-		
+
 		# Keep track of active scanpage
 		if isLinePageBreak(outBuf[lineNum]):
 			anchorsThisPage = []
@@ -775,7 +775,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 			for fn in footnotes:
 				if fn['scanPageNum'] == currentScanPage:
 					fnIDs.append(fn['fnID'])
-				
+
 			# Build regex for footnote anchors that can be found on this scanpage
 #			if len(fnIDs) > 0:
 #				r = "|".join(fnIDs)
@@ -788,7 +788,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 			if not anchor in fnIDs:
 				logging.error("No matching footnote for anchor [{}] on scan page {} (line {} in output file):\n       {}".format(anchor,currentScanPage,lineNum+1,outBuf[lineNum]))
 				logging.debug(fnIDs)
-				
+
 			else:
 				# replace [1] or [A] with [n]
 				curAnchor = "\[{}\]".format(anchor)
@@ -799,19 +799,19 @@ def processFootnoteAnchors( inBuf, footnotes ):
 
 				newAnchor = "[{}]".format(fnAnchorCount)
 				#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
-				
+
 				logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor,lineNum+1,currentScanPageLabel,outBuf[lineNum]))
 				for line in footnotes[fnAnchorCount-1]['fnText']:
 					logging.debug("       {}".format(line))
-				
+
 				# sanity check (anchor and footnote should be on same scan page)
 				if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
-					logging.fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum'])) 
+					logging.fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum']))
 					exit(1)
 
 				# replace anchor
-				outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])		
-				
+				outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])
+
 				# update paragraphEnd and chapterEnd so they are relative to anchor and not [Footnote
 				# Find end of paragraph
 				paragraphEnd = findNextEmptyLine(outBuf, lineNum)
@@ -822,11 +822,11 @@ def processFootnoteAnchors( inBuf, footnotes ):
 				chapterEnd = findNextChapter(outBuf, lineNum)
 				chapterEnd = findPreviousLineOfText(outBuf, chapterEnd) + 1
 				footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
-			
+
 		lineNum += 1
 
 	logging.info("--- Processed {} footnote anchors".format(fnAnchorCount))
-	
+
 	return outBuf, fnAnchorCount
 
 
@@ -853,35 +853,35 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 
 	# strip [Footnote markup
 	outBuf = stripFootnoteMarkup(outBuf)
-	
-	# find and markup footnote anchors 
+
+	# find and markup footnote anchors
 	outBuf, fnAnchorCount = processFootnoteAnchors(outBuf, footnotes)
-	
+
 	if len(footnotes) != fnAnchorCount:
 		logging.error("Footnote anchor count does not match footnote count")
-	
+
 	if len(footnotes) > 0:
 		outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination)
-	
+
 	return outBuf
 
 
-# Generate ppgen footnote markup 
+# Generate ppgen footnote markup
 def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
-	
+
 	outBuf = inBuf
-	
+
 	if footnoteDestination == "bookend":
 		logging.info("--- Adding ppgen style footnotes to end of book")
 		fnMarkup = []
 		fnMarkup.append(".pb")
-		fnMarkup.append(".if t")	
+		fnMarkup.append(".if t")
 		fnMarkup.append(".sp 4")
 		fnMarkup.append(".ce")
 		fnMarkup.append("FOOTNOTES:")
 		fnMarkup.append(".sp 2")
 		fnMarkup.append(".if-")
-		
+
 		fnMarkup.append(".if h")
 		fnMarkup.append(".de div.footnotes { border: dashed 1px #aaaaaa; padding: 1.5em; }")
 		fnMarkup.append('.dv class="footnotes"')
@@ -895,7 +895,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
-			
+
 		fnMarkup.append(".if h")
 		fnMarkup.append(".dv-")
 		fnMarkup.append(".if-")
@@ -903,11 +903,11 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		outBuf.extend(fnMarkup)
 
 	elif footnoteDestination == "chapterend":
-		logging.info("--- Adding ppgen style footnotes to end of chapters")	
+		logging.info("--- Adding ppgen style footnotes to end of chapters")
 		curChapterEnd = footnotes[-1]['chapterEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
-			
+
 			if curChapterEnd != fn['chapterEnd']:
 				# finish off last group
 				outBuf.insert(curChapterEnd, ".fm")
@@ -919,7 +919,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
-			
+
 			# insert it
 			outBuf[curChapterEnd:curChapterEnd] = fnMarkup
 			fnMarkup = []
@@ -932,7 +932,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		curParagraphEnd = footnotes[-1]['paragraphEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
-			
+
 			if curParagraphEnd != fn['paragraphEnd']:
 				# finish off last group
 				outBuf.insert(curParagraphEnd, ".fm")
@@ -944,7 +944,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
-			
+
 			# insert it
 			outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
 			fnMarkup = []
@@ -964,18 +964,18 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 	# Find:
 	# 1: */
 	# 2: // 010.png
-	# 3: 
+	# 3:
 	# 4: /*
-	
+
 	# Replace with:
 	# 2: // 010.png
-	# 3: 
+	# 3:
 
 	lineNum = 0
 	joinCount = 0
 	while lineNum < len(inBuf):
 		joinWasMade = False
-		
+
 		m = re.match(r"^(\*\/|\#\/)$", inBuf[lineNum])
 		if m:
 			outBlock = []
@@ -991,7 +991,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 				while ln < len(inBuf)-1 and isLineBlank(inBuf[ln]) or re.match(r".pn",inBuf[ln]) or re.match(r"\/\/",inBuf[ln]):
 					outBlock.append(inBuf[ln])
 					ln += 1
-				
+
 				if re.match(joinEndLineRegex, inBuf[ln]):
 					for line in outBlock:
 						outBuf.append(line)
@@ -999,11 +999,11 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 					joinCount += 1
 					logging.debug("Lines {}, {}: Joined spanned markup /{} {}/".format(lineNum,ln,m.group(1)[0],m.group(1)[0]))
 					lineNum = ln + 1
-			
+
 		if not joinWasMade:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
-		
+
 	logging.info("-- Joined {} instances of spanned out-of-line formatting markup".format(joinCount))
 	return outBuf
 
@@ -1017,9 +1017,9 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	# 1: the last word on this line is cont-*
 	# 2: // 010.png
 	# 3: *-inued. on the line below
-	
+
 	# Replace with:
-	# 1: the last word on this line is cont-**inued. 
+	# 1: the last word on this line is cont-**inued.
 	# 2: // 010.png
 	# 3: on the line below
 
@@ -1027,24 +1027,24 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	joinCount = 0
 	while lineNum < len(inBuf):
 		joinWasMade = False
-		
+
 		if re.search(r"\-\*$", inBuf[lineNum]) and isLinePageBreak(inBuf[lineNum+1]):
 			ln = findNextLineOfText(inBuf,lineNum+1)
 			if inBuf[ln][0] == '*':
 				# Remove first word from last line (secondPart) and join append it to first line
 #				secondPart = (inBuf[ln].split(' ',1)[0])[1:] # strip first word with leading * removed
-				secondPart = inBuf[ln].split(' ',1)[0] 
+				secondPart = inBuf[ln].split(' ',1)[0]
 				inBuf[ln] = inBuf[ln].split(' ',1)[1]
 				inBuf[lineNum] = inBuf[lineNum] + secondPart
-				logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(lineNum+1,inBuf[lineNum][-30:]))	
-#				logging.info("Line {}: Resolved hyphenation\n      '{}'".format(lineNum+1,inBuf[lineNum]))	
+				logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(lineNum+1,inBuf[lineNum][-30:]))
+#				logging.info("Line {}: Resolved hyphenation\n      '{}'".format(lineNum+1,inBuf[lineNum]))
 				joinCount += 1
 			else:
-				logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1,inBuf[lineNum],inBuf[ln]))	
+				logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1,inBuf[lineNum],inBuf[ln]))
 
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
-		
+
 	logging.info("-- Joined {} instances of spanned hyphenations".format(joinCount))
 	return outBuf
 
@@ -1069,12 +1069,12 @@ def convertUTF8( inBuf ):
 			line = re.sub(r"(?<!-)-{2}(?!-)","—", line)
 			line = re.sub(r"(?<!-)-{4}(?!-)","——", line)
 			if "--" in line:
-				logging.warn("Unconverted dashes: {}".format(line)) 
-		
+				logging.warn("Unconverted dashes: {}".format(line))
+
 		# [oe] becomes œ
 		# [OE] becomes Œ
 		line = line.replace("[oe]", "œ")
-		line = line.replace("[OE]", "Œ")		
+		line = line.replace("[OE]", "Œ")
 		outBuf.append(line)
 
 		# Fractions?
@@ -1089,24 +1089,24 @@ def convertThoughtBreaks( inBuf ):
 		# <tb> to .tb
 		line = re.sub(r"^<tb>$",".tb", line)
 		outBuf.append(line)
-		
+
 	return outBuf
 
 
 def removeBlankLinesAtPageEnds( inBuf ):
 	outBuf = []
-	
+
 	for line in inBuf:
 		if isLinePageBreak(line):
-			while outBuf and isLineBlank(outBuf[-1]): 
+			while outBuf and isLineBlank(outBuf[-1]):
 				outBuf.pop()
 
 		outBuf.append(line)
-	
+
 	return outBuf
 
 
-# TODO: Make this a tool in itself? 
+# TODO: Make this a tool in itself?
 def fixup( inBuf, keepOriginal ):
 #    • Remove spaces at end of line.
 #    • Remove blank lines at end of pages.
@@ -1117,7 +1117,7 @@ def fixup( inBuf, keepOriginal ):
 #    • Remove space before commas.
 #    • Remove space before semicolons.
 #    • Remove space before colons.
-#    • Remove space after opening and before closing brackets. () [] {} 
+#    • Remove space after opening and before closing brackets. () [] {}
 #    • Remove space after open angle quote and before close angle quote.
 #    • Remove space after beginning and before ending double quote.
 #    • Ensure space before ellipses except after period.
@@ -1128,7 +1128,7 @@ def fixup( inBuf, keepOriginal ):
 
 
 	outBuf = inBuf
-	
+
 	outBuf = tabsToSpaces(outBuf, 4)
 	outBuf = removeTrailingSpaces(outBuf)
 	outBuf = convertThoughtBreaks(outBuf)
@@ -1136,7 +1136,7 @@ def fixup( inBuf, keepOriginal ):
 #	outBuf = removeExtraSpaces(outBuf)
 
 	return outBuf
-	
+
 #TODO: Full guiguts fixit seems error prone.. maybe only do safe defaults or break off into seperate tool with each setting configurable, does gutsweeper do this already?
 #def removeExtraSpaces( inBuf ):
 #    • Remove spaces on either side of hyphens.
@@ -1146,7 +1146,7 @@ def fixup( inBuf, keepOriginal ):
 #    • Remove space before commas.
 #    • Remove space before semicolons.
 #    • Remove space before colons.
-#    • Remove space after opening and before closing brackets. () [] {} 
+#    • Remove space after opening and before closing brackets. () [] {}
 #    • Remove space after open angle quote and before close angle quote.
 #    • Remove space after beginning and before ending double quote.
 #    • Ensure space before ellipses except after period.
@@ -1159,7 +1159,7 @@ def fixup( inBuf, keepOriginal ):
 #			rewrapLevel -= 1
 #
 #		if rewrapLevel == 0:
-#			# Remove multiple spaces 
+#			# Remove multiple spaces
 #			# $line =~ s/(?<=\S)\s\s+(?=\S)/
 #			line = re.sub(r"(?<=\S)\s\s+(?=\S)","", line)
 #
@@ -1177,9 +1177,9 @@ def fixup( inBuf, keepOriginal ):
 #			line = re.sub(r'(?<!-)(-*---)(?=[^\s\\"F-])',"\1", line)
 #
 #		outBuf.append(line)
-#	
+#
 #	return outBuf
-#			
+#
 #				$edited++ if $line =~ s/- /-/g;    # Remove space after hyphen
 #				$edited++
 #				  if $line =~ s/(?<![-])([-]*---)(?=[^\s\\"F-])/$1 /g
@@ -1302,9 +1302,9 @@ def doStandardConversions( inBuf, keepOriginal ):
 
 	outBuf = removeTrailingSpaces(outBuf)
 	outBuf = convertThoughtBreaks(outBuf)
-	
+
 	return outBuf
-	
+
 
 def main():
 	args = docopt(__doc__, version="dp2ppgen v{}".format(VERSION))
@@ -1348,7 +1348,7 @@ def main():
 		not doFixup and \
 		not doUTF8 and \
 		not doJoinSpanned:
-		
+
 		logging.info("No processing options were given, using default set of options -pcfj --fixup --utf8\n      Run 'dp2ppgen -h' for a full list of options")
 		doPages = True
 		doChapterHeadings = True
@@ -1365,17 +1365,17 @@ def main():
 	errorCount = validateDpMarkup(inBuf)
 	if errorCount > 0 and not args['--force']:
 		logging.critical("Correct markup issues then re-run operation, or use --force to ignore markup errors")
-	
+
 	else:
 		outBuf = doStandardConversions(outBuf, args['--keeporiginal'])
-		
+
 		if doPages:
 			outBuf = processBlankPages(outBuf, args['--keeporiginal'])
 			outBuf = processPageNumbers(outBuf, args['--keeporiginal'])
 		if doFixup:
 			outBuf = fixup(outBuf, args['--keeporiginal'])
 		if doUTF8:
-			outBuf = convertUTF8(outBuf) 
+			outBuf = convertUTF8(outBuf)
 		if doChapterHeadings or doSectionHeadings:
 			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
 		if doSidenotes:
@@ -1388,7 +1388,7 @@ def main():
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
-			
+
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))
 			# Save file
