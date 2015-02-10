@@ -649,9 +649,9 @@ def parseFootnotes( inBuf ):
 			# Extract footnote text from [Footnote] block
 			fnText = []
 			for line in fnBlock:
-				line = re.sub(r"^\*\[Footnote: ", "", line)
-				line = re.sub(r"^\[Footnote [A-Z]: ", "", line)
-				line = re.sub(r"^\[Footnote \d+: ", "", line)
+				line = re.sub(r"^\*\[Footnote: ?", "", line)
+				line = re.sub(r"^\[Footnote [A-Z]: ?", "", line)
+				line = re.sub(r"^\[Footnote \d+: ?", "", line)
 				line = re.sub(r"][\*]*$", "", line)
 				fnText.append(line)
 			
