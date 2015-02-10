@@ -26,6 +26,7 @@ Options:
   -k, --keeporiginal   On any conversion keep original text as a comment.
   -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
+  -s, --sidenotes      Convert sidenotes into ppgen format.
   -v, --verbose        Print more text.
   -h, --help           Show help.
   --utf8               Convert characters to UTF8
@@ -591,6 +592,49 @@ def stripFootnoteMarkup( inBuf ):
 	
 	return outBuf
 
+def processSidenotes( inBuf, keepOriginal ):
+	sidenotesCount = 0
+	lineNum = 0
+	outBuf = []
+
+	logging.info("--- Processing sidenotes")
+	while lineNum < len(inBuf):
+		
+		# Search for sidenotes
+		if re.match(r"\*?\[Sidenote", inBuf[lineNum]): 
+			startLine = lineNum
+
+			# Copy sidenote block
+			snBlock = []
+			snBlock.append(inBuf[lineNum])
+			while lineNum < len(inBuf)-1 and not re.search(r"][\*]*$", inBuf[lineNum]):
+				lineNum += 1
+				snBlock.append(inBuf[lineNum])
+
+			endLine = lineNum
+
+			# Strip markup text from [sidenote] block
+			snText = []
+			for line in snBlock:
+				line = re.sub(r"^\*?\[Sidenote: ?", "", line)
+				line = re.sub(r"]$", "", line)
+				snText.append(line)
+			
+			# Ouput ppgen style sidenote
+			s = ".sn {}".format(' '.join(snText))
+			outBuf.append(s)
+			sidenotesCount += 1
+			lineNum += 1
+
+		else:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+
+	logging.info("--- Processed {} sidenotes".format(sidenotesCount))
+
+	return outBuf;
+
+
 def parseFootnotes( inBuf ):
 # parse footnotes into a list of dictionaries with the following properties for each entry
 # 	startLine - line number of [Footnote start
@@ -646,7 +690,7 @@ def parseFootnotes( inBuf ):
 			if m:
 				fnID = m.group(1);
 
-			# Extract footnote text from [Footnote] block
+			# Strip markup text from [Footnote] block
 			fnText = []
 			for line in fnBlock:
 				line = re.sub(r"^\*\[Footnote: ?", "", line)
@@ -701,7 +745,6 @@ def parseFootnotes( inBuf ):
 	if joinCount > 0:
 		logging.info("--- Merged {} broken footnote(s)".format(joinCount))
 		logging.info("--- {} total footnotes after joining".format(len(footnotes)))
-	
 
 	return footnotes;
 
@@ -1290,6 +1333,7 @@ def main():
 	doChapterHeadings = args['--chapters'];
 	doSectionHeadings = args['--sections'];
 	doFootnotes = args['--footnotes'];
+	doSidenotes = args['--sidenotes'];
 	doPages = args['--pages'];
 	doJoinSpanned = args['--joinspanned'];
 	doFixup = args['--fixup'];
@@ -1299,6 +1343,7 @@ def main():
 	if not doChapterHeadings and \
 		not doSectionHeadings and \
 		not doFootnotes and \
+		not doSidenotes and \
 		not doPages and \
 		not doFixup and \
 		not doUTF8 and \
@@ -1308,6 +1353,7 @@ def main():
 		doPages = True
 		doChapterHeadings = True
 		doFootnotes = True
+		doSidenotes = True
 		doFixup = False
 		doUTF8 = True
 		doJoinSpanned = True
@@ -1332,6 +1378,8 @@ def main():
 			outBuf = convertUTF8(outBuf) 
 		if doChapterHeadings or doSectionHeadings:
 			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
+		if doSidenotes:
+			outBuf = processSidenotes(outBuf, args['--keeporiginal'])
 		if doFootnotes:
 			footnoteDestination = "bookend"
 			if args['--fndest']:
