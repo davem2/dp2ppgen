@@ -841,9 +841,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		
 		fnMarkup.append(".if h")
 		fnMarkup.append(".de div.footnotes { border: dashed 1px #aaaaaa; padding: 1.5em; }")
-		fnMarkup.append(".li")
-		fnMarkup.append('<div class="footnotes">')
-		fnMarkup.append(".li-")
+		fnMarkup.append('.dv class="footnotes"')
 		fnMarkup.append(".ce")
 		fnMarkup.append("<xl>FOOTNOTES:</xl>")
 		fnMarkup.append(".sp 2") #TODO: current ppgen doesn't add space (pvs not applied to .fn I bet)
@@ -856,9 +854,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 			fnMarkup.append(".fn-")
 			
 		fnMarkup.append(".if h")
-		fnMarkup.append(".li")
-		fnMarkup.append('</div>')
-		fnMarkup.append(".li-")
+		fnMarkup.append(".dv-")
 		fnMarkup.append(".if-")
 
 		outBuf.extend(fnMarkup)
