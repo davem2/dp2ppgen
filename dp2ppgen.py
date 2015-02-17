@@ -620,6 +620,10 @@ def processSidenotes( inBuf, keepOriginal ):
 				line = re.sub(r"]$", "", line)
 				snText.append(line)
 
+			# Need to relocate *[Sidenote
+			if inBuf[startLine][0] == '*':
+				outBuf.append("// *** DP2PPGEN: RELOCATE SIDENOTE")
+
 			# Ouput ppgen style sidenote
 			s = ".sn {}".format(' '.join(snText))
 			outBuf.append(s)
