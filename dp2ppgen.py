@@ -483,7 +483,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				sectionLine += "|"
 			sectionLine = sectionLine[:-1]
 
-			outBlock.append("// ******** DP2PPGEN GENERATED ****************************************")
+			if keepOriginal:
+				outBlock.append("// ******** DP2PPGEN GENERATED ****************************************")
 			outBlock.append(".sp 2")
 			outBlock.append(".h3 id={}".format(sectionID))
 			outBlock.append(sectionLine)
