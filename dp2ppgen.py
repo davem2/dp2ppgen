@@ -235,7 +235,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 	logging.info("-- Processing page numbers")
 
 	while lineNum < len(inBuf):
-		m = re.match(r"-----File: (\d+\.png|jpg|jpeg).*", inBuf[lineNum])
+		m = re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", inBuf[lineNum])
 		if m:
 			if keepOriginal:
 				outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
