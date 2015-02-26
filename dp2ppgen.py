@@ -525,13 +525,18 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 	return outBuf;
 
 
+def fatal( errorMsg ):
+	logging.critical(errorMsg)
+	exit(1)
+	return
+
+
 def loadFile(fn):
 	inBuf = []
 	encoding = ""
 
 	if not os.path.isfile(fn):
-		logging.critical("specified file {} not found".format(fn))
-		exit(1)
+		fatal("File not found: {}".format(fn))
 
 	if encoding == "":
 		try:
@@ -1069,8 +1074,12 @@ def tabsToSpaces( inBuf, tabSize ):
 
 def convertUTF8( inBuf ):
 	outBuf = []
+	lineCount = 0
 
-	for line in inBuf:
+	logging.info("-- Converting characters to UTF-8")
+
+	for i, line in enumerate(inBuf):
+		originalLine = line
 		if not isLinePageBreak(line):
 			# -- becomes a unicode mdash, ---- becomes 2 unicode mdashes
 			line = re.sub(r"(?<!-)-{2}(?!-)","—", line)
@@ -1082,10 +1091,17 @@ def convertUTF8( inBuf ):
 		# [OE] becomes Œ
 		line = line.replace("[oe]", "œ")
 		line = line.replace("[OE]", "Œ")
+
+		if line != originalLine:
+			lineCount += 1
+			logging.debug("[{}] {}".format(i,originalLine))
+			logging.debug("{}{}".format(" "*(len(str(i))+3),line))
+
 		outBuf.append(line)
 
 		# Fractions?
 
+	logging.info("-- Finished converting characters on {} lines to UTF-8".format(lineCount))
 	return outBuf
 
 
@@ -1371,7 +1387,7 @@ def main():
 
 	errorCount = validateDpMarkup(inBuf)
 	if errorCount > 0 and not args['--force']:
-		logging.critical("Correct markup issues then re-run operation, or use --force to ignore markup errors")
+		fatal("Correct markup issues then re-run operation, or use --force to ignore markup errors")
 
 	else:
 		outBuf = doStandardConversions(outBuf, args['--keeporiginal'])
