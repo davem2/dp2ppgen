@@ -849,7 +849,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 
 	# strip empty lines before [Footnotes], *[Footnote
 	lineNum = 0
-	logging.info("--- Remove blank lines before [Footnotes]")
+	logging.info("--- Removing blank lines before [Footnotes]")
 	while lineNum < len(inBuf):
 		if re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]):
 			# delete previous blank line(s)
@@ -886,21 +886,13 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 	if footnoteDestination == "bookend":
 		logging.info("--- Adding ppgen style footnotes to end of book")
 		fnMarkup = []
-		fnMarkup.append(".pb")
-		fnMarkup.append(".if t")
 		fnMarkup.append(".sp 4")
-		fnMarkup.append(".ce")
-		fnMarkup.append("FOOTNOTES:")
-		fnMarkup.append(".sp 2")
-		fnMarkup.append(".if-")
-
-		fnMarkup.append(".if h")
+		fnMarkup.append(".pb")
 		fnMarkup.append(".de div.footnotes { border: dashed 1px #aaaaaa; padding: 1.5em; }")
 		fnMarkup.append('.dv class="footnotes"')
 		fnMarkup.append(".ce")
-		fnMarkup.append("<xl>FOOTNOTES:</xl>")
-		fnMarkup.append(".sp 2") #TODO: current ppgen doesn't add space (pvs not applied to .fn I bet)
-		fnMarkup.append(".if-")
+		fnMarkup.append("<fs=1.2em><B>FOOTNOTES:</B></fs>")
+		fnMarkup.append(".sp 2")
 
 		for i, fn in enumerate(footnotes):
 			fnMarkup.append(".fn {}".format(i+1))
@@ -908,9 +900,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
 
-		fnMarkup.append(".if h")
 		fnMarkup.append(".dv-")
-		fnMarkup.append(".if-")
 
 		outBuf.extend(fnMarkup)
 
