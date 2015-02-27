@@ -886,12 +886,15 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 	if footnoteDestination == "bookend":
 		logging.info("--- Adding ppgen style footnotes to end of book")
 		fnMarkup = []
+
 		fnMarkup.append(".sp 4")
 		fnMarkup.append(".pb")
 		fnMarkup.append(".de div.footnotes { border: dashed 1px #aaaaaa; padding: 1.5em; }")
+		fnMarkup.append(".de div.footnotes h2 { margin-top: 1em; }")
 		fnMarkup.append('.dv class="footnotes"')
-		fnMarkup.append(".ce")
-		fnMarkup.append("<fs=1.2em><B>FOOTNOTES:</B></fs>")
+		fnMarkup.append(".sp 2")
+		fnMarkup.append(".h2 id=footnotes")
+		fnMarkup.append("FOOTNOTES:")
 		fnMarkup.append(".sp 2")
 
 		for i, fn in enumerate(footnotes):

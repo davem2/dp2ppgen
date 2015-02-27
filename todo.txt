@@ -82,3 +82,5 @@
 - Add setup.py
 
 - Add project to python package repo so it can be installed via pip
+
+- Footnote processing slow.. (fm1b.txt good test) takes about 15 seconds to process
