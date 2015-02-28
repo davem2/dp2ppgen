@@ -239,9 +239,8 @@ def processPageNumbers( inBuf, keepOriginal ):
 		if m:
 			if keepOriginal:
 				outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
-#			outBuf.append("// {}".format(m.group(1)))
-#			outBuf.append(".bn {}".format(m.group(1)))
-			outBuf.append(".bn {0} // -----------------------( {0} )--------------------------".format(m.group(1)))
+			s = ".bn {0} // -----------------------( {0} )".format(m.group(1))
+			outBuf.append("{0}{1}".format(s,'-'*max(72-len(s),0)))
 			outBuf.append(".pn +1")
 			logging.debug("{:>{:d}}: '{}' to '{}, {}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-2],outBuf[-1]))
 			lineNum += 1
@@ -893,7 +892,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		fnMarkup.append(".de div.footnotes h2 { margin-top: 1em; }")
 		fnMarkup.append('.dv class="footnotes"')
 		fnMarkup.append(".sp 2")
-		fnMarkup.append(".h2 id=footnotes")
+		fnMarkup.append(".h2 id=footnotes nobreak")
 		fnMarkup.append("FOOTNOTES:")
 		fnMarkup.append(".sp 2")
 
