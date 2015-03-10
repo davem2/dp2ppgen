@@ -535,7 +535,7 @@ def processTables( inBuf, keepOriginal ):
 
 	while lineNum < len(inBuf):
 		# Find next /*
-		if re.match(r"^\/\*", inBuf[lineNum]):			
+		if re.match(r"^\/\*", inBuf[lineNum]):
 			inBlock = []
 			outBlock = []
 			foundChapterHeadingEnd = False;
@@ -553,11 +553,11 @@ def processTables( inBuf, keepOriginal ):
 				lineNum += 1
 			lineNum += 1
 
-			# Use autodetect if /* isnt marked 
+			# Use autodetect if /* isnt marked
 			if not isTable:
 				isTable = detectTable(inBlock)
 
-			if isTable:				
+			if isTable:
 				# Log action
 				logging.info("\n\n----- Found table:\n")
 				for line in inBlock:
@@ -566,10 +566,10 @@ def processTables( inBuf, keepOriginal ):
 
 				# Correct markup for rst, warn about things that need manual intervention
 				rstBlock = dpTableToRst(inBlock)
-				
+
 				# Run through rst2html
 				tableHTML = "TODO-HTML"
-				
+
 				# Build ppgen code
 				outBlock.append(".if t")
 				outBlock.append(".nf b")
@@ -598,27 +598,27 @@ def processTables( inBuf, keepOriginal ):
 
 def dpTableToRst( buf ):
 	outBuf = []
-	
+
 	return outBuf
-	
+
 
 def detectTable( buf ):
-	matches = { 
+	matches = {
 			  "--------+": False,
 			  "|": False,
-			  "T[aAbBlLeE]": False 
+			  "T[aAbBlLeE]": False
 	}
-	
+
 	for line in buf:
 		for key in matches:
 			if re.search(key, line):
 				matches[key] = True
-			
-	if (matches["--------+"] and matches["|"]) or (matches["T[aAbBlLeE]"] and matches["--------+"]): 
-		return True	
+
+	if (matches["--------+"] and matches["|"]) or (matches["T[aAbBlLeE]"] and matches["--------+"]):
+		return True
 
 	return False
-	
+
 
 def fatal( errorMsg ):
 	logging.critical(errorMsg)
