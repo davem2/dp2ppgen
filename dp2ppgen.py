@@ -27,6 +27,7 @@ Options:
   -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
   -s, --sidenotes      Convert sidenotes into ppgen format.
+  -t, --tables		   Convert tables into HTML.
   -v, --verbose        Print more text.
   -h, --help           Show help.
   --utf8               Convert characters to UTF8
@@ -523,6 +524,101 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 
 	return outBuf;
 
+
+def processTables( inBuf, keepOriginal ):
+	outBuf = []
+	lineNum = 0
+	foundChapterHeadingStart = False
+	tableCount = 0
+
+	logging.info("-- Processing tables")
+
+	while lineNum < len(inBuf):
+		# Find next /*
+		if re.match(r"^\/\*", inBuf[lineNum]):			
+			inBlock = []
+			outBlock = []
+			foundChapterHeadingEnd = False;
+			consecutiveEmptyLineCount = 0;
+
+			#TODO use guiguts style markup
+			isTable = False
+			if re.match(r"^\/\*TABLE", inBuf[lineNum]):
+				isTable = True
+
+			# Copy potential table to inBlock
+			lineNum += 1
+			while lineNum < len(inBuf) and not re.match(r"\*\/", inBuf[lineNum]):
+				inBlock.append(inBuf[lineNum])
+				lineNum += 1
+			lineNum += 1
+
+			# Use autodetect if /* isnt marked 
+			if not isTable:
+				isTable = detectTable(inBlock)
+
+			if isTable:				
+				# Log action
+				logging.info("\n\n----- Found table:\n")
+				for line in inBlock:
+					logging.info(line)
+				tableCount += 1
+
+				# Correct markup for rst, warn about things that need manual intervention
+				rstBlock = dpTableToRst(inBlock)
+				
+				# Run through rst2html
+				tableHTML = "TODO-HTML"
+				
+				# Build ppgen code
+				outBlock.append(".if t")
+				outBlock.append(".nf b")
+				for line in inBlock:
+					outBlock.append(line)
+				outBlock.append(".nf-")
+				outBlock.append(".if-")
+				outBlock.append(".if h")
+				outBlock.append(".li")
+				outBlock.append(tableHTML)
+				outBlock.append(".li-")
+				outBlock.append(".if-")
+
+				# Write out chapter heading block
+				for line in outBlock:
+					outBuf.append(line)
+
+		else:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+
+	logging.info("-- Processed {} tables".format(tableCount))
+
+	return outBuf;
+
+
+def dpTableToRst( buf ):
+	outBuf = []
+	
+	return outBuf
+	
+
+def detectTable( buf ):
+	matches = { 
+			  "--------+": False,
+			  "|": False,
+			  "T[aAbBlLeE]": False 
+	}
+	
+	for line in buf:
+		for key in matches:
+			if re.search(key, line):
+				matches[key] = True
+			
+	if (matches["--------+"] and matches["|"]) or (matches["T[aAbBlLeE]"] and matches["--------+"]): 
+		return True	
+
+	return False
+	
 
 def fatal( errorMsg ):
 	logging.critical(errorMsg)
@@ -1349,16 +1445,20 @@ def main():
 	doSectionHeadings = args['--sections'];
 	doFootnotes = args['--footnotes'];
 	doSidenotes = args['--sidenotes'];
+	doTables = args['--tables'];
 	doPages = args['--pages'];
 	doJoinSpanned = args['--joinspanned'];
 	doFixup = args['--fixup'];
 	doUTF8 = args['--utf8'];
+
+	#TODO, load config file and use those options if one is present
 
 	# Use default options if no processing options are set
 	if not doChapterHeadings and \
 		not doSectionHeadings and \
 		not doFootnotes and \
 		not doSidenotes and \
+		not doTables and \
 		not doPages and \
 		not doFixup and \
 		not doUTF8 and \
@@ -1403,6 +1503,8 @@ def main():
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
+		if doTables:
+			outBuf = processTables(outBuf, args['--keeporiginal'])
 
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))

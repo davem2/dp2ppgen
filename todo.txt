@@ -84,3 +84,13 @@
 - Add project to python package repo so it can be installed via pip
 
 - Footnote processing slow.. (fm1b.txt good test) takes about 15 seconds to process
+
+- Templates? Could just be config file
+
+- Would be nice to have .li HTML in a separate file for easier edit workflow (edit/refresh), add feature that parses out .li HTML snippets and .de statements and creates an HTML file out of them.
+
+- Add option to convert tables, use guiguts style markup or autodetect (-----+ within /* */). Output .li t (original text in /* */) .li h rst2htmlb, .de statements
+
+- Option to convert TOC, LOI. Autodetect with regex "(.+) {6:}(\d+)" and replace with #\1:Page_\2#|#\2#, or use user supplied .sr style regex. 
+
+- Detect diacritics in utf8 conversions and add necesary .cv statements
