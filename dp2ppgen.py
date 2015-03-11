@@ -40,6 +40,8 @@ import re
 import os
 import sys
 import logging
+import tempfile
+import subprocess
 
 
 VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
@@ -568,7 +570,7 @@ def processTables( inBuf, keepOriginal ):
 				rstBlock = dpTableToRst(inBlock)
 
 				# Run through rst2html
-				tableHTML = "TODO-HTML"
+				tableHTML = rstTableToHTML(rstBlock)
 
 				# Build ppgen code
 				outBlock.append(".if t")
@@ -579,7 +581,8 @@ def processTables( inBuf, keepOriginal ):
 				outBlock.append(".if-")
 				outBlock.append(".if h")
 				outBlock.append(".li")
-				outBlock.append(tableHTML)
+				for line in tableHTML:
+					outBlock.append(line)
 				outBlock.append(".li-")
 				outBlock.append(".if-")
 
@@ -596,8 +599,116 @@ def processTables( inBuf, keepOriginal ):
 	return outBuf;
 
 
-def dpTableToRst( buf ):
+def rstTableToHTML( inBuf ):
+
+	# Build input to rstToHtml
+	inFile = tempfile.NamedTemporaryFile(delete=False)
+	inFileName=inFile.name
+	print(inFile.name)
+	for line in inBuf:
+		inFile.write(bytes(line+'\n', 'UTF-8'))
+	inFile.close()
+
+	# Process table with rst2html
+	outFileName=makeTempFile()
+	commandLine=['rst2html',inFileName,outFileName]
+	logging.debug("commandLine:{}".format(str(commandLine)))
+	proc=subprocess.Popen(commandLine)
+	proc.wait()
+	if( proc.returncode != 0 ):
+		logging.error("Command failed: {}".format(str(commandLine)))
+
+	# Parse table HTML from rst2html output
 	outBuf = []
+	inTable = False
+	for line in loadFile(outFileName):
+		if "<table" in line:
+			inTable = True
+
+		if "</table" in line:
+			outBuf.append(line)
+			inTable = False
+
+		if inTable:
+			outBuf.append(line)
+
+	# Compact rows, strip colgroup
+	inBuf = outBuf
+	outBuf = []
+	inTr = False
+	inColgroup = False
+	rowStart = 0
+	for i, line in enumerate(inBuf):
+		if "<colgroup" in line:
+			inColgroup = True
+		elif "<tr" in line:
+			inTr = True
+			rowStart = i
+
+		if "</tr" in line:
+			rowHTML = ' '.join(inBuf[rowStart:i])
+			outBuf.append(rowHTML)
+			inTr = False
+		if "</colgroup" in line:
+			inColgroup = False
+		elif not inTr and not inColgroup:
+			outBuf.append(line)
+
+	return outBuf
+
+
+def makeTempFile():
+    tf = tempfile.NamedTemporaryFile(delete=False)
+    fn = tf.name
+    tf.close()
+    return fn
+
+
+def dpTableToRst( inBuf ):
+	outBuf = inBuf
+	tableWidth = 0
+
+	# Trim whitespace
+	for i, line in enumerate(outBuf):
+		outBuf[i] = outBuf[i].rstrip()
+
+	# Add left/right edges if needed
+	inTable = False
+	for i, line in enumerate(outBuf):
+
+		if re.match(r"\+-",line):
+			inTable = True
+		elif re.match(r"-",line):
+			outBuf[i] = "+{}".format(outBuf[i])
+			inTable = True
+		elif re.match(r"[^|+]",line) and inTable:
+			outBuf[i] = "|{}".format(outBuf[i])
+		if re.search(r"-$",line):
+			outBuf[i] = "{}+".format(outBuf[i])
+			tableWidth = len(outBuf[i])
+		elif re.search(r"[^|+]$",line) and inTable or tableWidth > len(outBuf[i]):
+			if tableWidth > len(outBuf[i]):
+				s = "{0:<{tableWidth}}|".format(outBuf[i],tableWidth=(tableWidth-1))
+				outBuf[i] = s
+			else:
+				outBuf[i] = "{}|".format(outBuf[i])
+
+		# Left align cell text
+		m = re.findall(r"\|([^|+]+)",outBuf[i])
+		for cell in m:
+			cw = len(cell)
+			if re.search(r"[^|\s]",cell):
+				s = r"|{}".format(cell)
+				r = r"|{0:<{cw}}".format(cell.lstrip(),cw=cw)
+				outBuf[i] = outBuf[i].replace(s,r)
+
+		# Ignore lines not inside table (title etc.)
+		if not inTable and line != "":
+			logging.warn("Ignoring line outside table:\n{}".format(line))
+			del outBuf[i]
+
+	for line in outBuf:
+		print(line)
 
 	return outBuf
 
