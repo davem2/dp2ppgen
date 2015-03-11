@@ -561,7 +561,7 @@ def processTables( inBuf, keepOriginal ):
 
 			if isTable:
 				# Log action
-				logging.info("\n\n----- Found table:\n")
+				logging.info("\n----- Found table:")
 				for line in inBlock:
 					logging.info(line)
 				tableCount += 1
@@ -596,6 +596,34 @@ def processTables( inBuf, keepOriginal ):
 
 	logging.info("-- Processed {} tables".format(tableCount))
 
+	# Add table CSS
+	if tableCount > 0:
+		cssBlock = []
+		cssBlock.append("// Tables")
+		cssBlock.append(".de .tableU1 { page-break-inside: avoid; margin: 1.5em auto; border-collapse: collapse; width: auto; max-width: 97%}")
+		cssBlock.append(".de .tableU1 td, .tableU1 th { padding: 0.15em 0.5em; border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; text-align: center; font-size: small; }")
+		cssBlock.append(".de .tableU1 th { padding: 0.8em 0.5em; font-weight: normal; font-size: smaller; border: 1px solid black; }")
+		cssBlock.append(".de .tableU1 td div.lgcurly { font-size:300%;font-weight:lighter;margin:0;line-height:1em;text-indent:0; }")
+		cssBlock.append("")
+		cssBlock.append(".de caption { margin-bottom: 0.8em; font-weight: bold; font-size: 0.9em; }")
+		cssBlock.append(".de td.ybt, th.ybt { border-top: 1px solid black; }")
+		cssBlock.append(".de td.nbt, th.nbt { border-top-style: none; }")
+		cssBlock.append(".de td.nbb, th.nbb { border-bottom-style: none; }")
+		cssBlock.append(".de td.nbl, th.nbl { border-left-style: none; }")
+		cssBlock.append(".de td.nbr, th.nbr { border-right-style: none; }")
+		cssBlock.append(".de td.dbt, th.dbt { border-top: double; }")
+		cssBlock.append(".de td.dbb, th.dbb { border-bottom: double; }")
+		cssBlock.append(".de td.dbr, th.dbr { border-right: double; }")
+		cssBlock.append(".de td.valignb, th.valignb { vertical-align: bottom; }")
+		cssBlock.append(".de td.left { text-align: left; }")
+		cssBlock.append(".de td.right { text-align: right; }")
+		cssBlock.append(".de td.hang { text-align: left; padding-left: 1.5em; text-indent: -1.2em; }")
+		cssBlock.append(".de td.hang2 { text-align: left; padding-left: 3em; text-indent: -1.2em; }")
+		cssBlock.append(".de .nodecoration { text-decoration: none; }")
+		cssBlock.append("")
+
+		outBuf[0:0] = cssBlock
+
 	return outBuf;
 
 
@@ -604,7 +632,6 @@ def rstTableToHTML( inBuf ):
 	# Build input to rstToHtml
 	inFile = tempfile.NamedTemporaryFile(delete=False)
 	inFileName=inFile.name
-	print(inFile.name)
 	for line in inBuf:
 		inFile.write(bytes(line+'\n', 'UTF-8'))
 	inFile.close()
@@ -623,6 +650,7 @@ def rstTableToHTML( inBuf ):
 	inTable = False
 	for line in loadFile(outFileName):
 		if "<table" in line:
+			line = "<table class='tableU1'>"
 			inTable = True
 
 		if "</table" in line:
@@ -633,7 +661,7 @@ def rstTableToHTML( inBuf ):
 			outBuf.append(line)
 
 	# Compact rows, strip colgroup
-	inBuf = outBuf
+	inBuf = outBuf[:]
 	outBuf = []
 	inTr = False
 	inColgroup = False
@@ -665,7 +693,7 @@ def makeTempFile():
 
 
 def dpTableToRst( inBuf ):
-	outBuf = inBuf
+	outBuf = inBuf[:]
 	tableWidth = 0
 
 	# Trim whitespace
@@ -706,9 +734,6 @@ def dpTableToRst( inBuf ):
 		if not inTable and line != "":
 			logging.warn("Ignoring line outside table:\n{}".format(line))
 			del outBuf[i]
-
-	for line in outBuf:
-		print(line)
 
 	return outBuf
 
