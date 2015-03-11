@@ -650,7 +650,7 @@ def rstTableToHTML( inBuf ):
 	inTable = False
 	for line in loadFile(outFileName):
 		if "<table" in line:
-			line = "<table class='tableU1'>"
+			line = '<table class="tableU1">'
 			inTable = True
 
 		if "</table" in line:
@@ -660,7 +660,7 @@ def rstTableToHTML( inBuf ):
 		if inTable:
 			outBuf.append(line)
 
-	# Compact rows, strip colgroup
+	# Compact rows, strip colgroup, tbody
 	inBuf = outBuf[:]
 	outBuf = []
 	inTr = False
@@ -681,6 +681,21 @@ def rstTableToHTML( inBuf ):
 			inColgroup = False
 		elif not inTr and not inColgroup:
 			outBuf.append(line)
+
+	# Strip tbody
+	inBuf = outBuf[:]
+	outBuf = []
+	for i, line in enumerate(inBuf):
+		if not re.match("</?tbody",line):
+			outBuf.append(line)
+
+	# Assume first row is header row
+	done = False
+	for i, line in enumerate(outBuf):
+		if "<tr" in line and not done:
+			outBuf[i] = outBuf[i].replace("<td","<th")
+			outBuf[i] = outBuf[i].replace("</td>","</th>")
+			done = True
 
 	return outBuf
 
