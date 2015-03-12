@@ -8,6 +8,6 @@ setup(
   author_email = 'david.maranhao@gmail.com',
   url = 'https://github.com/davem2/dp2ppgen', # use the URL to the github repo
   download_url = 'https://github.com/davem2/dp2ppgen/tarball/0.1', # I'll explain this in a second
-  keywords = ['text', 'processing', 'books', 'gutenberg', 'distributedproofers'], # arbitrary keywords
+  keywords = ['text', 'processing', 'book', 'gutenberg', 'distributedproofreaders'], # arbitrary keywords
   classifiers = [],
 )
