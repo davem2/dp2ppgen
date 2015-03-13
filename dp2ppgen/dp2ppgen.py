@@ -276,6 +276,10 @@ def isLineComment( line ):
 def isLinePageBreak( line ):
 	return (parseScanPage(line) != None)
 
+def isLineOriginalText( line ):
+	return not re.match(r"(\.[a-z0-9]{2} |[*#]\/|\/[*#]|\*?\[\w+|\/\/)", line) and not isLinePageBreak(line)
+
+
 def parseScanPage( line ):
 	scanPageNum = None
 
@@ -334,7 +338,7 @@ def findPreviousNonEmptyLine( buf, startLine ):
 # find previous line that contains original book text (ignore ppgen markup, proofing markup, blank lines)
 def findPreviousLineOfText( buf, startLine ):
 	lineNum = findPreviousNonEmptyLine(buf, startLine)
-	while lineNum > 0 and re.match(r"[\.\*\#\/\[]", buf[lineNum]):
+	while lineNum > 0 and not isLineOriginalText(buf[lineNum]):
 		lineNum = findPreviousNonEmptyLine(buf, lineNum-1)
 	return lineNum
 
@@ -342,7 +346,7 @@ def findPreviousLineOfText( buf, startLine ):
 # find next line that contains original book text (ignore ppgen markup, proofing markup, blank lines)
 def findNextLineOfText( buf, startLine ):
 	lineNum = findNextNonEmptyLine(buf, startLine)
-	while lineNum < len(buf)-1 and re.match(r"(\.[a-z0-9]{2} |[\*\#]\/|\/[\*\#]|\*?\[\w+|\/\/)", buf[lineNum]):
+	while lineNum < len(buf)-1 and not isLineOriginalText(buf[lineNum]):
 		lineNum = findNextNonEmptyLine(buf, lineNum+1)
 	return lineNum
 
@@ -620,7 +624,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 				lineNum += 1
 			lineNum += 1
 
-			if markupType is not None:
+			if markupType:
 				logging.info("\n----- Found {}, line {}".format(markupType,lineNum))
 
 				if markupType == "table":
@@ -900,7 +904,7 @@ def detectNoWrapMarkupType( buf ):
 	for line in buf:
 		for key in matches:
 			for s in matches[key]:
-				if re.search(s, line):
+				if re.search(s, line) and isLineOriginalText(line):
 					matches[key][s] += 1
 
 	if (matches["table"]["--------+"] and matches["table"]["|"]) or (matches["table"]["T[aAbBlLeE]"] and matches["table"]["--------+"]):
@@ -908,7 +912,7 @@ def detectNoWrapMarkupType( buf ):
 	elif matches["toc"][" {6,}\d+"]:
 		return "toc"
 
-	return None
+	return ""
 
 
 def fatal( errorMsg ):
