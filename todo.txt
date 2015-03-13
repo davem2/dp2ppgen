@@ -95,3 +95,7 @@
 - Option to convert TOC, LOI. Autodetect with regex "(.+) {6,}(\d+)" and replace with #\1:Page_\2#|#\2#, or use user supplied .sr style regex.
 
 - Detect diacritics in utf8 conversions and add necesary .cv statements
+
+- Add --autodetect for tables/toc, maybe remove --tables and --toc and just process marked blocks by default, or use generic --processoutoflineformatting
+
+- Add toc .sr parameter for user supplied toc search/re

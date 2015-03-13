@@ -27,7 +27,8 @@ Options:
   -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet          Print less text.
   -s, --sidenotes      Convert sidenotes into ppgen format.
-  -t, --tables		   Convert tables into HTML.
+  --detectmarkup       Best guess what out of line markup /* */ /# #/ represent (table, toc, poetry, etc..)
+  -m, --markup         Convert out of line markup /* */ /# #/ into ppgen format.
   -v, --verbose        Print more text.
   -h, --help           Show help.
   --utf8               Convert characters to UTF8
@@ -44,7 +45,7 @@ import tempfile
 import subprocess
 
 
-VERSION="0.1.0" # MAJOR.MINOR.PATCH | http://semver.org
+VERSION="0.2" # MAJOR.MINOR.PATCH | http://semver.org
 
 
 # Limited check for syntax errors in dp markup of input file
@@ -527,28 +528,29 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 	return outBuf;
 
 
-def processTables( inBuf, keepOriginal ):
+def processOOLFMarkup( inBuf, detectMarkup, keepOriginal ):
 	outBuf = []
 	lineNum = 0
-	foundChapterHeadingStart = False
-	tableCount = 0
-
-	logging.info("-- Processing tables")
+	rewrapLevel = 0
+	markupCount = {'table':0, 'toc':0, 'titlepage':0, 'poetry':0, 'appendix':0 }
 
 	while lineNum < len(inBuf):
-		# Find next /*
-		if re.match(r"^\/\*", inBuf[lineNum]):
+
+		# Process no-wrap /* */ markup
+		#	table
+		#	toc
+		#	titlepage
+		#	poetry
+		#	appendix
+		m = re.match(r"^\/\*(.*)", inBuf[lineNum])
+		if m:
 			inBlock = []
 			outBlock = []
 			foundChapterHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
+			markupType = m.group(1)
 
-			#TODO use guiguts style markup
-			isTable = False
-			if re.match(r"^\/\*TABLE", inBuf[lineNum]):
-				isTable = True
-
-			# Copy potential table to inBlock
+			# Copy nowrap block
 			lineNum += 1
 			while lineNum < len(inBuf) and not re.match(r"\*\/", inBuf[lineNum]):
 				inBlock.append(inBuf[lineNum])
@@ -556,48 +558,41 @@ def processTables( inBuf, keepOriginal ):
 			lineNum += 1
 
 			# Use autodetect if /* isnt marked
-			if not isTable:
-				isTable = detectTable(inBlock)
+			if detectMarkup and not markupType:
+				markupType = detectNoWrapMarkupType(inBlock)
 
-			if isTable:
-				# Log action
-				logging.info("\n----- Found table:")
-				for line in inBlock:
-					logging.info(line)
-				tableCount += 1
+			if markupType:
+				logging.info("\n----- Found {}, line {}".format(markupType,lineNum))
 
-				# Correct markup for rst, warn about things that need manual intervention
-				rstBlock = dpTableToRst(inBlock)
+				if markupType == "table":
+					outBlock = processTable(inBlock, keepOriginal)
+				elif markupType == "toc":
+					outBlock = processToc(inBlock, keepOriginal)
+				elif markupType == "titlepage":
+					outBlock = processTitlePage(inBlock, keepOriginal)
+				elif markupType == "poetry":
+					outBlock = processPoetry(inBlock, keepOriginal)
+				else:
+					logging.warn("{}: Unknown markup type '{}' found".format(lineNum,markupType))
 
-				# Run through rst2html
-				tableHTML = rstTableToHTML(rstBlock)
+				markupCount[markupType] += 1
 
-				# Build ppgen code
-				outBlock.append(".if t")
-				outBlock.append(".nf b")
-				for line in inBlock:
-					outBlock.append(line)
-				outBlock.append(".nf-")
-				outBlock.append(".if-")
-				outBlock.append(".if h")
-				outBlock.append(".li")
-				for line in tableHTML:
-					outBlock.append(line)
-				outBlock.append(".li-")
-				outBlock.append(".if-")
-
-				# Write out chapter heading block
 				for line in outBlock:
 					outBuf.append(line)
+
+		# Process rewrap /# #/ markup
+		#	blockquote
+		#	hangingindent
+		elif re.match(r"^\/\#(.*)", inBuf[lineNum]):
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
 
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
-	logging.info("-- Processed {} tables".format(tableCount))
-
 	# Add table CSS
-	if tableCount > 0:
+	if markupCount['table'] > 0:
 		cssBlock = []
 		cssBlock.append("// Tables")
 		cssBlock.append(".de .tableU1 { page-break-inside: avoid; margin: 1.5em auto; border-collapse: collapse; width: auto; max-width: 97%}")
@@ -623,6 +618,65 @@ def processTables( inBuf, keepOriginal ):
 		cssBlock.append("")
 
 		outBuf[0:0] = cssBlock
+
+	return outBuf;
+
+
+def processToc( inBuf, keepOriginal ):
+	outBuf = []
+	lineNum = 0
+	tocCount = 0
+	rewrapLevel = 0
+
+	while lineNum < len(inBuf):
+		# Detect when inside out-of-line formatting block /* */
+		if re.match(r"^\/\*", inBuf[lineNum]):
+			rewrapLevel += 1
+		elif re.match(r"^\*\/", inBuf[lineNum]):
+			rewrapLevel -= 1
+
+		s = r"(.+?) {6,}(\d+)"
+		r = r"#\1:Page_\2#\|#\2#"
+
+		if re.search(s,inBuf[lineNum]):
+			print("{}: {}".format(lineNum, inBuf[lineNum]))
+
+		if rewrapLevel > 0:
+			re.sub(s,r,inBuf[lineNum])
+
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	return outBuf;
+
+
+def processTable( inBuf, keepOriginal ):
+	outBuf = []
+	lineNum = 0
+
+	for line in inBuf:
+		logging.info(line)
+
+	# Correct markup for rst, warn about things that need manual intervention
+	rstBlock = dpTableToRst(inBuf)
+
+	# Run through rst2html
+	logging.info("\n----- Generating HTML with rst2html")
+	tableHTML = rstTableToHTML(rstBlock)
+
+	# Build ppgen code
+	outBuf.append(".if t")
+	outBuf.append(".nf b")
+	for line in inBuf:
+		outBuf.append(line)
+	outBuf.append(".nf-")
+	outBuf.append(".if-")
+	outBuf.append(".if h")
+	outBuf.append(".li")
+	for line in tableHTML:
+		outBuf.append(line)
+	outBuf.append(".li-")
+	outBuf.append(".if-")
 
 	return outBuf;
 
@@ -719,14 +773,14 @@ def dpTableToRst( inBuf ):
 	inTable = False
 	for i, line in enumerate(outBuf):
 
-		if re.match(r"\+-",line):
+		if re.match(r"\+[-=]",line):
 			inTable = True
-		elif re.match(r"-",line):
+		elif re.match(r"[-=]",line):
 			outBuf[i] = "+{}".format(outBuf[i])
 			inTable = True
 		elif re.match(r"[^|+]",line) and inTable:
 			outBuf[i] = "|{}".format(outBuf[i])
-		if re.search(r"-$",line):
+		if re.search(r"[-=]$",line):
 			outBuf[i] = "{}+".format(outBuf[i])
 			tableWidth = len(outBuf[i])
 		elif re.search(r"[^|+]$",line) and inTable or tableWidth > len(outBuf[i]):
@@ -753,22 +807,36 @@ def dpTableToRst( inBuf ):
 	return outBuf
 
 
-def detectTable( buf ):
+def detectNoWrapMarkupType( buf ):
+	# Tables
 	matches = {
-			  "--------+": False,
-			  "|": False,
-			  "T[aAbBlLeE]": False
+			  "table": {
+					   "--------+": 0,
+			           "=========": 0,
+					   "---------": 0,
+					   #TODO update and test better markup
+					   # "[-=]{6,}+": False,
+					   # "[-=]{6,}": False,
+					   "|": 0,
+					   "T[aAbBlLeE]": 0
+			  },
+			  "toc": {
+					   " {6,}\d+": 0,
+			  }
 	}
 
 	for line in buf:
 		for key in matches:
-			if re.search(key, line):
-				matches[key] = True
+			for s in matches[key]:
+				if re.search(s, line):
+					matches[key][s] += 1
 
-	if (matches["--------+"] and matches["|"]) or (matches["T[aAbBlLeE]"] and matches["--------+"]):
-		return True
+	if (matches["table"]["--------+"] and matches["table"]["|"]) or (matches["table"]["T[aAbBlLeE]"] and matches["table"]["--------+"]):
+		return "table"
+	elif matches["toc"][" {6,}\d+"]:
+		return "toc"
 
-	return False
+	return None
 
 
 def fatal( errorMsg ):
@@ -1596,7 +1664,7 @@ def main():
 	doSectionHeadings = args['--sections'];
 	doFootnotes = args['--footnotes'];
 	doSidenotes = args['--sidenotes'];
-	doTables = args['--tables'];
+	doMarkup = args['--markup'];
 	doPages = args['--pages'];
 	doJoinSpanned = args['--joinspanned'];
 	doFixup = args['--fixup'];
@@ -1609,7 +1677,7 @@ def main():
 		not doSectionHeadings and \
 		not doFootnotes and \
 		not doSidenotes and \
-		not doTables and \
+		not doMarkup and \
 		not doPages and \
 		not doFixup and \
 		not doUTF8 and \
@@ -1618,8 +1686,10 @@ def main():
 		logging.info("No processing options were given, using default set of options -pcfj --fixup --utf8\n      Run 'dp2ppgen -h' for a full list of options")
 		doPages = True
 		doChapterHeadings = True
+		doSectionHeadings = False
 		doFootnotes = True
 		doSidenotes = True
+		doMarkup = False
 		doFixup = False
 		doUTF8 = True
 		doJoinSpanned = True
@@ -1654,8 +1724,8 @@ def main():
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
-		if doTables:
-			outBuf = processTables(outBuf, args['--keeporiginal'])
+		if doMarkup:
+			outBuf = processOOLFMarkup(outBuf, args['--detectmarkup'], args['--keeporiginal'])
 
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))
