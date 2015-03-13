@@ -45,7 +45,12 @@ import tempfile
 import subprocess
 
 
-VERSION="0.2" # MAJOR.MINOR.PATCH | http://semver.org
+VERSION="0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
+
+markupTypes = {
+	'/*': ('table','toc','titlepage','poetry','appendix'),
+	'/#': ('blockquote','hangingindent'),
+}
 
 
 # Limited check for syntax errors in dp markup of input file
@@ -155,7 +160,8 @@ def validateDpMarkup( inBuf ):
 
 		# Extra text after out-of-line formatting markup
 		# ex. /*[**new stanza?]
-		if re.match(r"^(\/\*|\/\#|\*\/|\#\/).+", inBuf[lineNum]):
+		m = re.match(r"^(\/\*|\/\#|\*\/|\#\/)(.+)", inBuf[lineNum])
+		if m and m.group(2) not in markupTypes['/*'] and m.group(2) not in markupTypes['/#']:
 			errorCount += 1
 			logging.error("Line {}: Extra text after out-of-line formatting markup\n       {}".format(lineNum+1,inBuf[lineNum]))
 
@@ -528,7 +534,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 	return outBuf;
 
 
-def processOOLFMarkup( inBuf, detectMarkup, keepOriginal ):
+def detectMarkup( inBuf ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
@@ -551,17 +557,70 @@ def processOOLFMarkup( inBuf, detectMarkup, keepOriginal ):
 			markupType = m.group(1)
 
 			# Copy nowrap block
+			#TODO handle nested case where /* /* */ */
 			lineNum += 1
 			while lineNum < len(inBuf) and not re.match(r"\*\/", inBuf[lineNum]):
 				inBlock.append(inBuf[lineNum])
 				lineNum += 1
 			lineNum += 1
 
-			# Use autodetect if /* isnt marked
-			if detectMarkup and not markupType:
+			# autodetect markup
+			if not markupType:
 				markupType = detectNoWrapMarkupType(inBlock)
 
 			if markupType:
+				markupCount[markupType] += 1
+
+			outBuf.append("/*{}".format(markupType))
+			for line in inBlock:
+				outBuf.append(line)
+			outBuf.append("*/")
+
+		# Process rewrap /# #/ markup
+		#	blockquote
+		#	hangingindent
+		elif re.match(r"^\/\#(.*)", inBuf[lineNum]):
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+
+		else:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+
+	return outBuf
+
+
+def processOOLFMarkup( inBuf, keepOriginal ):
+	outBuf = []
+	lineNum = 0
+	rewrapLevel = 0
+	markupCount = {'table':0, 'toc':0, 'titlepage':0, 'poetry':0, 'appendix':0 }
+
+	while lineNum < len(inBuf):
+
+		# Process no-wrap /* */ markup
+		#	table
+		#	toc
+		#	titlepage
+		#	poetry
+		#	appendix
+		m = re.match(r"^\/\*(.*)", inBuf[lineNum])
+		if m:
+			inBlock = []
+			outBlock = []
+			foundChapterHeadingEnd = False;
+			consecutiveEmptyLineCount = 0;
+			markupType = m.group(1)
+
+			# Copy nowrap block
+			#TODO handle nested case where /* /* */ */
+			lineNum += 1
+			while lineNum < len(inBuf) and not re.match(r"\*\/", inBuf[lineNum]):
+				inBlock.append(inBuf[lineNum])
+				lineNum += 1
+			lineNum += 1
+
+			if markupType is not None:
 				logging.info("\n----- Found {}, line {}".format(markupType,lineNum))
 
 				if markupType == "table":
@@ -622,27 +681,36 @@ def processOOLFMarkup( inBuf, detectMarkup, keepOriginal ):
 	return outBuf;
 
 
+def processTitlePage( inBuf, keepOriginal ):
+	outBuf = []
+	lineNum = 0
+
+	outBuf.append(".nf c")
+
+	while lineNum < len(inBuf):
+		# TODO
+		# H1 from first line until blank line
+		# <l> markup everything else
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	outBuf.append(".nf-")
+
+	return outBuf;
+
+
 def processToc( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
-	tocCount = 0
-	rewrapLevel = 0
 
 	while lineNum < len(inBuf):
-		# Detect when inside out-of-line formatting block /* */
-		if re.match(r"^\/\*", inBuf[lineNum]):
-			rewrapLevel += 1
-		elif re.match(r"^\*\/", inBuf[lineNum]):
-			rewrapLevel -= 1
-
 		s = r"(.+?) {6,}(\d+)"
 		r = r"#\1:Page_\2#\|#\2#"
 
 		if re.search(s,inBuf[lineNum]):
 			print("{}: {}".format(lineNum, inBuf[lineNum]))
 
-		if rewrapLevel > 0:
-			re.sub(s,r,inBuf[lineNum])
+		re.sub(s,r,inBuf[lineNum])
 
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
@@ -822,6 +890,10 @@ def detectNoWrapMarkupType( buf ):
 			  },
 			  "toc": {
 					   " {6,}\d+": 0,
+			  },
+			  "titlepage": {
+					   "": 0,
+					   #TODO.. close to top? is autodetect possible?
 			  }
 	}
 
@@ -1724,8 +1796,10 @@ def main():
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
+		if args['--detectmarkup']:
+			outBuf = detectMarkup(outBuf)
 		if doMarkup:
-			outBuf = processOOLFMarkup(outBuf, args['--detectmarkup'], args['--keeporiginal'])
+			outBuf = processOOLFMarkup(outBuf, args['--keeporiginal'])
 
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))
