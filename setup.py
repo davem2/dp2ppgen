@@ -3,7 +3,7 @@ setup(
   name          = 'dp2ppgen',
   author        = 'David Maranhao',
   author_email  = 'david.maranhao@gmail.com',
-  license       = 'GPL3',
+  license       = 'MIT',
   description   = 'Translates pgdp.org formatted text files into ppgen syntax.',
   packages      = ['dp2ppgen'], # this must be the same as the name above
   version       = '0.2',
@@ -18,6 +18,16 @@ setup(
   install_requires = [
     'docopt >= 0.6.1',
     'docutils >= 0.12',
-  ]
+  ],
+  classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Text Processing",
+    "Topic :: Text Processing :: Markup",
+  ],
 )
 
