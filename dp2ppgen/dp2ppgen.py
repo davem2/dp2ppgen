@@ -618,10 +618,12 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 
 			# Copy nowrap block
 			#TODO handle nested case where /* /* */ */
+			nowrapStartLine = inBuf[lineNum]
 			lineNum += 1
 			while lineNum < len(inBuf) and not re.match(r"\*\/", inBuf[lineNum]):
 				inBlock.append(inBuf[lineNum])
 				lineNum += 1
+			nowrapEndLine = inBuf[lineNum]
 			lineNum += 1
 
 			if markupType:
@@ -642,6 +644,12 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 
 				for line in outBlock:
 					outBuf.append(line)
+			else:
+				outBuf.append(nowrapStartLine)
+				for line in inBlock:
+					outBuf.append(line)
+				outBuf.append(nowrapEndLine)
+
 
 		# Process rewrap /# #/ markup
 		#	blockquote
@@ -707,6 +715,8 @@ def processToc( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 
+	outBuf.append(".ta lr")
+
 	while lineNum < len(inBuf):
 		s = r"(.+?) {6,}(\d+)"
 		r = r"#\1:Page_\2#\|#\2#"
@@ -714,10 +724,11 @@ def processToc( inBuf, keepOriginal ):
 		if re.search(s,inBuf[lineNum]):
 			print("{}: {}".format(lineNum, inBuf[lineNum]))
 
-		re.sub(s,r,inBuf[lineNum])
-
+		inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
+
+	outBuf.append(".ta-")
 
 	return outBuf;
 
@@ -786,7 +797,7 @@ def rstTableToHTML( inBuf ):
 		if inTable:
 			outBuf.append(line)
 
-	# Compact rows, strip colgroup, tbody
+	# Compact rows, strip colgroup
 	inBuf = outBuf[:]
 	outBuf = []
 	inTr = False
