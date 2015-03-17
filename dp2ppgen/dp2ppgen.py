@@ -1093,8 +1093,6 @@ def parseFootnotes( inBuf ):
 					bracketLevel -= 1
 
 				if bracketLevel == 0 and re.search(r"][\*]*$", inBuf[lineNum]):
-					#if "on men" in ' '.join(inBuf[lineNum-3:lineNum+3]):
-						#print("{}".format(inBuf[lineNum]))
 					done = True
 				else:
 					lineNum += 1
