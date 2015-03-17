@@ -421,8 +421,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 					# Remove empty lines from end of chapter heading block
 					while isLineBlank(inBlock[-1]):
 						inBlock = inBlock[:-1]
-					# Rewind parser (to handle back to back chapter headings)
-					lineNum = findPreviousNonEmptyLine(inBuf, lineNum) + 1
+					# Set consecutiveEmptyLineCount to account for blank line removed (to handle back to back chapter headings)
+					consecutiveEmptyLineCount = 1
 				else:
 					inBlock.append(inBuf[lineNum])
 					lineNum += 1
@@ -457,6 +457,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBlock.append("")
 				for line in inBlock:
 					outBlock.append(line)
+				outBlock.append("")
 				outBlock.append(".ig- // *** END *****************************************************")
 
 			# Write out chapter heading block
