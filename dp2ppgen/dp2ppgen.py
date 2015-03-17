@@ -427,8 +427,9 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 					inBlock.append(inBuf[lineNum])
 					lineNum += 1
 
-			# Remove the four consecutive blank lines that preceeds chapter heading
-			outBuf = outBuf[:-4]
+			# Remove the consecutive blank lines that preceeds chapter heading
+			while isLineBlank(outBuf[-1]):
+				outBuf = outBuf[:-1]
 
 			# .sp 4
 			# .h2 id=chapter_vi
@@ -483,43 +484,49 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 					inBlock.append(inBuf[lineNum])
 					lineNum += 1
 
-			# Remove two consecutive blank lines that preceed section heading
-			outBuf = outBuf[:-2]
-
-			# .sp 2
-			# .h3 id=section_i
-			# Section I.
-			# .sp 1
-			sectionID = formatAsID(inBlock[0])
-			sectionLine = ""
-			for line in inBlock:
-				sectionLine += line
-				sectionLine += "|"
-			sectionLine = sectionLine[:-1]
-
-			if keepOriginal:
-				outBlock.append("// ******** DP2PPGEN GENERATED ****************************************")
-			outBlock.append(".sp 2")
-			outBlock.append(".h3 id={}".format(sectionID))
-			outBlock.append(sectionLine)
-			outBlock.append(".sp 1")
-
-			if keepOriginal:
-				# Write out original as a comment
-				outBlock.append(".ig  // *** DP2PPGEN BEGIN ORIGINAL ***********************************")
-				outBlock.append("")
-				outBlock.append("")
+			# Check if this is a heading
+			#TODO maxlinecount should be configurable
+			if len(inBlock) > 2:
+				logging.debug("Disregarding section heading; too many lines: {}".format(inBlock[0]))
 				for line in inBlock:
-					outBlock.append(line)
-				outBlock.append(".ig- // *** END *****************************************************")
+					outBuf.append(line)
+			else:
+				# Remove one of the two consecutive blank lines that preceed section heading
+				outBuf = outBuf[:-1]
 
-			# Write out chapter heading block
-			for line in outBlock:
-				outBuf.append(line)
+				# .sp 2
+				# .h3 id=section_i
+				# Section I.
+				# .sp 1
+				sectionID = formatAsID(inBlock[0])
+				sectionLine = ""
+				for line in inBlock:
+					sectionLine += line
+					sectionLine += "|"
+				sectionLine = sectionLine[:-1]
 
-			# Log action
-			logging.info("-- .h3 {}".format(sectionID))
-			sectionCount += 1
+				if keepOriginal:
+					outBlock.append("// ******** DP2PPGEN GENERATED ****************************************")
+				outBlock.append(".sp 2")
+				outBlock.append(".h3 id={}".format(sectionID))
+				outBlock.append(sectionLine)
+				outBlock.append(".sp 1")
+
+				if keepOriginal:
+					# Write out original as a comment
+					outBlock.append(".ig  // *** DP2PPGEN BEGIN ORIGINAL ***********************************")
+					outBlock.append("")
+					for line in inBlock:
+						outBlock.append(line)
+					outBlock.append(".ig- // *** END *****************************************************")
+
+				# Write out chapter heading block
+				for line in outBlock:
+					outBuf.append(line)
+
+				# Log action
+				logging.info("---- .h3 {}".format(sectionID))
+				sectionCount += 1
 
 		else:
 			if isLineBlank(inBuf[lineNum]):
