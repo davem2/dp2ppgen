@@ -1060,7 +1060,7 @@ def parseFootnotes( inBuf ):
 
 	footnotes = []
 	lineNum = 0
-	currentScanPage = 0;
+	currentScanPage = 0
 
 	logging.info("--- Parsing footnotes")
 	while lineNum < len(inBuf):
@@ -1080,9 +1080,25 @@ def parseFootnotes( inBuf ):
 			# Copy footnote block
 			fnBlock = []
 			fnBlock.append(inBuf[lineNum])
-			while lineNum < len(inBuf)-1 and not re.search(r"][\*]*$", inBuf[lineNum]):
-				lineNum += 1
-				fnBlock.append(inBuf[lineNum])
+
+			bracketLevel = 0
+			done = False
+			while lineNum < len(inBuf)-1 and not done:
+				# Detect when [ ] level so that nested [] are handled properly
+				m = re.findall("\[", inBuf[lineNum])
+				for b in m:
+					bracketLevel += 1
+				m = re.findall("\]", inBuf[lineNum])
+				for b in m:
+					bracketLevel -= 1
+
+				if bracketLevel == 0 and re.search(r"][\*]*$", inBuf[lineNum]):
+					#if "on men" in ' '.join(inBuf[lineNum-3:lineNum+3]):
+						#print("{}".format(inBuf[lineNum]))
+					done = True
+				else:
+					lineNum += 1
+					fnBlock.append(inBuf[lineNum])
 
 			endLine = lineNum
 
@@ -1109,8 +1125,8 @@ def parseFootnotes( inBuf ):
 				line = re.sub(r"^\*\[Footnote: ?", "", line)
 				line = re.sub(r"^\[Footnote [A-Z]: ?", "", line)
 				line = re.sub(r"^\[Footnote \d+: ?", "", line)
-				line = re.sub(r"][\*]*$", "", line)
 				fnText.append(line)
+			fnText[-1] = re.sub(r"][\*]*$", "", fnText[-1])
 
 			# Add entry
 			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'fnID':fnID, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'needsJoining':needsJoining, 'scanPageNum':currentScanPage})
@@ -1118,8 +1134,6 @@ def parseFootnotes( inBuf ):
 		lineNum += 1
 
 	logging.info("--- Parsed {} footnotes".format(len(footnotes)))
-
-#	print(footnotes)
 
 	# Join footnotes marked above during parsing
 	joinCount = 0
