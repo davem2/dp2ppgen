@@ -58,7 +58,7 @@ def validateDpMarkup( inBuf ):
 
 	# TODO, someone must have written a more thorough version of this already.. use that instead
 
-	logging.info("-- Checking input file for markup errors")
+	logging.info("Checking input file for markup errors")
 
 	inBuf = removeTrailingSpaces(inBuf)
 
@@ -185,7 +185,7 @@ def validateDpMarkup( inBuf ):
 			logging.debug(formattingStack)
 
 	if errorCount > 0:
-		logging.info("-- Found {} markup errors".format(errorCount) )
+		logging.info("Found {} markup errors".format(errorCount) )
 
 	return errorCount
 
@@ -214,7 +214,7 @@ def processBlankPages( inBuf, keepOriginal ):
 	lineNum = 0
 	count = 0
 
-	logging.info("-- Processing blank pages")
+	logging.info("Processing blank pages")
 
 	while lineNum < len(inBuf):
 		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
@@ -230,7 +230,7 @@ def processBlankPages( inBuf, keepOriginal ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
-	logging.info("-- Processed {} blank pages".format(count))
+	logging.info("Processed {} blank pages".format(count))
 
 	return outBuf;
 
@@ -242,7 +242,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 	lineNum = 0
 	count = 0
 
-	logging.info("-- Processing page numbers")
+	logging.info("Processing page numbers")
 
 	while lineNum < len(inBuf):
 		m = re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", inBuf[lineNum])
@@ -260,7 +260,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
-	logging.info("-- Processed {} page numbers".format(count))
+	logging.info("Processed {} page numbers".format(count))
 
 	return outBuf;
 
@@ -368,11 +368,11 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 	sectionCount = 0
 
 	if doChapterHeadings and doSectionHeadings:
-		logging.info("-- Processing chapter and section headings")
+		logging.info("Processing chapter and section headings")
 	if doChapterHeadings:
-		logging.info("-- Processing chapter headings")
+		logging.info("Processing chapter headings")
 	if doSectionHeadings:
-		logging.info("-- Processing section headings")
+		logging.info("Processing section headings")
 
 	while lineNum < len(inBuf):
 		# Chapter heading blocks are in the form:
@@ -464,7 +464,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBuf.append(line)
 
 			# Log action
-			logging.info("--- .h2 {}".format(chapterLine))
+			logging.info("-- .h2 {}".format(chapterLine))
 			chapterCount += 1
 
 		# Section heading
@@ -517,7 +517,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				outBuf.append(line)
 
 			# Log action
-			logging.info("--- .h3 {}".format(sectionID))
+			logging.info("-- .h3 {}".format(sectionID))
 			sectionCount += 1
 
 		else:
@@ -530,10 +530,10 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			lineNum += 1
 
 	if doChapterHeadings:
-		logging.info("-- Processed {} chapters".format(chapterCount))
+		logging.info("Processed {} chapters".format(chapterCount))
 
 	if doSectionHeadings:
-		logging.info("-- Processed {} sections".format(sectionCount))
+		logging.info("Processed {} sections".format(sectionCount))
 
 	return outBuf;
 
@@ -1006,7 +1006,7 @@ def processSidenotes( inBuf, keepOriginal ):
 	lineNum = 0
 	outBuf = []
 
-	logging.info("--- Processing sidenotes")
+	logging.info("Processing sidenotes")
 	while lineNum < len(inBuf):
 
 		# Search for sidenotes
@@ -1043,7 +1043,7 @@ def processSidenotes( inBuf, keepOriginal ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
-	logging.info("--- Processed {} sidenotes".format(sidenotesCount))
+	logging.info("Processed {} sidenotes".format(sidenotesCount))
 
 	return outBuf;
 
@@ -1062,7 +1062,7 @@ def parseFootnotes( inBuf ):
 	lineNum = 0
 	currentScanPage = 0
 
-	logging.info("--- Parsing footnotes")
+	logging.info("-- Parsing footnotes")
 	while lineNum < len(inBuf):
 		foundFootnote = False
 
@@ -1131,7 +1131,7 @@ def parseFootnotes( inBuf ):
 
 		lineNum += 1
 
-	logging.info("--- Parsed {} footnotes".format(len(footnotes)))
+	logging.info("-- Parsed {} footnotes".format(len(footnotes)))
 
 	# Join footnotes marked above during parsing
 	joinCount = 0
@@ -1139,7 +1139,7 @@ def parseFootnotes( inBuf ):
 	while i < len(footnotes):
 		if footnotes[i]['needsJoining']:
 			if joinCount == 0:
-				logging.info("--- Joining footnotes")
+				logging.info("-- Joining footnotes")
 
 			# debug message
 			logging.debug("Merging footnote [{}]".format(i+1))
@@ -1168,8 +1168,8 @@ def parseFootnotes( inBuf ):
 		i += 1
 
 	if joinCount > 0:
-		logging.info("--- Merged {} broken footnote(s)".format(joinCount))
-		logging.info("--- {} total footnotes after joining".format(len(footnotes)))
+		logging.info("-- Merged {} broken footnote(s)".format(joinCount))
+		logging.info("-- {} total footnotes after joining".format(len(footnotes)))
 
 	return footnotes;
 
@@ -1185,7 +1185,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 	currentScanPageLabel = ""
 	fnIDs = []
 #	r = []
-	logging.info("--- Processing footnote anchors")
+	logging.info("-- Processing footnote anchors")
 	while lineNum < len(outBuf):
 
 		# Keep track of active scanpage
@@ -1193,7 +1193,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 			anchorsThisPage = []
 			currentScanPage = parseScanPage(inBuf[lineNum])
 			currentScanPageLabel = re.sub(r"\/\/ ","", outBuf[lineNum])
-#			logging.debug("--- Processing page "+currentScanPage)
+#			logging.debug("-- Processing page "+currentScanPage)
 
 			# Make list of footnotes found on this page
 			fnIDs = []
@@ -1250,7 +1250,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 
 		lineNum += 1
 
-	logging.info("--- Processed {} footnote anchors".format(fnAnchorCount))
+	logging.info("-- Processed {} footnote anchors".format(fnAnchorCount))
 
 	return outBuf, fnAnchorCount
 
@@ -1258,11 +1258,11 @@ def processFootnoteAnchors( inBuf, footnotes ):
 def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	outBuf = []
 
-	logging.info("-- Processing footnotes")
+	logging.info("Processing footnotes")
 
 	# strip empty lines before [Footnotes], *[Footnote
 	lineNum = 0
-	logging.info("--- Removing blank lines before [Footnotes]")
+	logging.info("-- Removing blank lines before [Footnotes]")
 	while lineNum < len(inBuf):
 		if re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]):
 			# delete previous blank line(s)
@@ -1288,6 +1288,8 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	if len(footnotes) > 0:
 		outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination)
 
+	logging.info("Processed {} footnotes".format(len(footnotes)))
+
 	return outBuf
 
 
@@ -1297,7 +1299,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 	outBuf = inBuf
 
 	if footnoteDestination == "bookend":
-		logging.info("--- Adding ppgen style footnotes to end of book")
+		logging.info("-- Adding ppgen style footnotes to end of book")
 		fnMarkup = []
 
 		fnMarkup.append(".sp 4")
@@ -1321,7 +1323,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		outBuf.extend(fnMarkup)
 
 	elif footnoteDestination == "chapterend":
-		logging.info("--- Adding ppgen style footnotes to end of chapters")
+		logging.info("-- Adding ppgen style footnotes to end of chapters")
 		curChapterEnd = footnotes[-1]['chapterEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
@@ -1346,7 +1348,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		outBuf.insert(curChapterEnd, ".fm")
 
 	elif footnoteDestination == "paragraphend":
-		logging.info("--- Adding ppgen style footnotes to end of paragraphs")
+		logging.info("-- Adding ppgen style footnotes to end of paragraphs")
 		curParagraphEnd = footnotes[-1]['paragraphEnd']
 		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
@@ -1377,7 +1379,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 def joinSpannedFormatting( inBuf, keepOriginal ):
 	outBuf = []
 
-	logging.info("-- Joining spanned out-of-line formatting markup")
+	logging.info("Joining spanned out-of-line formatting markup")
 
 	# Find:
 	# 1: */
@@ -1422,14 +1424,14 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
-	logging.info("-- Joined {} instances of spanned out-of-line formatting markup".format(joinCount))
+	logging.info("Joined {} instances of spanned out-of-line formatting markup".format(joinCount))
 	return outBuf
 
 
 def joinSpannedHyphenations( inBuf, keepOriginal ):
 	outBuf = []
 
-	logging.info("-- Joining spanned hyphenations")
+	logging.info("Joining spanned hyphenations")
 
 	# Find:
 	# 1: the last word on this line is cont-*
@@ -1463,7 +1465,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
 
-	logging.info("-- Joined {} instances of spanned hyphenations".format(joinCount))
+	logging.info("Joined {} instances of spanned hyphenations".format(joinCount))
 	return outBuf
 
 
@@ -1482,7 +1484,7 @@ def convertUTF8( inBuf ):
 	outBuf = []
 	lineCount = 0
 
-	logging.info("-- Converting characters to UTF-8")
+	logging.info("Converting characters to UTF-8")
 
 	for i, line in enumerate(inBuf):
 		originalLine = line
@@ -1507,7 +1509,7 @@ def convertUTF8( inBuf ):
 
 		# Fractions?
 
-	logging.info("-- Finished converting characters on {} lines to UTF-8".format(lineCount))
+	logging.info("Finished converting characters on {} lines to UTF-8".format(lineCount))
 	return outBuf
 
 
