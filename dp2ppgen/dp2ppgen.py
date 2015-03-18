@@ -264,19 +264,29 @@ def processPageNumbers( inBuf, keepOriginal ):
 
 	return outBuf;
 
+def getDpMarkupBlock( buf, startLine ):
+	#TODO return line(s) containing /* */ /# #/ [] block
+	return
 
 def isLineBlank( line ):
 	return re.match(r"^\s*$", line)
 
-
 def isLineComment( line ):
 	return re.match(r"^\/\/*$", line)
-
 
 def isLinePageBreak( line ):
 	return (parseScanPage(line) != None)
 
+def isDotCommand( line ):
+	return re.match(r"\.[a-z0-9]{2} ", line)
+
 def isLineOriginalText( line ):
+	# Non-original lines are:
+	# ppgen dot commands
+	# ppgen comment
+	# dp proofing markup
+	#   dp out of line formatting markup
+	#   dp [] style markup (Illustration, footnote, sidenote..)
 	return not re.match(r"(\.[a-z0-9]{2} |[*#]\/|\/[*#]|\*?\[\w+|\/\/)", line) and not isLinePageBreak(line)
 
 
@@ -727,7 +737,7 @@ def processToc( inBuf, keepOriginal ):
 
 	while lineNum < len(inBuf):
 		s = r"(.+?) {6,}(\d+)"
-		r = r"#\1:Page_\2#\|#\2#"
+		r = r"#\1:Page_\2#|#\2#"
 
 		if re.search(s,inBuf[lineNum]):
 			print("{}: {}".format(lineNum, inBuf[lineNum]))
@@ -1435,6 +1445,16 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 	logging.info("Joined {} instances of spanned out-of-line formatting markup".format(joinCount))
 	return outBuf
 
+def getLinesUntil( inBuf, startLineNum, endRegex, direction=1 ):
+	outBlock = []
+	lineNum = startLineNum
+
+	while lineNum >= 0 and lineNum < len(inBuf) and not re.search(endRegex,inBuf[lineNum]):
+		outBlock.append(inBuf[lineNum])
+		lineNum += 1
+
+	return outBlock
+
 
 def joinSpannedHyphenations( inBuf, keepOriginal ):
 	outBuf = []
@@ -1446,29 +1466,84 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	# 2: // 010.png
 	# 3: *-inued. on the line below
 
+	# 4: the last word on this line is emdash--*
+	# 5: // 010.png
+	# 6: This is the line below
+
+	# 7: the first word on the next page is emdash
+	# 8: // 010.png
+	# 9: *--This is the line below
+
 	# Replace with:
 	# 1: the last word on this line is cont-**inued.
 	# 2: // 010.png
 	# 3: on the line below
 
+	# 4: the last word on this line is emdash--This
+	# 5: // 010.png
+	# 6: is the line below
+
+	# 7: the first word on the next page is emdash--This
+	# 8: // 010.png
+	# 9: is the line below
+
 	lineNum = 0
 	joinCount = 0
-	while lineNum < len(inBuf):
-		joinWasMade = False
+	while lineNum < len(inBuf)-1:
+		needsJoin = False
+		joinToLineNum = 0
+		joinFromLineNum = 0
 
-		if re.search(r"\-\*$", inBuf[lineNum]) and isLinePageBreak(inBuf[lineNum+1]):
-			ln = findNextLineOfText(inBuf,lineNum+1)
-			if inBuf[ln][0] == '*':
-				# Remove first word from last line (secondPart) and join append it to first line
-#				secondPart = (inBuf[ln].split(' ',1)[0])[1:] # strip first word with leading * removed
-				secondPart = inBuf[ln].split(' ',1)[0]
-				inBuf[ln] = inBuf[ln].split(' ',1)[1]
-				inBuf[lineNum] = inBuf[lineNum] + secondPart
-				logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(lineNum+1,inBuf[lineNum][-30:]))
-#				logging.info("Line {}: Resolved hyphenation\n      '{}'".format(lineNum+1,inBuf[lineNum]))
-				joinCount += 1
+		# spanned hyphenation
+		#TODO skip multiline [] markup between spanned hyphenation
+		if re.search(r"(?<![-—])-\*?$",inBuf[lineNum]) and isLinePageBreak(inBuf[lineNum+1]):
+			if inBuf[lineNum][-1] != "*":
+				logging.warning("Line {}: Unmarked end of line hyphenation\n       {}".format(lineNum,inBuf[lineNum]))
 			else:
-				logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1,inBuf[lineNum],inBuf[ln]))
+				logging.debug("spanned hyphenation found: {}".format(inBuf[lineNum]))
+				joinToLineNum = lineNum
+				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
+				if inBuf[joinFromLineNum][0] != '*':
+					logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum,inBuf[joinToLineNum],inBuf[joinFromLineNum]))
+				else:
+					needsJoin = True
+
+		# em-dash / long dash end of last line
+		if re.search(r"(?<![-—])(--|—)\*?$",inBuf[lineNum]) or re.search(r"(?<![-—])(----|——)\*?$",inBuf[lineNum]):
+			if inBuf[lineNum][-1] != "*":
+				logging.warning("Line {}: Unclothed end of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
+			else:
+				logging.debug("end of line emdash found: {}".format(inBuf[lineNum]))
+				joinToLineNum = lineNum
+				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
+				needsJoin = True
+
+		# em-dash / long dash start of first line
+		if re.match(r"\*?(--|—)(?![-—])",inBuf[lineNum]) or re.match(r"\*?(----|——)(?![-—])",inBuf[lineNum]):
+			if inBuf[lineNum][0] != "*":
+				logging.warning("Line {}: Unclothed start of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
+			else:
+				logging.debug("start of line emdash found: {}".format(inBuf[lineNum]))
+				joinToLineNum = findPreviousLineOfText(inBuf,lineNum-1)
+				joinFromLineNum = lineNum
+				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(joinToLineNum,joinFromLineNum))
+				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(inBuf[joinToLineNum],inBuf[joinFromLineNum]))
+				needsJoin = True
+
+		if needsJoin:
+			# Remove first word from fromline
+			fromWord = inBuf[joinFromLineNum].split(' ',1)[0]
+			inBuf[joinFromLineNum] = inBuf[joinFromLineNum].split(' ',1)[1]
+			# Join append it to toline
+			if joinToLineNum == lineNum:
+				inBuf[joinToLineNum] = inBuf[joinToLineNum] + fromWord
+			else:
+				dl = -1*(joinFromLineNum-joinToLineNum)
+				outBuf[dl] = outBuf[dl] + fromWord
+
+			logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(joinToLineNum,inBuf[joinToLineNum][-30:]))
+#			logging.info("Line {}: Resolved hyphenation\n      '{}'".format(lineNum+1,inBuf[lineNum]))
+			joinCount += 1
 
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
