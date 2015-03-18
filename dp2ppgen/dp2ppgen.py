@@ -69,12 +69,12 @@ def validateDpMarkup( inBuf ):
 
 
 		# Detect unbalanced out-of-line formatting markup /# #/ /* */
-		m = re.match(r"^\/(\*|\#)", inBuf[lineNum])
+		m = re.match(r"\/(\*|\#)", inBuf[lineNum])
 		if m:
 			d = ({'ln':lineNum+1,'v':"/{}".format(m.group(1))})
 			formattingStack.append(d)
 
-		m = re.match(r"^(\*|\#)\/", inBuf[lineNum])
+		m = re.match(r"(\*|\#)\/", inBuf[lineNum])
 		if m:
 			v = m.group(1)
 			if len(formattingStack) == 0 or formattingStack[-1]['v'] != "/{}".format(v):
@@ -160,7 +160,7 @@ def validateDpMarkup( inBuf ):
 
 		# Extra text after out-of-line formatting markup
 		# ex. /*[**new stanza?]
-		m = re.match(r"^(\/\*|\/\#|\*\/|\#\/)(.+)", inBuf[lineNum])
+		m = re.match(r"(\/\*|\/\#|\*\/|\#\/)(.+)", inBuf[lineNum])
 		if m and m.group(2) not in markupTypes['/*'] and m.group(2) not in markupTypes['/#']:
 			errorCount += 1
 			logging.error("Line {}: Extra text after out-of-line formatting markup\n       {}".format(lineNum+1,inBuf[lineNum]))
@@ -217,7 +217,7 @@ def processBlankPages( inBuf, keepOriginal ):
 	logging.info("Processing blank pages")
 
 	while lineNum < len(inBuf):
-		m = re.match(r"^\[Blank Page]", inBuf[lineNum])
+		m = re.match(r"\[Blank Page]", inBuf[lineNum])
 		if m:
 			if keepOriginal:
 				outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
@@ -269,10 +269,10 @@ def getDpMarkupBlock( buf, startLine ):
 	return
 
 def isLineBlank( line ):
-	return re.match(r"^\s*$", line)
+	return re.match(r"\s*$", line)
 
 def isLineComment( line ):
-	return re.match(r"^\/\/*$", line)
+	return re.match(r"\/\/*$", line)
 
 def isLinePageBreak( line ):
 	return (parseScanPage(line) != None)
@@ -401,9 +401,9 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			# (1 empty line)
 
 		# Detect when inside out-of-line formatting block /# #/ /* */
-		if re.match(r"^\/\*", inBuf[lineNum]) or re.match(r"^\/\#", inBuf[lineNum]):
+		if re.match(r"\/\*", inBuf[lineNum]) or re.match(r"\/\#", inBuf[lineNum]):
 			rewrapLevel += 1
-		elif re.match(r"^\*\/", inBuf[lineNum]) or re.match(r"^\#\/", inBuf[lineNum]):
+		elif re.match(r"\*\/", inBuf[lineNum]) or re.match(r"\#\/", inBuf[lineNum]):
 			rewrapLevel -= 1
 
 		# Chapter heading
@@ -570,7 +570,7 @@ def detectMarkup( inBuf ):
 		#	titlepage
 		#	poetry
 		#	appendix
-		m = re.match(r"^\/\*(.*)", inBuf[lineNum])
+		m = re.match(r"\/\*(.*)", inBuf[lineNum])
 		if m:
 			inBlock = []
 			outBlock = []
@@ -601,7 +601,7 @@ def detectMarkup( inBuf ):
 		# Process rewrap /# #/ markup
 		#	blockquote
 		#	hangingindent
-		elif re.match(r"^\/\#(.*)", inBuf[lineNum]):
+		elif re.match(r"\/\#(.*)", inBuf[lineNum]):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
@@ -626,7 +626,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 		#	titlepage
 		#	poetry
 		#	appendix
-		m = re.match(r"^\/\*(.*)", inBuf[lineNum])
+		m = re.match(r"\/\*(.*)", inBuf[lineNum])
 		if m:
 			inBlock = []
 			outBlock = []
@@ -672,7 +672,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 		# Process rewrap /# #/ markup
 		#	blockquote
 		#	hangingindent
-		elif re.match(r"^\/\#(.*)", inBuf[lineNum]):
+		elif re.match(r"\/\#(.*)", inBuf[lineNum]):
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
@@ -1145,7 +1145,7 @@ def parseFootnotes( inBuf ):
 			chapterEnd = -1 # This must be done during footnote anchor processing as chapter end is relative to anchor and not [Footnote] markup
 
 			# Extract footnote ID
-			m = re.search(r"^\[Footnote (\w{1,2}):", fnBlock[0])
+			m = re.match(r"\[Footnote (\w{1,2}):", fnBlock[0])
 			if m:
 				fnID = m.group(1);
 
@@ -1427,7 +1427,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 	while lineNum < len(inBuf):
 		joinWasMade = False
 
-		m = re.match(r"^(\*\/|\#\/)$", inBuf[lineNum])
+		m = re.match(r"(\*\/|\#\/)$", inBuf[lineNum])
 		if m:
 			outBlock = []
 			ln = lineNum + 1
@@ -1680,9 +1680,9 @@ def fixup( inBuf, keepOriginal ):
 #	rewrapLevel = 0
 #	for line in inBuf:
 #		# Detect when inside out-of-line formatting block /# #/ /* */
-#		if re.match(r"^\/[\*\#]", inBuf[lineNum]):
+#		if re.match(r"\/[\*\#]", inBuf[lineNum]):
 #			rewrapLevel += 1
-#		elif re.match(r"^[\*\#]\/", inBuf[lineNum]):
+#		elif re.match(r"[\*\#]\/", inBuf[lineNum]):
 #			rewrapLevel -= 1
 #
 #		if rewrapLevel == 0:
