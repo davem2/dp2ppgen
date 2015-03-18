@@ -1009,15 +1009,29 @@ def stripFootnoteMarkup( inBuf ):
 
 	while lineNum < len(inBuf):
 		# copy inBuf to outBuf throwing away all footnote markup [Footnote...]
-		if re.match(r"[\*]*\[Footnote", inBuf[lineNum]):
-			while lineNum < len(inBuf) and not re.search(r"][\*]*$", inBuf[lineNum]):
-				lineNum += 1
-			lineNum += 1
+		if re.match(r"\*?\[Footnote", inBuf[lineNum]):
+			bracketLevel = 0
+			done = False
+			while lineNum < len(inBuf)-1 and not done:
+				# Detect when [ ] level so that nested [] are handled properly
+				m = re.findall("\[", inBuf[lineNum])
+				for b in m:
+					bracketLevel += 1
+				m = re.findall("\]", inBuf[lineNum])
+				for b in m:
+					bracketLevel -= 1
+
+				if bracketLevel == 0 and re.search(r"][\*]*$", inBuf[lineNum]):
+					done = True
+					lineNum += 1
+				else:
+					lineNum += 1
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
 
 	return outBuf
+
 
 def processSidenotes( inBuf, keepOriginal ):
 	sidenotesCount = 0
@@ -1282,7 +1296,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	lineNum = 0
 	logging.info("-- Removing blank lines before [Footnotes]")
 	while lineNum < len(inBuf):
-		if re.match(r"\[Footnote", inBuf[lineNum]) or re.match(r"\*\[Footnote", inBuf[lineNum]):
+		if re.match(r"\*?\[Footnote", inBuf[lineNum]):
 			# delete previous blank line(s)
 			while isLineBlank(outBuf[-1]):
 				del outBuf[-1]
@@ -1391,7 +1405,6 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		outBuf.insert(curParagraphEnd, ".fm")
 
 	return outBuf
-
 
 
 def joinSpannedFormatting( inBuf, keepOriginal ):
