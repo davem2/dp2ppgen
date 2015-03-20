@@ -6,7 +6,8 @@
 
 - Need to worry about encoding?
 
-- Add "aggresiveness" parameter for heading detection option
+- Add "aggresiveness" parameter for heading detection option.
+    Simple max line count?
 
 - Add option to squash paragraphs to one line .. not sure this would be useful?
 
@@ -99,3 +100,13 @@
 - Add --autodetect for tables/toc, maybe remove --tables and --toc and just process marked blocks by default, or use generic --processoutoflineformatting
 
 - Add toc .sr parameter for user supplied toc search/re
+
+- Add fix for nested [] issue inside [Sidenote (already fixed in [Footnote)
+
+- Update to new ppgen footnote capabilities
+
+- Fix log messages for -ce
+INFO: Processing chapter and section headings
+INFO: Processing chapter headings
+INFO: Processing section headings
+

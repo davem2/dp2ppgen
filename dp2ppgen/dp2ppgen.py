@@ -15,24 +15,26 @@ Examples:
   dp2ppgen book.txt book-src.txt
 
 Options:
-  -c, --chapters       Convert chapter headings into ppgen style chapter headings.
-  -d, --dryrun         Run through conversions but do not write out result.
-  -e, --sections       Convert section headings into ppgen style section headings.
-  -f, --footnotes      Convert footnotes into ppgen format.
-  --fndest=<fndest>    Where to relocate footnotes (paragraphend, chapterend, bookend, inline).
-  --fixup              Perform guiguts style fixup operations.
-  --force              Ignore markup errors and force operation.
-  -j, --joinspanned    Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
-  -k, --keeporiginal   On any conversion keep original text as a comment.
-  -p, --pages          Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
-  -q, --quiet          Print less text.
-  -s, --sidenotes      Convert sidenotes into ppgen format.
-  --detectmarkup       Best guess what out of line markup /* */ /# #/ represent (table, toc, poetry, etc..)
-  -m, --markup         Convert out of line markup /* */ /# #/ into ppgen format.
-  -v, --verbose        Print more text.
-  -h, --help           Show help.
-  --utf8               Convert characters to UTF8
-  --version            Show version.
+  -c, --chapters        Convert chapter headings into ppgen style chapter headings.
+  -d, --dryrun          Run through conversions but do not write out result.
+  -e, --sections        Convert section headings into ppgen style section headings.
+  -f, --footnotes       Convert footnotes into ppgen format.
+  --fndest=<fndest>     Where to relocate footnotes (paragraphend, chapterend, bookend, inplace).
+  --lzdesth=<lzdesth>	Where to place footnote landing zones for HTML output
+  --lzdestt=<lzdestt>	Where to place footnote landing zones for text output
+  --fixup               Perform guiguts style fixup operations.
+  --force               Ignore markup errors and force operation.
+  -j, --joinspanned     Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
+  -k, --keeporiginal    On any conversion keep original text as a comment.
+  -p, --pages           Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
+  -q, --quiet           Print less text.
+  -s, --sidenotes       Convert sidenotes into ppgen format.
+  --detectmarkup        Best guess what out of line markup /* */ /# #/ represent (table, toc, poetry, etc..)
+  -m, --markup          Convert out of line markup /* */ /# #/ into ppgen format.
+  -v, --verbose         Print more text.
+  -h, --help            Show help.
+  --utf8                Convert characters to UTF8
+  --version             Show version.
 """
 
 from docopt import docopt
@@ -1287,7 +1289,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 	return outBuf, fnAnchorCount
 
 
-def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
+def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzDestt, lzDesth ):
 	outBuf = []
 
 	logging.info("Processing footnotes")
@@ -1308,8 +1310,9 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal ):
 	# parse footnotes into list of dictionaries
 	footnotes = parseFootnotes(outBuf)
 
-	# strip [Footnote markup
-	outBuf = stripFootnoteMarkup(outBuf)
+	if footnoteDestination != "inplace":
+		# strip [Footnote markup
+		outBuf = stripFootnoteMarkup(outBuf)
 
 	# find and markup footnote anchors
 	outBuf, fnAnchorCount = processFootnoteAnchors(outBuf, footnotes)
@@ -1332,8 +1335,8 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 
 	if footnoteDestination == "bookend":
 		logging.info("-- Adding ppgen style footnotes to end of book")
-		fnMarkup = []
 
+		fnMarkup = []
 		fnMarkup.append(".sp 4")
 		fnMarkup.append(".pb")
 		fnMarkup.append(".de div.footnotes { border: dashed 1px #aaaaaa; padding: 1.5em; }")
@@ -1357,7 +1360,6 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 	elif footnoteDestination == "chapterend":
 		logging.info("-- Adding ppgen style footnotes to end of chapters")
 		curChapterEnd = footnotes[-1]['chapterEnd']
-		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
 
 			if curChapterEnd != fn['chapterEnd']:
@@ -1367,6 +1369,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 
 			# build markup for this footnote
 #			print("{} {}".format(fn['chapterEnd'],fn['fnText'][0]))
+			fnMarkup = []
 			fnMarkup.append(".fn {}".format(i+1))
 			for line in fn['fnText']:
 				fnMarkup.append(line)
@@ -1374,7 +1377,6 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 
 			# insert it
 			outBuf[curChapterEnd:curChapterEnd] = fnMarkup
-			fnMarkup = []
 
 		# finish off last group
 		outBuf.insert(curChapterEnd, ".fm")
@@ -1382,7 +1384,6 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 	elif footnoteDestination == "paragraphend":
 		logging.info("-- Adding ppgen style footnotes to end of paragraphs")
 		curParagraphEnd = footnotes[-1]['paragraphEnd']
-		fnMarkup = []
 		for i, fn in reversed(list(enumerate(footnotes))):
 
 			if curParagraphEnd != fn['paragraphEnd']:
@@ -1392,6 +1393,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 
 			# build markup for this footnote
 #			print("{} {}".format(fn['paragraphEnd'],fn['fnText'][0]))
+			fnMarkup = []
 			fnMarkup.append(".fn {}".format(i+1))
 			for line in fn['fnText']:
 				fnMarkup.append(line)
@@ -1399,10 +1401,26 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 
 			# insert it
 			outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
-			fnMarkup = []
 
 		# finish off last group
 		outBuf.insert(curParagraphEnd, ".fm")
+
+	elif footnoteDestination == "inplace":
+		logging.info("-- Adding ppgen style footnotes in place")
+		for i, fn in reversed(list(enumerate(footnotes))):
+			# build markup for this footnote
+#			print("{} {}".format(fn['paragraphEnd'],fn['fnText'][0]))
+			fnMarkup = []
+			fnMarkup.append(".fn {}".format(i+1))
+			for line in fn['fnText']:
+				fnMarkup.append(line)
+			fnMarkup.append(".fn-")
+
+			# insert it
+			outBuf[fn['startLine']:fn['endLine']+1] = fnMarkup
+
+	# Still need to clean up continued footnotes, *[Footnote
+	outBuf = stripFootnoteMarkup(outBuf)
 
 	return outBuf
 
@@ -1917,7 +1935,7 @@ def main():
 			footnoteDestination = "bookend"
 			if args['--fndest']:
 				footnoteDestination = args['--fndest']
-			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'])
+			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'], args['--lzdestt'], args['--lzdesth'])
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
