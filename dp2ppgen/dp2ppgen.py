@@ -365,9 +365,12 @@ def findNextLineOfText( buf, startLine ):
 
 def findNextChapter( buf, startLine ):
 	lineNum = startLine
-	while lineNum < len(buf)-1 and not re.match(r"\.h2", buf[lineNum]):
+	chapterLineNum = None
+	while lineNum < len(buf)-1 and not chapterLineNum:
+		if re.match(r"\.h2", buf[lineNum]):
+			chapterLineNum = lineNum
 		lineNum += 1
-	return lineNum
+	return chapterLineNum
 
 
 def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal ):
@@ -1289,7 +1292,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 	return outBuf, fnAnchorCount
 
 
-def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzDestt, lzDesth ):
+def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth ):
 	outBuf = []
 
 	logging.info("Processing footnotes")
@@ -1321,7 +1324,8 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzDestt, lzDesth
 		logging.error("Footnote anchor count does not match footnote count")
 
 	if len(footnotes) > 0:
-		outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination)
+		outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination, lzdestt, lzdesth)
+		outBuf = generateLandingZones(outBuf, footnotes, lzdestt, lzdesth)
 
 	logging.info("Processed {} footnotes".format(len(footnotes)))
 
@@ -1329,9 +1333,21 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzDestt, lzDesth
 
 
 # Generate ppgen footnote markup
-def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
+def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt, lzdesth ):
 
 	outBuf = inBuf
+
+	logging.info("-- Generating footnote markup")
+
+	fmText = ""
+	if lzdestt and lzdesth:
+		fmText = ".fm rend=no"
+	elif lzdestt:
+		fmText = ".fm rend=h"
+	elif lzdesth:
+		fmText = ".fm rend=t"
+	else:
+		fmText = ".fm"
 
 	if footnoteDestination == "bookend":
 		logging.info("-- Adding ppgen style footnotes to end of book")
@@ -1346,13 +1362,11 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		fnMarkup.append(".h2 id=footnotes nobreak")
 		fnMarkup.append("FOOTNOTES:")
 		fnMarkup.append(".sp 2")
-
 		for i, fn in enumerate(footnotes):
 			fnMarkup.append(".fn {}".format(i+1))
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
-
 		fnMarkup.append(".dv-")
 
 		outBuf.extend(fnMarkup)
@@ -1364,7 +1378,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 
 			if curChapterEnd != fn['chapterEnd']:
 				# finish off last group
-				outBuf.insert(curChapterEnd, ".fm")
+				outBuf.insert(curChapterEnd, fmText)
 				curChapterEnd = fn['chapterEnd']
 
 			# build markup for this footnote
@@ -1378,8 +1392,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 			# insert it
 			outBuf[curChapterEnd:curChapterEnd] = fnMarkup
 
-		# finish off last group
-		outBuf.insert(curChapterEnd, ".fm")
+		outBuf.insert(curChapterEnd, fmText)
 
 	elif footnoteDestination == "paragraphend":
 		logging.info("-- Adding ppgen style footnotes to end of paragraphs")
@@ -1387,8 +1400,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 		for i, fn in reversed(list(enumerate(footnotes))):
 
 			if curParagraphEnd != fn['paragraphEnd']:
-				# finish off last group
-				outBuf.insert(curParagraphEnd, ".fm")
+				outBuf.insert(curParagraphEnd, fmText)
 				curParagraphEnd = fn['paragraphEnd']
 
 			# build markup for this footnote
@@ -1402,12 +1414,17 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 			# insert it
 			outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
 
-		# finish off last group
-		outBuf.insert(curParagraphEnd, ".fm")
+		outBuf.insert(curParagraphEnd, fmText)
 
 	elif footnoteDestination == "inplace":
 		logging.info("-- Adding ppgen style footnotes in place")
+		curScanPage = footnotes[-1]['scanPageNum']
+		lastStartLine = footnotes[-1]['startLine']
 		for i, fn in reversed(list(enumerate(footnotes))):
+			if curScanPage != fn['scanPageNum']:
+				outBuf.insert(lastStartLine, fmText)
+				curScanPage = fn['scanPageNum']
+
 			# build markup for this footnote
 #			print("{} {}".format(fn['paragraphEnd'],fn['fnText'][0]))
 			fnMarkup = []
@@ -1415,12 +1432,47 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination ):
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
+			lastStartLine = fn['startLine']
 
 			# insert it
 			outBuf[fn['startLine']:fn['endLine']+1] = fnMarkup
 
-	# Still need to clean up continued footnotes, *[Footnote
-	outBuf = stripFootnoteMarkup(outBuf)
+		outBuf.insert(lastStartLine, fmText)
+
+		# Still need to clean up continued footnotes, *[Footnote
+		outBuf = stripFootnoteMarkup(outBuf)
+
+	return outBuf
+
+
+def generateLandingZones( inBuf, footnotes, lzdestt, lzdesth ):
+
+	outBuf = inBuf
+
+	logging.info("-- Generating footnote landing zones")
+
+	if lzdestt == "bookend" or lzdesth == "bookend":
+		lzs = ""
+		if lzdestt == "bookend":
+			lzs += "t"
+		if lzdesth == "bookend":
+			lzs += "h"
+		outBuf.append(".fm lz={}".format(lzs))
+
+	if lzdestt == "chapterend" or lzdesth == "chapterend":
+		lzs = ""
+		if lzdestt == "chapterend":
+			lzs += "t"
+		if lzdesth == "chapterend":
+			lzs += "h"
+
+		nextChapterStart = findNextChapter(outBuf, 0)
+		while nextChapterStart:
+			# Find end of chapter (line after last line of last paragraph)
+			# Chapter headings must be marked in ppgen format (.h2)
+			lastChapterEnd = findPreviousEmptyLine(outBuf, nextChapterStart)
+			outBuf.insert(lastChapterEnd,".fm lz={}".format(lzs))
+			nextChapterStart = findNextChapter(outBuf, nextChapterStart+2)
 
 	return outBuf
 
