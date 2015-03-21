@@ -111,3 +111,4 @@ INFO: Processing chapter headings
 INFO: Processing section headings
 
 - Use .startswith instead of re.match where appropriate
+

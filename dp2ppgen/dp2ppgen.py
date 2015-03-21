@@ -20,8 +20,8 @@ Options:
   -e, --sections        Convert section headings into ppgen style section headings.
   -f, --footnotes       Convert footnotes into ppgen format.
   --fndest=<fndest>     Where to relocate footnotes (paragraphend, chapterend, bookend, inplace).
-  --lzdesth=<lzdesth>	Where to place footnote landing zones for HTML output
-  --lzdestt=<lzdestt>	Where to place footnote landing zones for text output
+  --lzdestt=<lzdestt>	Where to place footnote landing zones for text output (chapterend, bookend).
+  --lzdesth=<lzdesth>	Where to place footnote landing zones for HTML output (chapterend, bookend).
   --fixup               Perform guiguts style fixup operations.
   --force               Ignore markup errors and force operation.
   -j, --joinspanned     Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
