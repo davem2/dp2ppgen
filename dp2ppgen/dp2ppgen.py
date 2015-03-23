@@ -650,7 +650,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 			lineNum += 1
 
 			if markupType:
-				logging.info("\n----- Found {}, line {}".format(markupType,lineNum))
+				logging.info("----- Found {}, line {}".format(markupType,lineNum))
 
 				if markupType == "table":
 					outBlock = processTable(inBlock, keepOriginal)
@@ -744,7 +744,10 @@ def processToc( inBuf, keepOriginal ):
 		s = r"(.+?) {6,}(\d+)"
 		r = r"#\1:Page_\2#|#\2#"
 
-		if re.search(s,inBuf[lineNum]):
+		m = re.search(s,inBuf[lineNum])
+		if m:
+			#section ID
+			#r = r"#\1:{}#|#\2#".format(formatAsID(m.group(1)))
 			print("{}: {}".format(lineNum, inBuf[lineNum]))
 
 		inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
@@ -1634,12 +1637,12 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				joinToLineNum = lineNum
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
 				needsJoin = True
-			elif nowrapLevel == 0:
+			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum+1]):
 				logging.warning("Line {}: Unclothed end of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
 
 		# em-dash / long dash start of first line
 		if re.match(r"\*?(--|—)(?![-—])",inBuf[lineNum]) or re.match(r"\*?(----|——)(?![-—])",inBuf[lineNum]):
-			if inBuf[lineNum][-1] == "*":
+			if inBuf[lineNum][0] == "*":
 				logging.debug("start of line emdash found: {}".format(inBuf[lineNum]))
 				joinToLineNum = findPreviousLineOfText(inBuf,lineNum-1)
 				joinFromLineNum = lineNum
