@@ -1587,17 +1587,21 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 
 	lineNum = 0
 	joinCount = 0
+	nowrapLevel = 0
 	while lineNum < len(inBuf)-1:
 		needsJoin = False
 		joinToLineNum = 0
 		joinFromLineNum = 0
 
+		if re.match(r"\/\*", inBuf[lineNum]):
+			nowrapLevel += 1
+		elif re.match(r"\*\/", inBuf[lineNum]):
+			nowrapLevel -= 1
+
 		# spanned hyphenation
 		#TODO skip multiline [] markup between spanned hyphenation
 		if re.search(r"(?<![-—])-\*?$",inBuf[lineNum]) and isLinePageBreak(inBuf[lineNum+1]):
-			if inBuf[lineNum][-1] != "*":
-				logging.warning("Line {}: Unmarked end of line hyphenation\n       {}".format(lineNum,inBuf[lineNum]))
-			else:
+			if inBuf[lineNum][-1] == "*":
 				logging.debug("spanned hyphenation found: {}".format(inBuf[lineNum]))
 				joinToLineNum = lineNum
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
@@ -1605,28 +1609,30 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 					logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum,inBuf[joinToLineNum],inBuf[joinFromLineNum]))
 				else:
 					needsJoin = True
+			else:
+				logging.warning("Line {}: Unmarked end of line hyphenation\n       {}".format(lineNum,inBuf[lineNum]))
 
 		# em-dash / long dash end of last line
 		if re.search(r"(?<![-—])(--|—)\*?$",inBuf[lineNum]) or re.search(r"(?<![-—])(----|——)\*?$",inBuf[lineNum]):
-			if inBuf[lineNum][-1] != "*":
-				logging.warning("Line {}: Unclothed end of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
-			else:
+			if inBuf[lineNum][-1] == "*":
 				logging.debug("end of line emdash found: {}".format(inBuf[lineNum]))
 				joinToLineNum = lineNum
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
 				needsJoin = True
+			elif nowrapLevel == 0:
+				logging.warning("Line {}: Unclothed end of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
 
 		# em-dash / long dash start of first line
 		if re.match(r"\*?(--|—)(?![-—])",inBuf[lineNum]) or re.match(r"\*?(----|——)(?![-—])",inBuf[lineNum]):
-			if inBuf[lineNum][0] != "*":
-				logging.warning("Line {}: Unclothed start of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
-			else:
+			if inBuf[lineNum][-1] == "*":
 				logging.debug("start of line emdash found: {}".format(inBuf[lineNum]))
 				joinToLineNum = findPreviousLineOfText(inBuf,lineNum-1)
 				joinFromLineNum = lineNum
 				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(joinToLineNum,joinFromLineNum))
 				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(inBuf[joinToLineNum],inBuf[joinFromLineNum]))
 				needsJoin = True
+			elif nowrapLevel == 0:
+				logging.warning("Line {}: Unclothed start of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
 
 		if needsJoin:
 			# Remove first word from fromline
