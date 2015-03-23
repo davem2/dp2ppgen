@@ -1662,7 +1662,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(joinToLineNum,joinFromLineNum))
 				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(inBuf[joinToLineNum],inBuf[joinFromLineNum]))
 				needsJoin = True
-			elif nowrapLevel == 0:
+			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum-1]):
 				logging.warning("Line {}: Unclothed start of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
 
 		if needsJoin:
