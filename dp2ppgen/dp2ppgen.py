@@ -756,6 +756,21 @@ def processToc( inBuf, keepOriginal ):
 	return outBuf;
 
 
+def processPoetry( inBuf, keepOriginal ):
+	outBuf = []
+	lineNum = 0
+
+	outBuf.append(".nf b")
+
+	while lineNum < len(inBuf):
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	outBuf.append(".nf-")
+
+	return outBuf;
+
+
 def processTable( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
