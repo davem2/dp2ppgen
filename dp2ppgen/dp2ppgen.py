@@ -384,9 +384,9 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 
 	if doChapterHeadings and doSectionHeadings:
 		logging.info("Processing chapter and section headings")
-	if doChapterHeadings:
+	elif doChapterHeadings:
 		logging.info("Processing chapter headings")
-	if doSectionHeadings:
+	elif doSectionHeadings:
 		logging.info("Processing section headings")
 
 	while lineNum < len(inBuf):
