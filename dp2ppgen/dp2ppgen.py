@@ -1282,8 +1282,9 @@ def processFootnoteAnchors( inBuf, footnotes ):
 				# Find end of chapter (line after last line of last paragraph)
 				# Chapter headings must be marked in ppgen format (.h2)
 				chapterEnd = findNextChapter(outBuf, lineNum)
-				chapterEnd = findPreviousLineOfText(outBuf, chapterEnd) + 1
-				footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
+				if chapterEnd:
+					chapterEnd = findPreviousLineOfText(outBuf, chapterEnd) + 1
+					footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
 
 		lineNum += 1
 
@@ -1457,7 +1458,21 @@ def generateLandingZones( inBuf, footnotes, lzdestt, lzdesth ):
 			lzs += "t"
 		if lzdesth == "bookend":
 			lzs += "h"
-		outBuf.append(".fm lz={}".format(lzs))
+
+		fnMarkup = []
+		fnMarkup.append(".sp 4")
+		fnMarkup.append(".pb")
+		fnMarkup.append(".de div.footnotes { border: dashed 1px #aaaaaa; padding: 1.5em; }")
+		fnMarkup.append(".de div.footnotes h2 { margin-top: 1em; }")
+		fnMarkup.append('.dv class="footnotes"')
+		fnMarkup.append(".sp 2")
+		fnMarkup.append(".h2 id=footnotes nobreak")
+		fnMarkup.append("FOOTNOTES:")
+		fnMarkup.append(".sp 2")
+		fnMarkup.append(".fm rend=no lz={}".format(lzs))
+		fnMarkup.append(".dv-")
+
+		outBuf.extend(fnMarkup)
 
 	if lzdestt == "chapterend" or lzdesth == "chapterend":
 		lzs = ""
