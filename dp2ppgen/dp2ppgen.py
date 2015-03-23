@@ -450,11 +450,22 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			# .h2 id=chapter_vi
 			# CHAPTER VI.||chapter description etc..
 			# .sp 2
+
+			# Join chapter lines into one line
 			chapterID = formatAsID(inBlock[0])
 			chapterLine = ""
+			extra = []
+			doneChapterLine = False
 			for line in inBlock:
-				chapterLine += line
-				chapterLine += "|"
+				if line.startswith("/*") or line.startswith("/#"):
+					doneChapterLine = True
+
+				if not doneChapterLine:
+					chapterLine += line
+					chapterLine += "|"
+				else:
+					extra.append(line)
+
 			chapterLine = chapterLine[:-1]
 
 			outBlock.append("")
@@ -463,6 +474,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			outBlock.append(".sp 4")
 			outBlock.append(".h2 id={}".format(chapterID))
 			outBlock.append(chapterLine)
+			outBlock.extend(extra)
 			outBlock.append(".sp 2")
 
 			if keepOriginal:
@@ -513,6 +525,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				# .h3 id=section_i
 				# Section I.
 				# .sp 1
+
 				sectionID = formatAsID(inBlock[0])
 				sectionLine = ""
 				for line in inBlock:
