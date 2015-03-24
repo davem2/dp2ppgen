@@ -162,10 +162,10 @@ def validateDpMarkup( inBuf ):
 
 		# Extra text after out-of-line formatting markup
 		# ex. /*[**new stanza?]
-		m = re.match(r"(\/\*|\/\#|\*\/|\#\/)(.+)", inBuf[lineNum])
-		if m and m.group(2) not in markupTypes['/*'] and m.group(2) not in markupTypes['/#']:
-			errorCount += 1
-			logging.error("Line {}: Extra text after out-of-line formatting markup\n       {}".format(lineNum+1,inBuf[lineNum]))
+#		m = re.match(r"(\/\*|\/\#|\*\/|\#\/)(.+)", inBuf[lineNum])
+#		if m and m.group(2) not in markupTypes['/*'] and m.group(2) not in markupTypes['/#']:
+#			errorCount += 1
+#			logging.error("Line {}: Extra text after out-of-line formatting markup\n       {}".format(lineNum+1,inBuf[lineNum]))
 
 		lineNum += 1
 
