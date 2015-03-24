@@ -1646,7 +1646,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				else:
 					needsJoin = True
 			elif not isDotCommand(inBuf[lineNum]):
-				logging.warning("Line {}: Unmarked end of line hyphenation\n       {}".format(lineNum,inBuf[lineNum]))
+				logging.warning("Line {}: Unmarked end of line hyphenation\n         {}".format(lineNum,inBuf[lineNum]))
 
 		# em-dash / long dash end of last line
 		if re.search(r"(?<![-—])(--|—)\*?$",inBuf[lineNum]) or re.search(r"(?<![-—])(----|——)\*?$",inBuf[lineNum]):
@@ -1656,7 +1656,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
 				needsJoin = True
 			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum+1]):
-				logging.warning("Line {}: Unclothed end of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
+				logging.warning("Line {}: Unclothed end of line dashes\n         {}".format(lineNum,inBuf[lineNum]))
 
 		# em-dash / long dash start of first line
 		if re.match(r"\*?(--|—)(?![-—])",inBuf[lineNum]) or re.match(r"\*?(----|——)(?![-—])",inBuf[lineNum]):
@@ -1668,7 +1668,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(inBuf[joinToLineNum],inBuf[joinFromLineNum]))
 				needsJoin = True
 			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum-1]):
-				logging.warning("Line {}: Unclothed start of line dashes\n       {}".format(lineNum,inBuf[lineNum]))
+				logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum,inBuf[lineNum]))
 
 		if needsJoin:
 			# Remove first word from fromline
