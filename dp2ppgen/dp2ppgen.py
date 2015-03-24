@@ -411,7 +411,10 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			rewrapLevel -= 1
 
 		# Chapter heading
-		if doChapterHeadings and consecutiveEmptyLineCount == 4 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0:
+		if (doChapterHeadings and
+				consecutiveEmptyLineCount == 4 and
+				not isLineBlank(inBuf[lineNum]) and
+				rewrapLevel == 0):
 			inBlock = []
 			outBlock = []
 			foundChapterHeadingEnd = False;
@@ -441,10 +444,6 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 					inBlock.append(inBuf[lineNum])
 					lineNum += 1
 
-			# Remove the consecutive blank lines that preceeds chapter heading
-			while isLineBlank(outBuf[-1]):
-				outBuf = outBuf[:-1]
-
 			# .sp 4
 			# .h2 id=chapter_vi
 			# CHAPTER VI.||chapter description etc..
@@ -465,36 +464,43 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				else:
 					extra.append(line)
 
-			if chapterLine[-1] == "|":
-				chapterLine = chapterLine[:-1]
+			if not chapterLine:
+				logging.warning("Line {}: Disregarding chapter heading; no text found\n         {}".format(lineNum,inBlock[0]))
+			else:
+				if chapterLine[-1] == "|":
+					chapterLine = chapterLine[:-1]
 
-			outBlock.append("")
-			if keepOriginal:
-				outBlock.append("// ******** DP2PPGEN GENERATED ****************************************")
-			outBlock.append(".sp 4")
-			outBlock.append(".h2 id={}".format(chapterID))
-			outBlock.append(chapterLine)
-			outBlock.extend(extra)
-			outBlock.append(".sp 2")
+				outBlock.append("")
+				if keepOriginal:
+					outBlock.append("// ******** DP2PPGEN GENERATED ****************************************")
+				outBlock.append(".sp 4")
+				outBlock.append(".h2 id={}".format(chapterID))
+				outBlock.append(chapterLine)
+				outBlock.extend(extra)
+				outBlock.append(".sp 2")
 
-			if keepOriginal:
-				# Write out original as a comment
-				outBlock.append(".ig  // *** DP2PPGEN BEGIN ORIGINAL ***********************************")
-				outBlock.append("")
-				outBlock.append("")
-				outBlock.append("")
-				for line in inBlock:
-					outBlock.append(line)
-				outBlock.append("")
-				outBlock.append(".ig- // *** END *****************************************************")
+				if keepOriginal:
+					# Write out original as a comment
+					outBlock.append(".ig  // *** DP2PPGEN BEGIN ORIGINAL ***********************************")
+					outBlock.append("")
+					outBlock.append("")
+					outBlock.append("")
+					for line in inBlock:
+						outBlock.append(line)
+					outBlock.append("")
+					outBlock.append(".ig- // *** END *****************************************************")
 
-			# Write out chapter heading block
-			for line in outBlock:
-				outBuf.append(line)
+				# Remove the consecutive blank lines that preceed chapter heading
+				while isLineBlank(outBuf[-1]):
+					outBuf = outBuf[:-1]
 
-			# Log action
-			logging.info("-- .h2 {}".format(chapterLine))
-			chapterCount += 1
+				# Write out chapter heading block
+				for line in outBlock:
+					outBuf.append(line)
+
+				# Log action
+				logging.info("-- .h2 {}".format(chapterLine))
+				chapterCount += 1
 
 		# Section heading
 		elif doSectionHeadings and consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0:
