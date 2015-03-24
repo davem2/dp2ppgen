@@ -280,7 +280,7 @@ def isLinePageBreak( line ):
 	return (parseScanPage(line) != None)
 
 def isDotCommand( line ):
-	return re.match(r"\.[a-z0-9]{2} ", line)
+	return re.match(r"\.[a-z0-9]{2}[ -]", line)
 
 def isLineOriginalText( line ):
 	# Non-original lines are:
@@ -1640,7 +1640,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 					logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum,inBuf[joinToLineNum],inBuf[joinFromLineNum]))
 				else:
 					needsJoin = True
-			else:
+			elif not isDotCommand(inBuf[lineNum]):
 				logging.warning("Line {}: Unmarked end of line hyphenation\n       {}".format(lineNum,inBuf[lineNum]))
 
 		# em-dash / long dash end of last line
