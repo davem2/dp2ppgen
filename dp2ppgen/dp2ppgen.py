@@ -367,7 +367,7 @@ def findNextChapter( buf, startLine ):
 	lineNum = startLine
 	chapterLineNum = None
 	while lineNum < len(buf)-1 and not chapterLineNum:
-		if re.match(r"\.h2", buf[lineNum]):
+		if buf[lineNum].startswith(".h2"):
 			chapterLineNum = lineNum
 		lineNum += 1
 	return chapterLineNum
@@ -1261,7 +1261,6 @@ def processFootnoteAnchors( inBuf, footnotes ):
 		if isLinePageBreak(outBuf[lineNum]):
 			anchorsThisPage = []
 			currentScanPage = parseScanPage(inBuf[lineNum])
-			currentScanPageLabel = re.sub(r"\/\/ ","", outBuf[lineNum])
 #			logging.debug("-- Processing page "+currentScanPage)
 
 			# Make list of footnotes found on this page
