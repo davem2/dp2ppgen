@@ -219,8 +219,7 @@ def processBlankPages( inBuf, keepOriginal ):
 	logging.info("Processing blank pages")
 
 	while lineNum < len(inBuf):
-		m = re.match(r"\[Blank Page]", inBuf[lineNum])
-		if m:
+		if inBuf[lineNum].startswith("[Blank Page]"):
 			if keepOriginal:
 				outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
 			outBuf.append("// [Blank Page]")
@@ -274,7 +273,7 @@ def isLineBlank( line ):
 	return re.match(r"\s*$", line)
 
 def isLineComment( line ):
-	return re.match(r"\/\/*$", line)
+	return line.startswith("//")
 
 def isLinePageBreak( line ):
 	return (parseScanPage(line) != None)
@@ -406,9 +405,9 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			# (1 empty line)
 
 		# Detect when inside out-of-line formatting block /# #/ /* */
-		if re.match(r"\/\*", inBuf[lineNum]) or re.match(r"\/\#", inBuf[lineNum]):
+		if inBuf[lineNum].startswith("/*") or inBuf[lineNum].startswith("/#"):
 			rewrapLevel += 1
-		elif re.match(r"\*\/", inBuf[lineNum]) or re.match(r"\#\/", inBuf[lineNum]):
+		elif inBuf[lineNum].startswith("*/") or inBuf[lineNum].startswith("#/"):
 			rewrapLevel -= 1
 
 		# Chapter heading
@@ -600,7 +599,7 @@ def detectMarkup( inBuf ):
 			# Copy nowrap block
 			#TODO handle nested case where /* /* */ */
 			lineNum += 1
-			while lineNum < len(inBuf) and not re.match(r"\*\/", inBuf[lineNum]):
+			while lineNum < len(inBuf) and not inBuf[lineNum].startswith("*/"):
 				inBlock.append(inBuf[lineNum])
 				lineNum += 1
 			lineNum += 1
@@ -657,7 +656,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 			#TODO handle nested case where /* /* */ */
 			nowrapStartLine = inBuf[lineNum]
 			lineNum += 1
-			while lineNum < len(inBuf) and not re.match(r"\*\/", inBuf[lineNum]):
+			while lineNum < len(inBuf) and not inBuf[lineNum].startswith("*/"):
 				inBlock.append(inBuf[lineNum])
 				lineNum += 1
 			nowrapEndLine = inBuf[lineNum]
@@ -1171,7 +1170,7 @@ def parseFootnotes( inBuf ):
 
 			# Is footnote part of a multipage footnote?
 			needsJoining = False
-			if re.match(r"\*\[Footnote", fnBlock[0]) or re.search(r"\]\*$", fnBlock[-1]):
+			if fnBlock[0].startswith("*[Footnote") or fnBlock[-1].endswith("]*"):
 				logging.debug("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
 				needsJoining = True
 				foundFootnote = True
@@ -1624,9 +1623,9 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 		joinToLineNum = 0
 		joinFromLineNum = 0
 
-		if re.match(r"\/\*", inBuf[lineNum]):
+		if inBuf[lineNum].startswith("/*"):
 			nowrapLevel += 1
-		elif re.match(r"\*\/", inBuf[lineNum]):
+		elif inBuf[lineNum].startswith("*/"):
 			nowrapLevel -= 1
 
 		# spanned hyphenation
