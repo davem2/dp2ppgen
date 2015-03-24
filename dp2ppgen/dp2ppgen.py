@@ -457,7 +457,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 			extra = []
 			doneChapterLine = False
 			for line in inBlock:
-				if line.startswith("/*") or line.startswith("/#"):
+				if not isLineOriginalText(line):
 					doneChapterLine = True
 
 				if not doneChapterLine:
@@ -466,7 +466,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 				else:
 					extra.append(line)
 
-			chapterLine = chapterLine[:-1]
+			if chapterLine[-1] == "|":
+				chapterLine = chapterLine[:-1]
 
 			outBlock.append("")
 			if keepOriginal:
