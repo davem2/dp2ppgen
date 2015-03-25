@@ -465,7 +465,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 					extra.append(line)
 
 			if not chapterLine:
-				logging.warning("Line {}: Disregarding chapter heading; no text found\n         {}".format(lineNum,inBlock[0]))
+				logging.warning("Line {}: Disregarding chapter heading; no text found\n         {}".format(lineNum+1,inBlock[0]))
 			else:
 				if chapterLine[-1] == "|":
 					chapterLine = chapterLine[:-1]
@@ -680,7 +680,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 				elif markupType == "poetry":
 					outBlock = processPoetry(inBlock, keepOriginal)
 				else:
-					logging.warn("{}: Unknown markup type '{}' found".format(lineNum,markupType))
+					logging.warn("{}: Unknown markup type '{}' found".format(lineNum+1,markupType))
 
 				markupCount[markupType] += 1
 
@@ -767,7 +767,7 @@ def processToc( inBuf, keepOriginal ):
 		if m:
 			#section ID
 			#r = r"#\1:{}#|#\2#".format(formatAsID(m.group(1)))
-			print("{}: {}".format(lineNum, inBuf[lineNum]))
+			print("{}: {}".format(lineNum+1, inBuf[lineNum]))
 
 		inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
 		outBuf.append(inBuf[lineNum])
@@ -1279,7 +1279,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 #				r = "|".join(fnIDs)
 #				r = r"\[({})\]".format(r)
 
-#		print("{}: {}".format(lineNum,outBuf[lineNum]))
+#		print("{}: {}".format(lineNum+1,outBuf[lineNum]))
 		m = re.findall("\[([A-Za-z]|[0-9]{1,2})\]", outBuf[lineNum])
 		for anchor in m:
 			# Check that anchor found belongs to a footnote on this page
@@ -1569,7 +1569,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 						outBuf.append(line)
 					joinWasMade = True
 					joinCount += 1
-					logging.debug("Lines {}, {}: Joined spanned markup /{} {}/".format(lineNum,ln,m.group(1)[0],m.group(1)[0]))
+					logging.debug("Lines {}, {}: Joined spanned markup /{} {}/".format(lineNum+1,ln,m.group(1)[0],m.group(1)[0]))
 					lineNum = ln + 1
 
 		if not joinWasMade:
@@ -1642,11 +1642,11 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				joinToLineNum = lineNum
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
 				if inBuf[joinFromLineNum][0] != '*':
-					logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum,inBuf[joinToLineNum],inBuf[joinFromLineNum]))
+					logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1,inBuf[joinToLineNum],inBuf[joinFromLineNum]))
 				else:
 					needsJoin = True
 			elif not isDotCommand(inBuf[lineNum]):
-				logging.warning("Line {}: Unmarked end of line hyphenation\n         {}".format(lineNum,inBuf[lineNum]))
+				logging.warning("Line {}: Unmarked end of line hyphenation\n         {}".format(lineNum+1,inBuf[lineNum]))
 
 		# em-dash / long dash end of last line
 		if re.search(r"(?<![-—])(--|—)\*?$",inBuf[lineNum]) or re.search(r"(?<![-—])(----|——)\*?$",inBuf[lineNum]):
@@ -1656,7 +1656,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
 				needsJoin = True
 			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum+1]):
-				logging.warning("Line {}: Unclothed end of line dashes\n         {}".format(lineNum,inBuf[lineNum]))
+				logging.warning("Line {}: Unclothed end of line dashes\n         {}".format(lineNum+1,inBuf[lineNum]))
 
 		# em-dash / long dash start of first line
 		if re.match(r"\*?(--|—)(?![-—])",inBuf[lineNum]) or re.match(r"\*?(----|——)(?![-—])",inBuf[lineNum]):
@@ -1666,10 +1666,10 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				joinFromLineNum = lineNum
 				needsJoin = True
 			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum-1]):
-				logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum,inBuf[lineNum]))
+				logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum+1,inBuf[lineNum]))
 
 		if needsJoin:
-			logging.debug("joinToLineNum {}, joinFromLineNum {}".format(joinToLineNum,joinFromLineNum))
+			logging.debug("joinToLineNum {}, joinFromLineNum {}".format(joinToLineNum+1,joinFromLineNum))
 			logging.debug("  joinToLineNum: {}".format(inBuf[joinToLineNum]))
 			logging.debug("joinFromLineNum: {}".format(inBuf[joinFromLineNum]))
 			# Remove first word of from line
@@ -1687,7 +1687,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				dl = -1*(joinFromLineNum-joinToLineNum)
 				outBuf[dl] = outBuf[dl] + fromWord
 
-			logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(joinToLineNum,inBuf[joinToLineNum][-30:]))
+			logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(joinToLineNum+1,inBuf[joinToLineNum][-30:]))
 			joinCount += 1
 
 		outBuf.append(inBuf[lineNum])
