@@ -1175,10 +1175,10 @@ def parseFootnotes( inBuf ):
 			endLine = lineNum
 
 			# Is footnote part of a multipage footnote?
-			needsJoining = False
-			if fnBlock[0].startswith("*[Footnote") or fnBlock[-1].endswith("]*"):
+			joinToPrevious = fnBlock[0].startswith("*[Footnote")
+			joinToNext = fnBlock[-1].endswith("]*")
+			if joinToPrevious or joinToNext:
 				logging.debug("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
-				needsJoining = True
 				foundFootnote = True
 
 			# Find end of paragraph
@@ -1201,45 +1201,45 @@ def parseFootnotes( inBuf ):
 			fnText[-1] = re.sub(r"][\*]*$", "", fnText[-1])
 
 			# Add entry
-			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'fnID':fnID, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'needsJoining':needsJoining, 'scanPageNum':currentScanPage})
+			footnotes.append({'fnBlock':fnBlock, 'fnText':fnText, 'fnID':fnID, 'startLine':startLine, 'endLine':endLine, 'paragraphEnd':paragraphEnd, 'chapterEnd':chapterEnd, 'joinToPrevious':joinToPrevious, 'joinToNext':joinToNext, 'scanPageNum':currentScanPage})
 
 		lineNum += 1
 
 	logging.info("-- Parsed {} footnotes".format(len(footnotes)))
+	logging.debug(footnotes)
 
 	# Join footnotes marked above during parsing
 	joinCount = 0
-	i = 0
-	while i < len(footnotes):
-		if footnotes[i]['needsJoining']:
+	i = len(footnotes) - 1
+	while i > 0:
+		if footnotes[i]['joinToPrevious']:
 			if joinCount == 0:
 				logging.info("-- Joining footnotes")
 
 			# debug message
 			logging.debug("Merging footnote [{}]".format(i+1))
+			if len(footnotes[i-1]['fnBlock']) > 1:
+				logging.debug("  ScanPg {}: {} ... {} ".format(footnotes[i-1]['scanPageNum'], footnotes[i-1]['fnBlock'][0], footnotes[i-1]['fnBlock'][-1]))
+			else:
+				logging.debug("  ScanPg {}: {}".format(footnotes[i-1]['scanPageNum'], footnotes[i-1]['fnBlock'][0]))
 			if len(footnotes[i]['fnBlock']) > 1:
 				logging.debug("  ScanPg {}: {} ... {} ".format(footnotes[i]['scanPageNum'], footnotes[i]['fnBlock'][0], footnotes[i]['fnBlock'][-1]))
 			else:
 				logging.debug("  ScanPg {}: {}".format(footnotes[i]['scanPageNum'], footnotes[i]['fnBlock'][0]))
-			if len(footnotes[i+1]['fnBlock']) > 1:
-				logging.debug("  ScanPg {}: {} ... {} ".format(footnotes[i+1]['scanPageNum'], footnotes[i+1]['fnBlock'][0], footnotes[i+1]['fnBlock'][-1]))
-			else:
-				logging.debug("  ScanPg {}: {}".format(footnotes[i+1]['scanPageNum'], footnotes[i+1]['fnBlock'][0]))
 
 			# TODO: can footnotes span more than two pages?
-			if not footnotes[i+1]['needsJoining']:
+			if not footnotes[i-1]['joinToNext']:
 				logging.error("Attempt to join footnote failed!")
+				logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i-1]['scanPageNum'], i+1,footnotes[i-1]['startLine']+1,footnotes[i-1]['fnBlock'][0]))
 				logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]))
-				logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i+1]['scanPageNum'], i+1,footnotes[i+1]['startLine']+1,footnotes[i+1]['fnBlock'][0]))
 			else:
 				# merge fnBlock and fnText from second into first
-				footnotes[i]['fnBlock'].extend(footnotes[i+1]['fnBlock'])
-				footnotes[i]['fnText'].extend(footnotes[i+1]['fnText'])
-				footnotes[i]['needsJoining'] = False
-				del footnotes[i+1]
+				footnotes[i-1]['fnBlock'].extend(footnotes[i]['fnBlock'])
+				footnotes[i-1]['fnText'].extend(footnotes[i]['fnText'])
+				del footnotes[i]
 				joinCount += 1
 
-		i += 1
+		i -= 1
 
 	if joinCount > 0:
 		logging.info("-- Merged {} broken footnote(s)".format(joinCount))

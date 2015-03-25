@@ -112,3 +112,4 @@ INFO: Processing section headings
 
 - Use .startswith instead of re.match where appropriate
 
+- Add support for footnotes that span more than two pages (t1/110-proj... has an example of this)
