@@ -269,6 +269,30 @@ def getDpMarkupBlock( buf, startLine ):
 	#TODO return line(s) containing /* */ /# #/ [] block
 	return
 
+def isNextOriginalLineBlank( buf, startLine ):
+	result = None
+	lineNum = startLine
+	while lineNum < len(buf)-1 and result == None:
+		if isLineBlank(buf[lineNum]):
+			result = True
+		elif isLineOriginalText(buf[lineNum]):
+			result = False
+		lineNum += 1
+
+	return result
+
+def isPreviousOriginalLineBlank( buf, startLine ):
+	result = None
+	lineNum = startLine
+	while lineNum >= 0 and result == None:
+		if isLineBlank(buf[lineNum]):
+			result = True
+		elif isLineOriginalText(buf[lineNum]):
+			result = False
+		lineNum -= 1
+
+	return result
+
 def isLineBlank( line ):
 	return re.match(r"\s*$", line)
 
@@ -1579,6 +1603,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 	logging.info("Joined {} instances of spanned out-of-line formatting markup".format(joinCount))
 	return outBuf
 
+
 def getLinesUntil( inBuf, startLineNum, endRegex, direction=1 ):
 	outBlock = []
 	lineNum = startLineNum
@@ -1655,7 +1680,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				joinToLineNum = lineNum
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
 				needsJoin = True
-			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum+1]):
+			elif nowrapLevel == 0 and not isNextOriginalLineBlank(inBuf,lineNum+1):
 				logging.warning("Line {}: Unclothed end of line dashes\n         {}".format(lineNum+1,inBuf[lineNum]))
 
 		# em-dash / long dash start of first line
@@ -1665,7 +1690,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				joinToLineNum = findPreviousLineOfText(inBuf,lineNum-1)
 				joinFromLineNum = lineNum
 				needsJoin = True
-			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum-1]):
+			elif nowrapLevel == 0 and not isPreviousOriginalLineBlank(inBuf,lineNum-1):
 				logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum+1,inBuf[lineNum]))
 
 		if needsJoin:
@@ -1737,7 +1762,7 @@ def convertUTF8( inBuf ):
 
 		# Fractions?
 
-	logging.info("Finished converting characters on {} lines to UTF-8".format(lineCount))
+	logging.info("Converted characters on {} lines to UTF-8".format(lineCount))
 	return outBuf
 
 
