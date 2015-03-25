@@ -1664,17 +1664,23 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				logging.debug("start of line emdash found: {}".format(inBuf[lineNum]))
 				joinToLineNum = findPreviousLineOfText(inBuf,lineNum-1)
 				joinFromLineNum = lineNum
-				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(joinToLineNum,joinFromLineNum))
-				logging.debug("joinToLineNum {}, joinFromLineNum {}".format(inBuf[joinToLineNum],inBuf[joinFromLineNum]))
 				needsJoin = True
 			elif nowrapLevel == 0 and not isLineBlank(inBuf[lineNum-1]):
 				logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum,inBuf[lineNum]))
 
 		if needsJoin:
-			# Remove first word from fromline
+			logging.debug("joinToLineNum {}, joinFromLineNum {}".format(joinToLineNum,joinFromLineNum))
+			logging.debug("  joinToLineNum: {}".format(inBuf[joinToLineNum]))
+			logging.debug("joinFromLineNum: {}".format(inBuf[joinFromLineNum]))
+			# Remove first word of from line
 			fromWord = inBuf[joinFromLineNum].split(' ',1)[0]
-			inBuf[joinFromLineNum] = inBuf[joinFromLineNum].split(' ',1)[1]
-			# Join append it to toline
+			if len(inBuf[joinFromLineNum].split(' ',1)) > 1:
+				inBuf[joinFromLineNum] = inBuf[joinFromLineNum].split(' ',1)[1]
+			else:
+				# Single word on from line, remove blank line
+				del inBuf[joinFromLineNum]
+
+			# Append it to toline
 			if joinToLineNum == lineNum:
 				inBuf[joinToLineNum] = inBuf[joinToLineNum] + fromWord
 			else:
@@ -1682,7 +1688,6 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				outBuf[dl] = outBuf[dl] + fromWord
 
 			logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(joinToLineNum,inBuf[joinToLineNum][-30:]))
-#			logging.info("Line {}: Resolved hyphenation\n      '{}'".format(lineNum+1,inBuf[lineNum]))
 			joinCount += 1
 
 		outBuf.append(inBuf[lineNum])

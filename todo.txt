@@ -103,13 +103,3 @@
 
 - Add fix for nested [] issue inside [Sidenote (already fixed in [Footnote)
 
-- Update to new ppgen footnote capabilities
-
-- Fix log messages for -ce
-INFO: Processing chapter and section headings
-INFO: Processing chapter headings
-INFO: Processing section headings
-
-- Use .startswith instead of re.match where appropriate
-
-- Add support for footnotes that span more than two pages (t1/110-proj... has an example of this)
