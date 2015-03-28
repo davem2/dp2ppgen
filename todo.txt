@@ -103,3 +103,9 @@
 
 - Add fix for nested [] issue inside [Sidenote (already fixed in [Footnote)
 
+- Footnote anchors in a footnote (footnote to a footnote).. Manual resolution? Unsure how common or difficulty (possible?) to handle programatically
+
+- Add maxlines requirement for determining what is a chapter heading (like section heading detection does)
+
+- Add the ability to reorganize ppgen formatted footnotes.
+

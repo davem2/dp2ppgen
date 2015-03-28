@@ -16,8 +16,10 @@ Examples:
 
 Options:
   -c, --chapters        Convert chapter headings into ppgen style chapter headings.
+  --chaptermaxlines		Max lines a chapter can be, anything larger is not a chapter
   -d, --dryrun          Run through conversions but do not write out result.
   -e, --sections        Convert section headings into ppgen style section headings.
+  --sectionmaxlines		Max lines a section can be, ianything larger is not a section
   -f, --footnotes       Convert footnotes into ppgen format.
   --fndest=<fndest>     Where to relocate footnotes (paragraphend, chapterend, bookend, inplace).
   --lzdestt=<lzdestt>	Where to place footnote landing zones for text output (chapterend, bookend).
@@ -396,7 +398,7 @@ def findNextChapter( buf, startLine ):
 	return chapterLineNum
 
 
-def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal ):
+def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, chapterMaxLines, sectionMaxLines ):
 	outBuf = []
 	lineNum = 0
 	consecutiveEmptyLineCount = 0
@@ -490,6 +492,13 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 
 			if not chapterLine:
 				logging.warning("Line {}: Disregarding chapter heading; no text found\n         {}".format(lineNum+1,inBlock[0]))
+				for line in inBlock:
+					outBuf.append(line)
+			elif len(inBlock) > chapterMaxLines:
+				logging.warning("Line {}: Disregarding chapter heading; too many lines ({} > {}):\n ---\n{}\n ---".format(lineNum+1,len(inBlock),chapterMaxLines,"\n".join(inBlock[0:6])))
+				for line in inBlock:
+					outBuf.append(line)
+
 			else:
 				if chapterLine[-1] == "|":
 					chapterLine = chapterLine[:-1]
@@ -541,10 +550,11 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal )
 					inBlock.append(inBuf[lineNum])
 					lineNum += 1
 
+			# TODO: Join section lines into one line.. really needed?
+
 			# Check if this is a heading
-			#TODO maxlinecount should be configurable
-			if len(inBlock) > 2:
-				logging.debug("Disregarding section heading; too many lines: {}".format(inBlock[0]))
+			if len(inBlock) > sectionMaxLines:
+				logging.warning("Line {}: Disregarding section heading; too many lines ({} > {}):\n ---\n{}\n ---".format(lineNum+1,len(inBlock),sectionMaxLines,"\n".join(inBlock[0:6])))
 				for line in inBlock:
 					outBuf.append(line)
 			else:
@@ -1338,8 +1348,7 @@ def processFootnoteAnchors( inBuf, footnotes ):
 
 				# sanity check (anchor and footnote should be on same scan page)
 				if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
-					logging.fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum']))
-					exit(1)
+					fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum']))
 
 				# replace anchor
 				outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])
@@ -2035,6 +2044,13 @@ def main():
 	doUTF8 = args['--utf8'];
 
 	#TODO, load config file and use those options if one is present
+	chapterMaxLines = 8
+	sectionMaxLines = 2
+	if args['--chaptermaxlines']:
+		chapterMaxLines = args['--chaptermaxlines']
+	if args['--sectionmaxlines']:
+		chapterMaxLines = args['--sectionmaxlines']
+
 
 	# Use default options if no processing options are set
 	if not doChapterHeadings and \
@@ -2077,7 +2093,7 @@ def main():
 		if doUTF8:
 			outBuf = convertUTF8(outBuf)
 		if doChapterHeadings or doSectionHeadings:
-			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'])
+			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'], chapterMaxLines, sectionMaxLines)
 		if doSidenotes:
 			outBuf = processSidenotes(outBuf, args['--keeporiginal'])
 		if doFootnotes:
