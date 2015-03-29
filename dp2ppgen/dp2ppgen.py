@@ -791,11 +791,32 @@ def processToc( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 
-	outBuf.append(".ta lr")
+	tocStyles = (
+		# 3. County and Shire. Meaning of the Words      42
+		{ 's': r'(\d+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
+		# XI. Columbus and the Savages      48
+		{ 's': r'([XIVLC]+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
+		# SIR CHRISTOPHER WREN      24
+		{ 's': r'(.+?) {6,}(\d+)', 'r': r'#\1:Page_\2#|#\2#', 'count': 0, 'columns': 'lr' },
+	)
+
+	for style in tocStyles:
+		for line in inBuf:
+			if re.search(style['s'],line):
+				style['count'] += 1
+
+	styleUsed = ""
+	maxCount = 0
+	for style in tocStyles:
+		if style['count'] > 0:
+			styleUsed = style
+			break
+
+	outBuf.append(".ta {}".format(style['columns']))
 
 	while lineNum < len(inBuf):
-		s = r"(.+?) {6,}(\d+)"
-		r = r"#\1:Page_\2#|#\2#"
+		s = styleUsed['s']
+		r = styleUsed['r']
 
 		m = re.search(s,inBuf[lineNum])
 		if m:
@@ -2047,9 +2068,9 @@ def main():
 	chapterMaxLines = 8
 	sectionMaxLines = 2
 	if args['--chaptermaxlines']:
-		chapterMaxLines = args['--chaptermaxlines']
+		chapterMaxLines = int(args['--chaptermaxlines'])
 	if args['--sectionmaxlines']:
-		chapterMaxLines = args['--sectionmaxlines']
+		sectionMaxLines = int(args['--sectionmaxlines'])
 
 
 	# Use default options if no processing options are set
