@@ -74,7 +74,6 @@ def validateDpMarkup( inBuf ):
 	errorCount = 0
 	while lineNum < len(inBuf):
 
-
 		# Detect unbalanced out-of-line formatting markup /# #/ /* */
 		m = re.match(r"\/(\*|\#)", inBuf[lineNum])
 		if m:
@@ -1991,7 +1990,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	lineNum = 0
 	joinCount = 0
 	nowrapLevel = 0
-	while lineNum < len(inBuf)-1:
+	while lineNum < len(inBuf):
 		needsJoin = False
 		joinToLineNum = 0
 		joinFromLineNum = 0
@@ -2003,7 +2002,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 
 		# spanned hyphenation
 		#TODO skip multiline [] markup between spanned hyphenation
-		if re.search(r"(?<![-—])-\*?$",inBuf[lineNum]) and isLinePageBreak(inBuf[lineNum+1]):
+		if re.search(r"(?<![-—])-\*?$",inBuf[lineNum]) and lineNum < len(inBuf)-1 and isLinePageBreak(inBuf[lineNum+1]):
 			if inBuf[lineNum][-1] == "*":
 				logging.debug("spanned hyphenation found: {}".format(inBuf[lineNum]))
 				joinToLineNum = lineNum
