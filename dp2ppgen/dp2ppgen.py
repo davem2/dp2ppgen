@@ -619,7 +619,7 @@ def detectMarkup( inBuf ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'nf':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
+	markupCount = {'nf':0, 'ta':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
 
 	while lineNum < len(inBuf):
 
@@ -669,7 +669,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'nf':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
+	markupCount = {'nf':0, 'ta':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
 
 	while lineNum < len(inBuf):
 
@@ -704,6 +704,8 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 
 				if markupType == "nf":
 					outBlock = processNf(inBlock, keepOriginal, args)
+				elif markupType == "ta":
+					outBlock = processTa(inBlock, keepOriginal, args)
 				elif markupType == "table":
 					outBlock = processTable(inBlock, keepOriginal)
 				elif markupType == "toc":
@@ -786,6 +788,40 @@ def processNf( inBuf, keepOriginal, args ):
 		lineNum += 1
 
 	outBuf.append(".nf-")
+
+	return outBuf;
+
+
+def processTa( inBuf, keepOriginal, args ):
+	outBuf = []
+	lineNum = 0
+
+	# Use arguments if provided
+	columns = ""
+	if 'columns' in args:
+		columns = args['columns']
+	s = ""
+	if 's' in args:
+		s = args['s']
+	r = ""
+	if 'r' in args:
+		r = args['r']
+
+	outBuf.append(".ta {}".format(columns))
+
+	while lineNum < len(inBuf):
+		m = re.search(s,inBuf[lineNum])
+		if m:
+			#section ID
+			#r = r"#\1:{}#|#\2#".format(formatAsID(m.group(1)))
+			print("{}: {}".format(lineNum+1, inBuf[lineNum]))
+
+		if isLineOriginalText(inBuf[lineNum]):
+			inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	outBuf.append(".ta-")
 
 	return outBuf;
 
@@ -923,7 +959,7 @@ def processToc( inBuf, keepOriginal, args ):
 	if 'r' in args:
 		r = args['r']
 
-	outBuf.append(".ta {}".format(style['columns']))
+	outBuf.append(".ta {}".format(columns))
 
 	while lineNum < len(inBuf):
 		m = re.search(s,inBuf[lineNum])
