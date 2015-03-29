@@ -619,7 +619,7 @@ def detectMarkup( inBuf ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
+	markupCount = {'nf':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
 
 	while lineNum < len(inBuf):
 
@@ -669,7 +669,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
+	markupCount = {'nf':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
 
 	while lineNum < len(inBuf):
 
@@ -702,7 +702,9 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 			if markupType:
 				logging.info("----- Found {}, line {}".format(markupType,lineNum))
 
-				if markupType == "table":
+				if markupType == "nf":
+					outBlock = processNf(inBlock, keepOriginal, args)
+				elif markupType == "table":
 					outBlock = processTable(inBlock, keepOriginal)
 				elif markupType == "toc":
 					outBlock = processToc(inBlock, keepOriginal, args)
@@ -713,7 +715,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 				elif markupType == "appendix":
 					outBlock = processAppendix(inBlock, keepOriginal, args)
 				elif markupType == "bq":
-					outBlock = processBlockquote(inBlock, keepOriginal)
+					outBlock = processBlockquote(inBlock, keepOriginal, args)
 				elif markupType == "hang":
 					outBlock = processHangingindent(inBlock, keepOriginal)
 				else:
@@ -764,6 +766,30 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 	return outBuf;
 
 
+def processNf( inBuf, keepOriginal, args ):
+	outBuf = []
+	lineNum = 0
+
+	# Use arguments if provided
+	align = 'c'
+	if 'c' in args:
+		align = 'c'
+	if 'l' in args:
+		align = 'c'
+	if 'r' in args:
+		align = 'c'
+
+	outBuf.append(".nf {}".format(align))
+
+	while lineNum < len(inBuf):
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	outBuf.append(".nf-")
+
+	return outBuf;
+
+
 def processTitlePage( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
@@ -782,12 +808,17 @@ def processTitlePage( inBuf, keepOriginal ):
 	return outBuf;
 
 
-def processBlockquote( inBuf, keepOriginal ):
+def processBlockquote( inBuf, keepOriginal, args ):
 	outBuf = []
 	lineNum = 0
 
-	outBuf.append(".in 2")
-	outBuf.append(".ll -2")
+	# Use arguments if provided
+	indent = 2
+	if 'in' in args:
+		indent = args['in']
+
+	outBuf.append(".in {}".format(indent))
+	outBuf.append(".ll -{}".format(indent))
 
 	while lineNum < len(inBuf):
 		outBuf.append(inBuf[lineNum])
@@ -803,18 +834,20 @@ def processAppendix( inBuf, keepOriginal, args ):
 	outBuf = []
 	lineNum = 0
 
-	outBuf.append(".na")
-	outBuf.append(".in 2")
-	outBuf.append(".nf l")
-
-	print(args)
+	# Use arguments if provided
 	s = r", (\d{1,3})(?!\d)"
 	if 's' in args:
 		s = args['s']
 	r = r", #\1#"
 	if 'r' in args:
 		r = args['r']
+	indent = 2
+	if 'in' in args:
+		indent = args['in']
 
+	outBuf.append(".na")
+	outBuf.append(".in {}".format(indent))
+	outBuf.append(".nf l")
 
 	while lineNum < len(inBuf):
 		if isLineOriginalText(inBuf[lineNum]):
@@ -879,6 +912,7 @@ def processToc( inBuf, keepOriginal, args ):
 			styleUsed = style
 			break
 
+	# Use arguments if provided
 	columns = style['columns']
 	if 'columns' in args:
 		columns = args['columns']
