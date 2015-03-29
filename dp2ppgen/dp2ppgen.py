@@ -619,7 +619,7 @@ def detectMarkup( inBuf ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'table':0, 'toc':0, 'titlepage':0, 'poetry':0, 'appendix':0 }
+	markupCount = {'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
 
 	while lineNum < len(inBuf):
 
@@ -629,40 +629,34 @@ def detectMarkup( inBuf ):
 		#	titlepage
 		#	poetry
 		#	appendix
-		m = re.match(r"\/\*(.*)", inBuf[lineNum])
+		m = re.match(r"\/(\*|\#)(.*)", inBuf[lineNum])
 		if m:
 			inBlock = []
 			outBlock = []
 			foundChapterHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
-			markupType = m.group(1)
+			markupType = m.group(2).split(" ")[0]
+			dpType = m.group(1)
 
 			# Copy nowrap block
 			#TODO handle nested case where /* /* */ */
 			lineNum += 1
-			while lineNum < len(inBuf) and not inBuf[lineNum].startswith("*/"):
+			while lineNum < len(inBuf) and not inBuf[lineNum].startswith("{}/".format(dpType)):
 				inBlock.append(inBuf[lineNum])
 				lineNum += 1
 			lineNum += 1
 
 			# autodetect markup
 			if not markupType:
-				markupType = detectNoWrapMarkupType(inBlock)
+				markupType = detectMarkupType(inBlock,dpType)
 
 			if markupType:
 				markupCount[markupType] += 1
 
-			outBuf.append("/*{}".format(markupType))
+			outBuf.append("/{}{}".format(dpType,markupType))
 			for line in inBlock:
 				outBuf.append(line)
-			outBuf.append("*/")
-
-		# Process rewrap /# #/ markup
-		#	blockquote
-		#	hangingindent
-		elif re.match(r"\/\#(.*)", inBuf[lineNum]):
-			outBuf.append(inBuf[lineNum])
-			lineNum += 1
+			outBuf.append("{}/".format(dpType))
 
 		else:
 			outBuf.append(inBuf[lineNum])
@@ -675,7 +669,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'table':0, 'toc':0, 'titlepage':0, 'poetry':0, 'appendix':0 }
+	markupCount = {'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
 
 	while lineNum < len(inBuf):
 
@@ -685,20 +679,21 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 		#	titlepage
 		#	poetry
 		#	appendix
-		m = re.match(r"\/\*(.*)", inBuf[lineNum])
+		m = re.match(r"\/(\*|\#)(.*)", inBuf[lineNum])
 		if m:
 			inBlock = []
 			outBlock = []
 			foundChapterHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
-			markupType = m.group(1).split(" ")[0]
-			args = parseArgs(m.group(1))
+			markupType = m.group(2).split(" ")[0]
+			args = parseArgs(m.group(2))
+			dpType = m.group(1)
 
 			# Copy nowrap block
 			#TODO handle nested case where /* /* */ */
 			nowrapStartLine = inBuf[lineNum]
 			lineNum += 1
-			while lineNum < len(inBuf) and not inBuf[lineNum].startswith("*/"):
+			while lineNum < len(inBuf) and not inBuf[lineNum].startswith("{}/".format(dpType)):
 				inBlock.append(inBuf[lineNum])
 				lineNum += 1
 			nowrapEndLine = inBuf[lineNum]
@@ -711,10 +706,14 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 					outBlock = processTable(inBlock, keepOriginal)
 				elif markupType == "toc":
 					outBlock = processToc(inBlock, keepOriginal, args)
-				elif markupType == "titlepage":
+				elif markupType == "title":
 					outBlock = processTitlePage(inBlock, keepOriginal)
 				elif markupType == "poetry":
 					outBlock = processPoetry(inBlock, keepOriginal)
+				elif markupType == "bq":
+					outBlock = processBlockquote(inBlock, keepOriginal)
+				elif markupType == "hang":
+					outBlock = processHangingindent(inBlock, keepOriginal)
 				else:
 					logging.warn("{}: Unknown markup type '{}' found".format(lineNum+1,markupType))
 
@@ -727,14 +726,6 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 				for line in inBlock:
 					outBuf.append(line)
 				outBuf.append(nowrapEndLine)
-
-
-		# Process rewrap /# #/ markup
-		#	blockquote
-		#	hangingindent
-		elif re.match(r"\/\#(.*)", inBuf[lineNum]):
-			outBuf.append(inBuf[lineNum])
-			lineNum += 1
 
 		else:
 			outBuf.append(inBuf[lineNum])
@@ -789,6 +780,23 @@ def processTitlePage( inBuf, keepOriginal ):
 	return outBuf;
 
 
+def processBlockquote( inBuf, keepOriginal ):
+	outBuf = []
+	lineNum = 0
+
+	outBuf.append(".in 2")
+	outBuf.append(".ll -2")
+
+	while lineNum < len(inBuf):
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	outBuf.append(".ll")
+	outBuf.append(".in")
+
+	return outBuf;
+
+
 # For a given ppgen command, parse all arguments in the form
 # 	arg="val"
 # 	arg='val'
@@ -814,8 +822,6 @@ def parseArgs(commandLine):
 def processToc( inBuf, keepOriginal, args ):
 	outBuf = []
 	lineNum = 0
-
-	print(args)
 
 	tocStyles = (
 		# 3. County and Shire. Meaning of the Words      42
@@ -857,7 +863,8 @@ def processToc( inBuf, keepOriginal, args ):
 			#r = r"#\1:{}#|#\2#".format(formatAsID(m.group(1)))
 			print("{}: {}".format(lineNum+1, inBuf[lineNum]))
 
-		inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
+		if isLineOriginalText(inBuf[lineNum]):
+			inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
 
@@ -1038,7 +1045,7 @@ def dpTableToRst( inBuf ):
 	return outBuf
 
 
-def detectNoWrapMarkupType( buf ):
+def detectMarkupType( buf, dpType ):
 	# Tables
 	matches = {
 			  "table": {
