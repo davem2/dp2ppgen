@@ -18,6 +18,7 @@ setup(
   install_requires = [
     'docopt >= 0.6.1',
     'docutils >= 0.12',
+    'pillow >= 2.7.0',
   ],
   classifiers = [
     "Environment :: Console",

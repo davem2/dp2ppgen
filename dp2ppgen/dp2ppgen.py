@@ -49,6 +49,7 @@ import logging
 import tempfile
 import subprocess
 import shlex
+from PIL import Image
 
 
 VERSION="0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
@@ -1821,6 +1822,11 @@ def buildImageDictionary():
 	return images;
 
 
+def idFromFilename( fn ):
+	id = os.path.basename(fn) # strip to filename only
+	id = os.path.splitext(id)[0] # strip off extension
+	return id
+
 def idFromPageNumber( pn ):
 	s =  'i_{}'.format(pn)
 	return s
@@ -1928,8 +1934,7 @@ def processIllustrations( inBuf ):
 			for line in outBlock:
 				outBuf.append(line)
 
-			logging.debug("Line " + str(lineNum) + ": ScanPage " + str(currentScanPage) + ": convert " + str(inBlock))
-
+			logging.debug("Line {}: ScanPage {}: convert {}".format(str(lineNum),str(currentScanPage),str(inBlock)))
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
