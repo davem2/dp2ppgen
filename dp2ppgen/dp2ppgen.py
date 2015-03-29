@@ -498,7 +498,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 				for line in inBlock:
 					outBuf.append(line)
 			elif len(inBlock) > chapterMaxLines:
-				logging.warning("Line {}: Disregarding chapter heading; too many lines ({} > {}):\n ---\n{}\n ---".format(lineNum+1,len(inBlock),chapterMaxLines,"\n".join(inBlock[0:6])))
+				logging.warning("Line {}: Disregarding chapter heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1,len(inBlock),chapterMaxLines,"\n".join(inBlock[0:6])))
 				for line in inBlock:
 					outBuf.append(line)
 
@@ -557,7 +557,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 
 			# Check if this is a heading
 			if len(inBlock) > sectionMaxLines:
-				logging.warning("Line {}: Disregarding section heading; too many lines ({} > {}):\n ---\n{}\n ---".format(lineNum+1,len(inBlock),sectionMaxLines,"\n".join(inBlock[0:6])))
+				logging.warning("Line {}: Disregarding section heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1,len(inBlock),sectionMaxLines,"\n".join(inBlock[0:6])))
 				for line in inBlock:
 					outBuf.append(line)
 			else:
