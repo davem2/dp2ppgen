@@ -47,6 +47,7 @@ import sys
 import logging
 import tempfile
 import subprocess
+import shlex
 
 
 VERSION="0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
@@ -690,7 +691,8 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 			outBlock = []
 			foundChapterHeadingEnd = False;
 			consecutiveEmptyLineCount = 0;
-			markupType = m.group(1)
+			markupType = m.group(1).split(" ")[0]
+			args = parseArgs(m.group(1))
 
 			# Copy nowrap block
 			#TODO handle nested case where /* /* */ */
@@ -708,7 +710,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 				if markupType == "table":
 					outBlock = processTable(inBlock, keepOriginal)
 				elif markupType == "toc":
-					outBlock = processToc(inBlock, keepOriginal)
+					outBlock = processToc(inBlock, keepOriginal, args)
 				elif markupType == "titlepage":
 					outBlock = processTitlePage(inBlock, keepOriginal)
 				elif markupType == "poetry":
@@ -787,17 +789,41 @@ def processTitlePage( inBuf, keepOriginal ):
 	return outBuf;
 
 
-def processToc( inBuf, keepOriginal ):
+# For a given ppgen command, parse all arguments in the form
+# 	arg="val"
+# 	arg='val'
+# 	arg=val
+#
+def parseArgs(commandLine):
+	arguments = {}
+
+	# break up command line
+	tokens = shlex.split(commandLine)
+#	print(tokens)
+
+	# process parameters (skip .command)
+	for t in tokens[1:]:
+		t = re.sub(r"[\'\"]","",t)
+		m = re.match(r"(.+)=(.+)", t)
+		if m:
+			arguments[m.group(1)]=m.group(2)
+
+	return(arguments)
+
+
+def processToc( inBuf, keepOriginal, args ):
 	outBuf = []
 	lineNum = 0
 
+	print(args)
+
 	tocStyles = (
 		# 3. County and Shire. Meaning of the Words      42
-		{ 's': r'(\d+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
+		{ 's': r'^(\d+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
 		# XI. Columbus and the Savages      48
-		{ 's': r'([XIVLC]+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
+		{ 's': r'^([XIVLC]+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
 		# SIR CHRISTOPHER WREN      24
-		{ 's': r'(.+?) {6,}(\d+)', 'r': r'#\1:Page_\2#|#\2#', 'count': 0, 'columns': 'lr' },
+		{ 's': r'^(.+?) {6,}(\d+)', 'r': r'#\1:Page_\2#|#\2#', 'count': 0, 'columns': 'lr' },
 	)
 
 	for style in tocStyles:
@@ -812,12 +838,19 @@ def processToc( inBuf, keepOriginal ):
 			styleUsed = style
 			break
 
+	columns = style['columns']
+	if 'columns' in args:
+		columns = args['columns']
+	s = styleUsed['s']
+	if 's' in args:
+		s = args['s']
+	r = styleUsed['r']
+	if 'r' in args:
+		r = args['r']
+
 	outBuf.append(".ta {}".format(style['columns']))
 
 	while lineNum < len(inBuf):
-		s = styleUsed['s']
-		r = styleUsed['r']
-
 		m = re.search(s,inBuf[lineNum])
 		if m:
 			#section ID
