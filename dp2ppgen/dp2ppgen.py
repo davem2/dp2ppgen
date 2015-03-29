@@ -26,6 +26,7 @@ Options:
   --lzdesth=<lzdesth>	Where to place footnote landing zones for HTML output (chapterend, bookend).
   --fixup               Perform guiguts style fixup operations.
   --force               Ignore markup errors and force operation.
+  -i, --illustrations   Convert raw [Illustration] tags into ppgen .il/.ca markup.
   -j, --joinspanned     Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
   -k, --keeporiginal    On any conversion keep original text as a comment.
   -p, --pages           Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
@@ -1789,6 +1790,157 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 	return outBuf
 
 
+def buildImageDictionary():
+	# Build dictionary of image files in images/ directory
+	files = sorted(glob.glob("images/*"))
+
+	logging.info("--- Taking inventory of /image folder")
+	images = {}
+	for f in files:
+		try:
+			img = Image.open(f)
+			img.load()
+		except IOError:
+			logging.warning("Error loading '{}' ... skipping".format(f))
+		except:
+			raise
+		else:
+			fn = os.path.basename(f)
+			anchorID = idFromFilename(fn)
+			logging.debug("Found image id={} fn='{}' size={}".format(anchorID,fn,img.size))
+			scanPageNum = re.sub("[^0-9]","",fn)
+			key = idFromFilename(fn)
+			images[key] = ({'anchorID':anchorID, 'fileName':fn, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':"", 'usageCount':0 })
+
+			if not re.match(r"i_\d{3,4}[a-z]?\.", fn) and fn != "cover.jpg":
+				logging.warning("File '{}' does not match expected naming convention (i_001, i_001a)".format(fn))
+
+#	print(images)
+	logging.info("----- Found {} images".format(len(images)))
+
+	return images;
+
+
+def idFromPageNumber( pn ):
+	s =  'i_{}'.format(pn)
+	return s
+
+def processIllustrations( inBuf ):
+	# Replace [Illustration: caption] markup with equivalent .il/.ca statements
+	outBuf = []
+	lineNum = 0
+	currentScanPage = 0
+	illustrationTagCount = 0
+	asteriskIllustrationTagCount = 0
+	#TODO use format() instead of +
+
+	logging.info("-- Processing illustrations")
+
+	illustrations = buildImageDictionary()
+
+	logging.info("--- Converting [Illustration] tags")
+	while lineNum < len(inBuf):
+		# Keep track of active scanpage, page numbers must be
+		pn = parseScanPage(inBuf[lineNum])
+		if pn:
+			currentScanPage = os.path.splitext(pn)[0]
+			logging.debug("--- Processing page {}".format(pn))
+
+		# Copy until next illustration block
+		if re.match(r"^\[Illustration", inBuf[lineNum]) or re.match(r"^\*\[Illustration", inBuf[lineNum]):
+			inBlock = []
+			outBlock = []
+
+			# *[Illustration:] tags need to be handled manually afterward (can't reposition before or illustration will change page location)
+			if re.match(r"^\*\[Illustration", inBuf[lineNum]):
+				asteriskIllustrationTagCount += 1
+			else:
+				illustrationTagCount += 1
+
+			# Copy illustration block
+			bracketLevel = 0
+			done = False
+			while lineNum < len(inBuf)-1 and not done:
+				# Detect when [ ] level so that nested [] are handled properly
+				m = re.findall("\[", inBuf[lineNum])
+				for b in m:
+					bracketLevel += 1
+				m = re.findall("\]", inBuf[lineNum])
+				for b in m:
+					bracketLevel -= 1
+
+				if bracketLevel == 0 and re.search(r"]$", inBuf[lineNum]):
+					done = True
+				else:
+					lineNum += 1
+					inBlock.append(inBuf[lineNum])
+
+			lineNum += 1
+
+			# Handle multiple illustrations per page, must be named (i_001a, i_001b, ...) or (i_001, i_001a, i_001b, ...)
+			ilID = None
+			testID = idFromPageNumber(currentScanPage)
+			if testID in illustrations and illustrations[testID]['usageCount'] == 0:
+				ilID = testID
+			else: # try i_001a, i_001b, ..., i_001z
+				alphabet = map(chr, range(97,123))
+				for letter in alphabet:
+					if testID+letter in illustrations and illustrations[testID+letter]['usageCount'] == 0:
+						ilID = testID+letter
+						break;
+
+			if ilID == None and testID in illustrations:
+				ilID = testID
+			elif ilID == None:
+				logging.error("No image file for illustration located on scan page {}".format(currentScanPage));
+
+			if ilID:
+				# Convert to ppgen illustration block
+				# .il id=i001 fn=i_001.jpg w=600 alt=''
+				outBlock.append(".il id={} fn={} w={}px alt=''".format(ilID,illustrations[ilID]['fileName'],str(illustrations[ilID]['dimensions'][0])))
+				illustrations[ilID]['usageCount'] += 1
+			else:
+				outBlock.append(".il id={} fn={} alt=''".format(testID,testID))
+
+			# Extract caption from illustration block
+			captionBlock = []
+			for line in inBlock:
+				line = re.sub(r"^\[Illustration: ", "", line)
+				line = re.sub(r"^\[Illustration", "", line)
+				line = re.sub(r"]$", "", line)
+				captionBlock.append(line)
+
+		    # .ca SOUTHAMPTON BAR IN THE OLDEN TIME.
+			if len(captionBlock) == 1 and captionBlock[0] == "":
+				# No caption
+				pass
+			elif len(captionBlock) == 1:
+				# One line caption
+				outBlock.append(".ca " + captionBlock[0]);
+			else:
+				# Multiline caption
+				outBlock.append(".ca");
+				for line in captionBlock:
+					outBlock.append(line)
+				outBlock.append(".ca-");
+
+			# Write out ppgen illustration block
+			for line in outBlock:
+				outBuf.append(line)
+
+			logging.debug("Line " + str(lineNum) + ": ScanPage " + str(currentScanPage) + ": convert " + str(inBlock))
+
+		else:
+			outBuf.append(inBuf[lineNum])
+			lineNum += 1
+
+	logging.info("--- Processed {} [Illustrations] tags".format(illustrationTagCount))
+	if asteriskIllustrationTagCount > 0:
+		logging.warning("Found {} *[Illustrations] tags; ppgen .il/.ca statements have been generated, but relocation to paragraph break must be performed manually.".format(asteriskIllustrationTagCount))
+
+	return outBuf;
+
+
 def getLinesUntil( inBuf, startLineNum, endRegex, direction=1 ):
 	outBlock = []
 	lineNum = startLineNum
@@ -2203,6 +2355,7 @@ def main():
 	doSectionHeadings = args['--sections'];
 	doFootnotes = args['--footnotes'];
 	doSidenotes = args['--sidenotes'];
+	doIllustrations = args['--illustrations']
 	doMarkup = args['--markup'];
 	doPages = args['--pages'];
 	doJoinSpanned = args['--joinspanned'];
@@ -2223,6 +2376,7 @@ def main():
 		not doSectionHeadings and \
 		not doFootnotes and \
 		not doSidenotes and \
+		not doIllustrations and \
 		not doMarkup and \
 		not doPages and \
 		not doFixup and \
@@ -2235,6 +2389,7 @@ def main():
 		doSectionHeadings = False
 		doFootnotes = True
 		doSidenotes = True
+		doIllustrations = True
 		doMarkup = False
 		doFixup = False
 		doUTF8 = True
@@ -2262,6 +2417,8 @@ def main():
 			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'], chapterMaxLines, sectionMaxLines)
 		if doSidenotes:
 			outBuf = processSidenotes(outBuf, args['--keeporiginal'])
+		if doIllustrations:
+			outBuf = processIllustrations(outBuf)
 		if doFootnotes:
 			footnoteDestination = "bookend"
 			if args['--fndest']:
