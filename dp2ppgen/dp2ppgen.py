@@ -710,6 +710,8 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 					outBlock = processTitlePage(inBlock, keepOriginal)
 				elif markupType == "poetry":
 					outBlock = processPoetry(inBlock, keepOriginal)
+				elif markupType == "appendix":
+					outBlock = processAppendix(inBlock, keepOriginal, args)
 				elif markupType == "bq":
 					outBlock = processBlockquote(inBlock, keepOriginal)
 				elif markupType == "hang":
@@ -793,6 +795,39 @@ def processBlockquote( inBuf, keepOriginal ):
 
 	outBuf.append(".ll")
 	outBuf.append(".in")
+
+	return outBuf;
+
+
+def processAppendix( inBuf, keepOriginal, args ):
+	outBuf = []
+	lineNum = 0
+
+	outBuf.append(".na")
+	outBuf.append(".in 2")
+	outBuf.append(".nf l")
+
+	print(args)
+	s = r", (\d{1,3})(?!\d)"
+	if 's' in args:
+		s = args['s']
+	r = r", #\1#"
+	if 'r' in args:
+		r = args['r']
+
+
+	while lineNum < len(inBuf):
+		if isLineOriginalText(inBuf[lineNum]):
+			m = re.search(r"(\d{4,})",inBuf[lineNum])
+			if m:
+				logging.warning("Link not created for digit in appendix: {}".format(m.group(1)))
+			inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	outBuf.append(".nf-")
+	outBuf.append(".in")
+	outBuf.append(".ad")
 
 	return outBuf;
 
