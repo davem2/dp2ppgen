@@ -277,7 +277,7 @@ def getDpMarkupBlock( buf, startLine ):
 def isNextOriginalLineBlank( buf, startLine ):
 	result = None
 	lineNum = startLine
-	while lineNum < len(buf)-1 and result == None:
+	while lineNum < len(buf) and result == None:
 		if isLineBlank(buf[lineNum]):
 			result = True
 		elif isLineOriginalText(buf[lineNum]):
@@ -349,56 +349,72 @@ def formatAsID( s ):
 
 def findNextEmptyLine( buf, startLine ):
 	lineNum = startLine
-	while lineNum < len(buf)-1 and not isLineBlank(buf[lineNum]):
+	retVal = None
+	while lineNum < len(buf) and not retVal:
+		if isLineBlank(buf[lineNum]):
+			retVal = lineNum
 		lineNum += 1
-	return lineNum
-
+	return retVal
 
 def findPreviousEmptyLine( buf, startLine ):
 	lineNum = startLine
-	while lineNum >= 0 and not isLineBlank(buf[lineNum]):
+	retVal = None
+	while lineNum >= 0 and not retVal:
+		if isLineBlank(buf[lineNum]):
+			retVal = lineNum
 		lineNum -= 1
-	return lineNum
-
+	return retVal
 
 def findNextNonEmptyLine( buf, startLine ):
 	lineNum = startLine
-	while lineNum < len(buf)-1 and isLineBlank(buf[lineNum]):
+	retVal = None
+	while lineNum < len(buf) and not retVal:
+		if not isLineBlank(buf[lineNum]):
+			retVal = lineNum
 		lineNum += 1
-	return lineNum
-
+	return retVal
 
 def findPreviousNonEmptyLine( buf, startLine ):
 	lineNum = startLine
-	while lineNum >= 0 and isLineBlank(buf[lineNum]):
+	retVal = None
+	while lineNum < len(buf) and not retVal:
+		if not isLineBlank(buf[lineNum]):
+			retVal = lineNum
 		lineNum -= 1
-	return lineNum
+	return retVal
 
-
-# find previous line that contains original book text (ignore ppgen markup, proofing markup, blank lines)
+# find previous line that contains original book text
+# (ignore ppgen markup, proofing markup, blank lines)
 def findPreviousLineOfText( buf, startLine ):
 	lineNum = findPreviousNonEmptyLine(buf, startLine)
-	while lineNum > 0 and not isLineOriginalText(buf[lineNum]):
-		lineNum = findPreviousNonEmptyLine(buf, lineNum-1)
+	retVal = None
+	while lineNum >= 0 and not retVal:
+		if isLineOriginalText(buf[lineNum]):
+			retVal = lineNum
+		elif lineNum > 0:
+			lineNum = findPreviousNonEmptyLine(buf, lineNum-1)
 	return lineNum
 
-
-# find next line that contains original book text (ignore ppgen markup, proofing markup, blank lines)
+# find next line that contains original book text
+# (ignore ppgen markup, proofing markup, blank lines)
 def findNextLineOfText( buf, startLine ):
 	lineNum = findNextNonEmptyLine(buf, startLine)
-	while lineNum < len(buf)-1 and not isLineOriginalText(buf[lineNum]):
-		lineNum = findNextNonEmptyLine(buf, lineNum+1)
+	retVal = None
+	while lineNum < len(buf) and not retVal:
+		if isLineOriginalText(buf[lineNum]):
+			retVal = lineNum
+		elif lineNum < len(buf)-1:
+			lineNum = findNextNonEmptyLine(buf, lineNum+1)
 	return lineNum
-
 
 def findNextChapter( buf, startLine ):
 	lineNum = startLine
-	chapterLineNum = None
-	while lineNum < len(buf)-1 and not chapterLineNum:
+	retVal = None
+	while lineNum < len(buf)-1 and not retVal:
 		if buf[lineNum].startswith(".h2"):
-			chapterLineNum = lineNum
+			retVal = lineNum
 		lineNum += 1
-	return chapterLineNum
+	return retVal
 
 
 def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, chapterMaxLines, sectionMaxLines ):
