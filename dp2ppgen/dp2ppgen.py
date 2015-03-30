@@ -21,6 +21,7 @@ Options:
   -e, --sections        Convert section headings into ppgen style section headings.
   --sectionmaxlines		Max lines a section can be, ianything larger is not a section
   -f, --footnotes       Convert footnotes into ppgen format.
+  --fnautonum           Use ppgen autonumbering for generated anchors and .fn statements.
   --fndest=<fndest>     Where to relocate footnotes (paragraphend, chapterend, bookend, inplace).
   --lzdestt=<lzdestt>	Where to place footnote landing zones for text output (chapterend, bookend).
   --lzdesth=<lzdesth>	Where to place footnote landing zones for HTML output (chapterend, bookend).
@@ -1459,12 +1460,13 @@ def parseFootnotes( inBuf ):
 	return footnotes;
 
 
-def processFootnoteAnchors( inBuf, footnotes ):
+def processFootnoteAnchors( inBuf, footnotes, useAutoNumbering ):
 
 	outBuf = inBuf
 
 	# process footnote anchors
-	fnAnchorCount = 0
+	fnUniqueAnchorCount = 0
+	anchorCount = 0
 	lineNum = 0
 	currentScanPage = 0
 	currentScanPageLabel = ""
@@ -1503,19 +1505,23 @@ def processFootnoteAnchors( inBuf, footnotes ):
 				curAnchor = "\[{}\]".format(anchor)
 				logging.debug("curAnchor={} anchorsThisPage={}".format(curAnchor,anchorsThisPage))
 				if not curAnchor in anchorsThisPage:
-					fnAnchorCount += 1
+					fnUniqueAnchorCount += 1
 					anchorsThisPage.append(curAnchor)
+				elif useAutoNumbering:
+					logging.error("Duplicate anchors ([{}]) detected ({}); ppgen autonumbering may not function correctly".format(anchor,currentScanPage))
 
-				newAnchor = "[{}]".format(fnAnchorCount)
-				#TODO: add option to use ppgen autonumber? [#].. unsure if good reason to do this, would hide footnote mismatch errors and increase ppgen project compile times
+				if useAutoNumbering:
+					newAnchor = "[#]"
+				else:
+					newAnchor = "[{}]".format(fnUniqueAnchorCount)
 
 				logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor,lineNum+1,currentScanPageLabel,outBuf[lineNum]))
-				for line in footnotes[fnAnchorCount-1]['fnText']:
+				for line in footnotes[fnUniqueAnchorCount-1]['fnText']:
 					logging.debug("       {}".format(line))
 
 				# sanity check (anchor and footnote should be on same scan page)
-				if currentScanPage != footnotes[fnAnchorCount-1]['scanPageNum']:
-					fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnAnchorCount-1]['scanPageNum']))
+				if currentScanPage != footnotes[fnUniqueAnchorCount-1]['scanPageNum']:
+					fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnUniqueAnchorCount-1]['scanPageNum']))
 
 				# replace anchor
 				outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])
@@ -1523,23 +1529,23 @@ def processFootnoteAnchors( inBuf, footnotes ):
 				# update paragraphEnd and chapterEnd so they are relative to anchor and not [Footnote
 				# Find end of paragraph
 				paragraphEnd = findNextEmptyLine(outBuf, lineNum)
-				footnotes[fnAnchorCount-1]['paragraphEnd'] = paragraphEnd
+				footnotes[fnUniqueAnchorCount-1]['paragraphEnd'] = paragraphEnd
 
 				# Find end of chapter (line after last line of last paragraph)
 				# Chapter headings must be marked in ppgen format (.h2)
 				chapterEnd = findNextChapter(outBuf, lineNum)
 				if chapterEnd:
 					chapterEnd = findPreviousLineOfText(outBuf, chapterEnd) + 1
-					footnotes[fnAnchorCount-1]['chapterEnd'] = chapterEnd
+					footnotes[fnUniqueAnchorCount-1]['chapterEnd'] = chapterEnd
 
 		lineNum += 1
 
-	logging.info("-- Processed {} footnote anchors".format(fnAnchorCount))
+	logging.info("-- Processed {} footnote anchors".format(fnUniqueAnchorCount))
 
-	return outBuf, fnAnchorCount
+	return outBuf, fnUniqueAnchorCount
 
 
-def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth ):
+def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth, useAutoNumbering ):
 	outBuf = []
 
 	logging.info("Processing footnotes")
@@ -1565,13 +1571,13 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth
 		outBuf = stripFootnoteMarkup(outBuf)
 
 	# find and markup footnote anchors
-	outBuf, fnAnchorCount = processFootnoteAnchors(outBuf, footnotes)
+	outBuf, fnUniqueAnchorCount = processFootnoteAnchors(outBuf, footnotes, useAutoNumbering)
 
-	if len(footnotes) != fnAnchorCount:
+	if len(footnotes) != fnUniqueAnchorCount:
 		logging.error("Footnote anchor count does not match footnote count")
 
 	if len(footnotes) > 0:
-		outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination, lzdestt, lzdesth)
+		outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination, lzdestt, lzdesth, useAutoNumbering)
 		outBuf = generateLandingZones(outBuf, footnotes, lzdestt, lzdesth)
 
 	logging.info("Processed {} footnotes".format(len(footnotes)))
@@ -1580,7 +1586,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth
 
 
 # Generate ppgen footnote markup
-def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt, lzdesth ):
+def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt, lzdesth, useAutoNumbering ):
 
 	outBuf = inBuf
 
@@ -1631,7 +1637,11 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
 			# build markup for this footnote
 #			print("{} {}".format(fn['chapterEnd'],fn['fnText'][0]))
 			fnMarkup = []
-			fnMarkup.append(".fn {}".format(i+1))
+			if useAutoNumbering:
+				fnMarkup.append(".fn #")
+			else:
+				fnMarkup.append(".fn {}".format(i+1))
+
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
@@ -2368,12 +2378,11 @@ def main():
 
 	#TODO, load config file and use those options if one is present
 	chapterMaxLines = 8
-	sectionMaxLines = 2
 	if args['--chaptermaxlines']:
 		chapterMaxLines = int(args['--chaptermaxlines'])
+	sectionMaxLines = 2
 	if args['--sectionmaxlines']:
 		sectionMaxLines = int(args['--sectionmaxlines'])
-
 
 	# Use default options if no processing options are set
 	if not doChapterHeadings and \
@@ -2427,7 +2436,10 @@ def main():
 			footnoteDestination = "bookend"
 			if args['--fndest']:
 				footnoteDestination = args['--fndest']
-			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'], args['--lzdestt'], args['--lzdesth'])
+			useAutoNumbering = False
+			if args['--fnautonum']:
+				useAutoNumbering = True
+			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'], args['--lzdestt'], args['--lzdesth'], useAutoNumbering)
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
