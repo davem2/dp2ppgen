@@ -4,15 +4,7 @@
 		id|CHAPTER I
 		...id|SECTION I
 
-- Need to worry about encoding?
-
-- Add "aggresiveness" parameter for heading detection option.
-    Simple max line count?
-
 - Add option to squash paragraphs to one line .. not sure this would be useful?
-
-- Add footnote processing
-  - Option to place footnote inline
 
 - New feature (maybe a whole new tool in itself) to help resolve -* issues
     - generate report on all -* words
@@ -23,37 +15,19 @@
     - generate report
     - autofix?
 
-- Autojoin -* *- cases due to line breaks (just move to same line and leave -* in place)
-
-- Sidenotes
-
 - Automate section id naming
 
 - Check that --keeporiginal works with all operations (doesnt with --footnotes for example)
-
-- Generate TOC? Maybe detect certain style TOC and generate or have user pick.. user defined templates? Usefulness of this depends on how variable styles are for TOC
 
 - More comprehensive error check on pgdp markup
 
 - Add configuration file to allow for more customizability
 
-- Add basic illustration conversion
-
-- <tb> to .tb
-
 - Convert UTF8?
-
-- Refactor footnote processing function
-
-- Convert lines like "*/\n// Pg xx\n/*" to "// Pg xx\n"
 
 - New application that performs all checks in "make errorcheck" and generates an html report with the full text that was scanned included in the report. All issues are hyperlinked to the line/column in document that they reference. Maybe split view with error report on one side and document on other (like guiguts but in a browser). Have original be editable in browser so corrections could be made as well would be bonus. Another bonus would be to map errors from scanned doc (book-utf8) back into ppgen source file (book-src.txt) and be able to navigate/make corrections directly to source file.
 
-- Implement isLinePageBreak() returns (True, 010.png) and use where appropriate. Handle ppgen as well as pgdp style so that page renumbering will no longer be a requirement for all other operations.
-
 - Generate index?
-
-- Automatically convert /# /* to nf/.in,.ll
 
 - Add --fixup option that performs guiguts fixup function:
     • Remove spaces at end of line.
@@ -80,13 +54,6 @@
 
 - Change design so that instead of parsing the whole file per operation do one pass. Change functions to take line instead of file buffer.. (for single line conversions..).. maybe pass group of lines?
 
-- Add project to python package repo so it can be installed via pip
-    - read packaging guide on pypi site
-    - add setup.py
-    - structure project as best practices
-
-- Footnote processing slow.. (fm1b.txt good test) takes about 15 seconds to process
-
 - Templates? Could just be config file
 
 - Would be nice to have .li HTML in a separate file for easier edit workflow (edit/refresh), add feature that parses out .li HTML snippets and .de statements and creates an HTML file out of them.
@@ -109,3 +76,13 @@
 
 - Add the ability to reorganize ppgen formatted footnotes.
 
+- Add --report=(txt,html,csv) to generate a report on the input file containing:
+    toc outline
+    table of footnotes
+    table of illustrations (in ppgimg too?)
+    list of proofer notes
+    markup errors with associated line numbers
+
+- Add option --boilerplate, if the files header.txt or footer.txt exists append to the start and end of output
+
+-

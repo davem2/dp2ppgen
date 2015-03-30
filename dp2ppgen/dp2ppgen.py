@@ -15,6 +15,7 @@ Examples:
   dp2ppgen book.txt book-src.txt
 
 Options:
+  --boilerplate         Pastes contents of header.txt and footer.txt to start and end
   -c, --chapters        Convert chapter headings into ppgen style chapter headings.
   --chaptermaxlines		Max lines a chapter can be, anything larger is not a chapter
   -d, --dryrun          Run through conversions but do not write out result.
@@ -56,7 +57,7 @@ from PIL import Image
 VERSION="0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
 
 markupTypes = {
-	'/*': ('table','toc','titlepage','poetry','appendix'),
+	'/*': ('table','toc','titlepage','poetry','index'),
 	'/#': ('blockquote','hangingindent'),
 }
 
@@ -637,7 +638,7 @@ def detectMarkup( inBuf ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'nf':0, 'ta':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
+	markupCount = {'nf':0, 'ta':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'index':0, 'bq':0, 'hang':0 }
 
 	while lineNum < len(inBuf):
 
@@ -646,7 +647,7 @@ def detectMarkup( inBuf ):
 		#	toc
 		#	titlepage
 		#	poetry
-		#	appendix
+		#	index
 		m = re.match(r"\/(\*|\#)(.*)", inBuf[lineNum])
 		if m:
 			inBlock = []
@@ -687,7 +688,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'nf':0, 'ta':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'appendix':0, 'bq':0, 'hang':0 }
+	markupCount = {'nf':0, 'ta':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'index':0, 'bq':0, 'hang':0 }
 
 	while lineNum < len(inBuf):
 
@@ -696,7 +697,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 		#	toc
 		#	titlepage
 		#	poetry
-		#	appendix
+		#	index
 		m = re.match(r"\/(\*|\#)(.*)", inBuf[lineNum])
 		if m:
 			inBlock = []
@@ -732,8 +733,8 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 					outBlock = processTitlePage(inBlock, keepOriginal)
 				elif markupType == "poetry":
 					outBlock = processPoetry(inBlock, keepOriginal)
-				elif markupType == "appendix":
-					outBlock = processAppendix(inBlock, keepOriginal, args)
+				elif markupType == "index":
+					outBlock = processIndex(inBlock, keepOriginal, args)
 				elif markupType == "bq":
 					outBlock = processBlockquote(inBlock, keepOriginal, args)
 				elif markupType == "hang":
@@ -884,7 +885,7 @@ def processBlockquote( inBuf, keepOriginal, args ):
 	return outBuf;
 
 
-def processAppendix( inBuf, keepOriginal, args ):
+def processIndex( inBuf, keepOriginal, args ):
 	outBuf = []
 	lineNum = 0
 
@@ -907,7 +908,7 @@ def processAppendix( inBuf, keepOriginal, args ):
 		if isLineOriginalText(inBuf[lineNum]):
 			m = re.search(r"(\d{4,})",inBuf[lineNum])
 			if m:
-				logging.warning("Link not created for digit in appendix: {}".format(m.group(1)))
+				logging.warning("Link not created for digit in index: {}".format(m.group(1)))
 			inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
