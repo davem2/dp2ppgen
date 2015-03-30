@@ -258,7 +258,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 			s = ".bn {0} // -----------------------( {0} )".format(scanPageNum)
 			outBuf.append("{0}{1}".format(s,'-'*max(72-len(s),0)))
 			outBuf.append(".pn +1")
-			logging.debug("{:>{:d}}: '{}' to '{}, {}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-2],outBuf[-1]))
+			logging.debug("{}: Page {}".format(str(lineNum+1),scanPageNum))
 			lineNum += 1
 			count += 1
 
@@ -323,15 +323,15 @@ def isLineOriginalText( line ):
 def parseScanPage( line ):
 	scanPageNum = None
 
-	m = re.match(r"-----File: (\w?\d+\.(png|jpg|jpeg)).*", line)
+	m = re.match(r"-----File: (\w+\.(png|jpg|jpeg)).*", line)
 	if m:
 		scanPageNum = m.group(1)
 
-	m = re.match(r"\/\/ (\w?\d+\.(png|jpg|jpeg))", line)
+	m = re.match(r"\/\/ (\w+\.(png|jpg|jpeg))", line)
 	if m:
 		scanPageNum = m.group(1)
 
-	m = re.match(r"\.bn (\w?\d+\.(png|jpg|jpeg))", line)
+	m = re.match(r"\.bn (\w+\.(png|jpg|jpeg))", line)
 	if m:
 		scanPageNum = m.group(1)
 
@@ -573,7 +573,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 
 			# Check if this is a heading
 			if len(inBlock) > sectionMaxLines:
-				logging.warning("Line {}: Disregarding section heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1,len(inBlock),sectionMaxLines,"\n".join(inBlock[0:6])))
+				logging.debug("Line {}: Disregarding section heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1,len(inBlock),sectionMaxLines,"\n".join(inBlock[0:6])))
 				for line in inBlock:
 					outBuf.append(line)
 			else:
@@ -1361,7 +1361,6 @@ def parseFootnotes( inBuf ):
 		# Keep track of active scanpage
 		if isLinePageBreak(inBuf[lineNum]):
 			currentScanPage = parseScanPage(inBuf[lineNum])
-#			logging.debug("Processing page "+currentScanPage)
 
 		if re.match(r"\*?\[Footnote", inBuf[lineNum]):
 			foundFootnote = True
@@ -1424,7 +1423,6 @@ def parseFootnotes( inBuf ):
 		lineNum += 1
 
 	logging.info("-- Parsed {} footnotes".format(len(footnotes)))
-	logging.debug(footnotes)
 
 	# Join footnotes marked above during parsing
 	joinCount = 0
@@ -1495,7 +1493,6 @@ def processFootnoteAnchors( inBuf, footnotes, useAutoNumbering ):
 		if isLinePageBreak(outBuf[lineNum]):
 			anchorsThisPage = []
 			currentScanPage = parseScanPage(inBuf[lineNum])
-#			logging.debug("-- Processing page "+currentScanPage)
 
 			# Make list of footnotes found on this page
 			fnIDs = []
@@ -1519,7 +1516,6 @@ def processFootnoteAnchors( inBuf, footnotes, useAutoNumbering ):
 			else:
 				# replace [1] or [A] with [n]
 				curAnchor = "\[{}\]".format(anchor)
-				logging.debug("curAnchor={} anchorsThisPage={}".format(curAnchor,anchorsThisPage))
 				if not curAnchor in anchorsThisPage:
 					fnUniqueAnchorCount += 1
 					anchorsThisPage.append(curAnchor)
@@ -1875,7 +1871,6 @@ def processIllustrations( inBuf ):
 		pn = parseScanPage(inBuf[lineNum])
 		if pn:
 			currentScanPage = os.path.splitext(pn)[0]
-			logging.debug("--- Processing page {}".format(pn))
 
 		# Copy until next illustration block
 		if re.match(r"^\[Illustration", inBuf[lineNum]) or re.match(r"^\*\[Illustration", inBuf[lineNum]):
@@ -1959,7 +1954,7 @@ def processIllustrations( inBuf ):
 			for line in outBlock:
 				outBuf.append(line)
 
-			logging.debug("Line {}: ScanPage {}: convert {}".format(str(lineNum),str(currentScanPage),str(inBlock)))
+			logging.debug("{}: ScanPage {}: convert {}".format(str(lineNum+1),str(currentScanPage),str(inBlock)))
 		else:
 			outBuf.append(inBuf[lineNum])
 			lineNum += 1
@@ -2030,7 +2025,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 		#TODO skip multiline [] markup between spanned hyphenation
 		if re.search(r"(?<![-—])-\*?$",inBuf[lineNum]) and lineNum < len(inBuf)-1 and isLinePageBreak(inBuf[lineNum+1]):
 			if inBuf[lineNum][-1] == "*":
-				logging.debug("spanned hyphenation found: {}".format(inBuf[lineNum]))
+				#logging.debug("spanned hyphenation found: {}".format(inBuf[lineNum]))
 				joinToLineNum = lineNum
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
 				if inBuf[joinFromLineNum][0] != '*':
@@ -2043,7 +2038,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 		# em-dash / long dash end of last line
 		if re.search(r"(?<![-—])(--|—)\*?$",inBuf[lineNum]) or re.search(r"(?<![-—])(----|——)\*?$",inBuf[lineNum]):
 			if inBuf[lineNum][-1] == "*":
-				logging.debug("end of line emdash found: {}".format(inBuf[lineNum]))
+				#logging.debug("end of line emdash found: {}".format(inBuf[lineNum]))
 				joinToLineNum = lineNum
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
 				needsJoin = True
@@ -2053,7 +2048,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 		# em-dash / long dash start of first line
 		if re.match(r"\*?(--|—)(?![-—])",inBuf[lineNum]) or re.match(r"\*?(----|——)(?![-—])",inBuf[lineNum]):
 			if inBuf[lineNum][0] == "*":
-				logging.debug("start of line emdash found: {}".format(inBuf[lineNum]))
+				#logging.debug("start of line emdash found: {}".format(inBuf[lineNum]))
 				joinToLineNum = findPreviousLineOfText(inBuf,lineNum-1)
 				joinFromLineNum = lineNum
 				needsJoin = True
@@ -2061,9 +2056,8 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum+1,inBuf[lineNum]))
 
 		if needsJoin:
-			logging.debug("joinToLineNum {}, joinFromLineNum {}".format(joinToLineNum+1,joinFromLineNum))
-			logging.debug("  joinToLineNum: {}".format(inBuf[joinToLineNum]))
-			logging.debug("joinFromLineNum: {}".format(inBuf[joinFromLineNum]))
+			#logging.debug("  joinToLineNum: {}".format(inBuf[joinToLineNum]))
+			#logging.debug("joinFromLineNum: {}".format(inBuf[joinFromLineNum]))
 			# Remove first word of from line
 			fromWord = inBuf[joinFromLineNum].split(' ',1)[0]
 			if len(inBuf[joinFromLineNum].split(' ',1)) > 1:
@@ -2079,7 +2073,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 				dl = -1*(joinFromLineNum-joinToLineNum)
 				outBuf[dl] = outBuf[dl] + fromWord
 
-			logging.debug("Line {}: Resolved hyphenation, ... '{}'".format(joinToLineNum+1,inBuf[joinToLineNum][-30:]))
+			logging.debug("{}: Resolved hyphenation, ...{}".format(joinToLineNum+1,inBuf[joinToLineNum][-30:]))
 			joinCount += 1
 
 		outBuf.append(inBuf[lineNum])
@@ -2122,8 +2116,8 @@ def convertUTF8( inBuf ):
 
 		if line != originalLine:
 			lineCount += 1
-			logging.debug("[{}] {}".format(i,originalLine))
-			logging.debug("{}{}".format(" "*(len(str(i))+3),line))
+			logging.debug("{}: {}".format(i,originalLine))
+			logging.debug("{}{}".format(" "*(len(str(i))+2),line))
 
 		outBuf.append(line)
 
@@ -2393,10 +2387,10 @@ def main():
 	doUTF8 = args['--utf8'];
 
 	#TODO, load config file and use those options if one is present
-	chapterMaxLines = 8
+	chapterMaxLines = 16
 	if args['--chaptermaxlines']:
 		chapterMaxLines = int(args['--chaptermaxlines'])
-	sectionMaxLines = 2
+	sectionMaxLines = 3
 	if args['--sectionmaxlines']:
 		sectionMaxLines = int(args['--sectionmaxlines'])
 
