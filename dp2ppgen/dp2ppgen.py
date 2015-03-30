@@ -2084,6 +2084,36 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	return outBuf
 
 
+def addBoilerplate( inBuf ):
+	outBuf = inBuf
+
+	headerBlock = []
+	fn = os.path.join(os.path.dirname(os.path.realpath(__file__)),'header.txt')
+	logging.info("Adding boilerplate from {}".format(fn))
+	try:
+		with open(fn, 'r') as f:
+			for line in f:
+				headerBlock.append(line.rstrip())
+	except (IOError, OSError) as e:
+		logging.info("Couldn't load {}, skipping header boilerplate".format(fn))
+
+	outBuf[0:0] = headerBlock
+
+	footerBlock = []
+	fn = os.path.join(os.path.dirname(os.path.realpath(__file__)),'footer.txt')
+	logging.info("Adding boilerplate from {}".format(fn))
+	try:
+		with open(fn, 'r') as f:
+			for line in f:
+				headerBlock.append(line.rstrip())
+	except (IOError, OSError) as e:
+		logging.info("Couldn't load {}, skipping footer boilerplate".format(fn))
+
+	outBuf.extend(footerBlock)
+
+	return outBuf
+
+
 def tabsToSpaces( inBuf, tabSize ):
 	outBuf = []
 
@@ -2458,6 +2488,9 @@ def main():
 			outBuf = detectMarkup(outBuf)
 		if doMarkup:
 			outBuf = processOOLFMarkup(outBuf, args['--keeporiginal'])
+
+		if args['--boilerplate']:
+			outBuf = addBoilerplate(outBuf)
 
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))

@@ -6,6 +6,7 @@ setup(
   license       = 'MIT',
   description   = 'Translates pgdp.org formatted text files into ppgen syntax.',
   packages      = ['dp2ppgen'], # this must be the same as the name above
+  package_data  = {'': ['header.txt','footer.txt']},
   version       = '0.2.0',
   url           = 'https://github.com/davem2/dp2ppgen', # use the URL to the github repo
   download_url  = 'https://github.com/davem2/dp2ppgen/tarball/0.2.0', # I'll explain this in a second

@@ -1,0 +1,59 @@
+// TODO: replace TITLE, AUTHOR
+.dt The Project Gutenberg eBook of TITLE, by AUTHOR
+
+// Captions
+.de div.figcenter p { font-size: 90%; }
+.de div.figleft p { font-size: 90%; }
+.de div.figright p { font-size: 90%; }
+.de div.figinline p { font-size: 90%; }
+
+// Try and keep caption together with illustration
+.de @media handheld { .figcenter { page-break-inside: avoid; }}
+.de @media handheld { .figleft { page-break-inside: avoid; }}
+.de @media handheld { .figright { page-break-inside: avoid; }}
+
+// Use smaller bottom margin on floated images
+.de .figleft { margin:0.5em 1em 0.5em 0em; }
+.de .figright { margin:0.5em 0em 0.5em 1em; }
+
+// No border on pageno
+.de .pageno { border: none; font-family: sans-serif, serif }
+
+// Headings
+.de h2 { text-align: center; font-weight: normal; font-size: 1.2em; }
+.de h3 { text-align: center; font-weight: normal; font-size: 0.85em; }
+
+// Sidenotes
+// Override default
+.de .sidenote, .sni { text-indent: 0; text-align: left; width: 9em; min-width: 9em; max-width: 9em; padding-bottom: .3em; padding-top: .3em; padding-left: .3em; padding-right: .3em; margin-right: 1em; float: left; clear: left; margin-top: 1em; margin-bottom: .3em; font-size: smaller; color: black; background-color: #eeeeee; border: thin dotted gray; }
+
+
+// Cover image
+.if h
+.de div.covernote { border: dashed 1px #aaa; color: black; padding: 0.8em; margin: 0.8em; font-family: sans-serif, serif; font-size: small; text-align: center; }
+.il fn=cover.jpg w=600px
+// TODO: Activate if using custom cover
+//.na
+//.dv class="covernote"
+//.li
+//<b>Transcriber's Note:</b> The cover image was created by the transcriber and is placed in the public domain.
+//.li-
+//.dv-
+//.ad
+.pb
+.if-
+
+// Text only TN (if needed)
+.if t
+.nf l
+ TRANSCRIBER'S NOTE
+
+   • Italic text is denoted by _underscores_.
+   • Bold text by =equal signs=.
+//   • Superscript text is presented with a ^ in front of it, and if the
+//	 text is longer than one letter the letters are surrounded with {},
+//	 for example, M^r or M^{rs}.
+   • Additional notes are at the end of the book.
+.nf-
+.if-
+
