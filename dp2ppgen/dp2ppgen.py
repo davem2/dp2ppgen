@@ -519,7 +519,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 					outBuf.append(line)
 
 			else:
-				if chapterLine[-1] == "|":
+				while chapterLine[-1] == "|":
 					chapterLine = chapterLine[:-1]
 
 				outBlock.append("")
