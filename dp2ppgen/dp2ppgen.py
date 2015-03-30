@@ -377,7 +377,7 @@ def findNextNonEmptyLine( buf, startLine ):
 def findPreviousNonEmptyLine( buf, startLine ):
 	lineNum = startLine
 	retVal = None
-	while lineNum < len(buf) and not retVal:
+	while lineNum >= 0 and not retVal:
 		if not isLineBlank(buf[lineNum]):
 			retVal = lineNum
 		lineNum -= 1
@@ -1796,7 +1796,7 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
 					outBlock.append(inBuf[ln])
 					ln += 1
 
-				if re.match(joinEndLineRegex, inBuf[ln]):
+				if re.match(joinEndLineRegex,inBuf[ln]) and (ln-1)-findPreviousNonEmptyLine(inBuf,ln-1) < 4:
 					for line in outBlock:
 						outBuf.append(line)
 					joinWasMade = True
