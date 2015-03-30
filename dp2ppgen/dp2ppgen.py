@@ -251,11 +251,11 @@ def processPageNumbers( inBuf, keepOriginal ):
 	logging.info("Processing page numbers")
 
 	while lineNum < len(inBuf):
-		m = re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", inBuf[lineNum])
-		if m:
+		if isLinePageBreak(inBuf[lineNum]):
+			scanPageNum = parseScanPage(inBuf[lineNum])
 			if keepOriginal:
 				outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
-			s = ".bn {0} // -----------------------( {0} )".format(m.group(1))
+			s = ".bn {0} // -----------------------( {0} )".format(scanPageNum)
 			outBuf.append("{0}{1}".format(s,'-'*max(72-len(s),0)))
 			outBuf.append(".pn +1")
 			logging.debug("{:>{:d}}: '{}' to '{}, {}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-2],outBuf[-1]))
@@ -323,15 +323,15 @@ def isLineOriginalText( line ):
 def parseScanPage( line ):
 	scanPageNum = None
 
-	m = re.match(r"-----File: (\d+\.(png|jpg|jpeg)).*", line)
+	m = re.match(r"-----File: (\w?\d+\.(png|jpg|jpeg)).*", line)
 	if m:
 		scanPageNum = m.group(1)
 
-	m = re.match(r"\/\/ (\d+\.(png|jpg|jpeg))", line)
+	m = re.match(r"\/\/ (\w?\d+\.(png|jpg|jpeg))", line)
 	if m:
 		scanPageNum = m.group(1)
 
-	m = re.match(r"\.bn (\d+\.(png|jpg|jpeg))", line)
+	m = re.match(r"\.bn (\w?\d+\.(png|jpg|jpeg))", line)
 	if m:
 		scanPageNum = m.group(1)
 
