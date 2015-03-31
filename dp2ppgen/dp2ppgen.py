@@ -1413,7 +1413,7 @@ def parseFootnotes( inBuf ):
 			fnText = []
 			for line in fnBlock:
 				line = re.sub(r"^\*\[Footnote: ?", "", line)
-				line = re.sub(r"^\[Footnote [A-Z]: ?", "", line)
+				line = re.sub(r"^\[Footnote [A-Za-z]: ?", "", line)
 				line = re.sub(r"^\[Footnote \d+: ?", "", line)
 				fnText.append(line)
 			fnText[-1] = re.sub(r"][\*]*$", "", fnText[-1])
