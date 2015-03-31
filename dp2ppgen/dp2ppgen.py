@@ -34,6 +34,7 @@ Options:
   -p, --pages           Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
   -q, --quiet           Print less text.
   -s, --sidenotes       Convert sidenotes into ppgen format.
+  --snkeepbreaks        Keep exact line endings for multi-line sidenotes.
   --detectmarkup        Best guess what out of line markup /* */ /# #/ represent (table, toc, poetry, etc..)
   -m, --markup          Convert out of line markup /* */ /# #/ into ppgen format.
   -v, --verbose         Print more text.
@@ -831,8 +832,6 @@ def processTa( inBuf, keepOriginal, args ):
 	while lineNum < len(inBuf):
 		m = re.search(s,inBuf[lineNum])
 		if m:
-			#section ID
-			#r = r"#\1:{}#|#\2#".format(formatAsID(m.group(1)))
 			print("{}: {}".format(lineNum+1, inBuf[lineNum]))
 
 		if isLineOriginalText(inBuf[lineNum]):
@@ -955,6 +954,7 @@ def processToc( inBuf, keepOriginal, args ):
 		{ 's': r'^(.+?) {6,}(\d+)', 'r': r'#\1:Page_\2#|#\2#', 'count': 0, 'columns': 'lr' },
 	)
 
+	# Does toc fit a known style?
 	for style in tocStyles:
 		for line in inBuf:
 			if re.search(style['s'],line):
@@ -983,8 +983,6 @@ def processToc( inBuf, keepOriginal, args ):
 	while lineNum < len(inBuf):
 		m = re.search(s,inBuf[lineNum])
 		if m:
-			#section ID
-			#r = r"#\1:{}#|#\2#".format(formatAsID(m.group(1)))
 			print("{}: {}".format(lineNum+1, inBuf[lineNum]))
 
 		if isLineOriginalText(inBuf[lineNum]):
@@ -1294,7 +1292,7 @@ def stripFootnoteMarkup( inBuf ):
 	return outBuf
 
 
-def processSidenotes( inBuf, keepOriginal ):
+def processSidenotes( inBuf, keepOriginal, keepBreaks ):
 	sidenotesCount = 0
 	lineNum = 0
 	outBuf = []
@@ -1327,7 +1325,11 @@ def processSidenotes( inBuf, keepOriginal ):
 				outBuf.append("// *** DP2PPGEN: RELOCATE SIDENOTE")
 
 			# Ouput ppgen style sidenote
-			s = ".sn {}".format(' '.join(snText))
+			if keepBreaks:
+				joinChar = '|'
+			else:
+				joinChar = ' '
+			s = ".sn {}".format(joinChar.join(snText))
 			outBuf.append(s)
 			sidenotesCount += 1
 			lineNum += 1
@@ -2470,7 +2472,7 @@ def main():
 		if doChapterHeadings or doSectionHeadings:
 			outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'], chapterMaxLines, sectionMaxLines)
 		if doSidenotes:
-			outBuf = processSidenotes(outBuf, args['--keeporiginal'])
+			outBuf = processSidenotes(outBuf, args['--keeporiginal'], args['--snkeepbreaks'])
 		if doIllustrations:
 			outBuf = processIllustrations(outBuf)
 		if doFootnotes:
