@@ -341,8 +341,8 @@ def parseScanPage( line ):
 
 def formatAsID( s ):
 	s = re.sub(r"<\/?\w+>", "", s)  # Remove inline markup
-	s = re.sub(r" ", "_", s)        # Replace spaces with underscore
-	s = re.sub(r"[^\w\s]", "", s)   # Strip everything but alphanumeric and _
+	s = re.sub(r"[^A-Za-z0-9_ ]", "", s)   # Strip everything but alphanumeric and _
+	s = re.sub(r" ", "_", s.rstrip())        # Replace spaces with underscore
 	s = s.lower()                   # Lowercase
 
 	return s
