@@ -1938,7 +1938,7 @@ def processIllustrations( inBuf ):
 				captionBlock.append(line)
 
 		    # .ca SOUTHAMPTON BAR IN THE OLDEN TIME.
-			if len(captionBlock) == 1 and captionBlock[0] == "":
+			if len(captionBlock) == 0 or (len(captionBlock) == 1 and captionBlock[0] == ""):
 				# No caption
 				pass
 			elif len(captionBlock) == 1:
@@ -2474,13 +2474,16 @@ def main():
 		if doIllustrations:
 			outBuf = processIllustrations(outBuf)
 		if doFootnotes:
-			footnoteDestination = "bookend"
+			footnoteDestination = "chapterend"
 			if args['--fndest']:
 				footnoteDestination = args['--fndest']
+			lzdesth = "bookend"
+			if args['--lzdesth']:
+				lzdesth = args['--lzdesth']
 			useAutoNumbering = False
 			if args['--fnautonum']:
 				useAutoNumbering = True
-			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'], args['--lzdestt'], args['--lzdesth'], useAutoNumbering)
+			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'], args['--lzdestt'], lzdesth, useAutoNumbering)
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
