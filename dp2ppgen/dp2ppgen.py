@@ -239,7 +239,7 @@ def processBlankPages( inBuf, keepOriginal ):
 
 	logging.info("Processed {} blank pages".format(count))
 
-	return outBuf;
+	return outBuf
 
 
 # Replace : -----File: 001.png---\sparkleshine\swankypup\Kipling\SeaRose\Scholar\------
@@ -269,7 +269,7 @@ def processPageNumbers( inBuf, keepOriginal ):
 
 	logging.info("Processed {} page numbers".format(count))
 
-	return outBuf;
+	return outBuf
 
 def getDpMarkupBlock( buf, startLine ):
 	#TODO return line(s) containing /* */ /# #/ [] block
@@ -463,8 +463,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 				rewrapLevel == 0):
 			inBlock = []
 			outBlock = []
-			foundChapterHeadingEnd = False;
-			consecutiveEmptyLineCount = 0;
+			foundChapterHeadingEnd = False
+			consecutiveEmptyLineCount = 0
 
 			# Copy chapter heading block to inBlock
 			while lineNum < len(inBuf) and not foundChapterHeadingEnd:
@@ -559,8 +559,8 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 		elif doSectionHeadings and consecutiveEmptyLineCount == 2 and not isLineBlank(inBuf[lineNum]) and rewrapLevel == 0:
 			inBlock = []
 			outBlock = []
-			foundSectionHeadingEnd = False;
-			consecutiveEmptyLineCount = 0;
+			foundSectionHeadingEnd = False
+			consecutiveEmptyLineCount = 0
 
 			# Copy section heading block to inBlock
 			while lineNum < len(inBuf) and not foundSectionHeadingEnd:
@@ -631,7 +631,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 	if doSectionHeadings:
 		logging.info("Processed {} sections".format(sectionCount))
 
-	return outBuf;
+	return outBuf
 
 
 def detectMarkup( inBuf ):
@@ -652,8 +652,8 @@ def detectMarkup( inBuf ):
 		if m:
 			inBlock = []
 			outBlock = []
-			foundChapterHeadingEnd = False;
-			consecutiveEmptyLineCount = 0;
+			foundChapterHeadingEnd = False
+			consecutiveEmptyLineCount = 0
 			markupType = m.group(2).split(" ")[0]
 			dpType = m.group(1)
 
@@ -702,8 +702,8 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 		if m:
 			inBlock = []
 			outBlock = []
-			foundChapterHeadingEnd = False;
-			consecutiveEmptyLineCount = 0;
+			foundChapterHeadingEnd = False
+			consecutiveEmptyLineCount = 0
 			markupType = m.group(2).split(" ")[0]
 			args = parseArgs(m.group(2))
 			dpType = m.group(1)
@@ -784,7 +784,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 
 		outBuf[0:0] = cssBlock
 
-	return outBuf;
+	return outBuf
 
 
 def processNf( inBuf, keepOriginal, args ):
@@ -808,7 +808,7 @@ def processNf( inBuf, keepOriginal, args ):
 
 	outBuf.append(".nf-")
 
-	return outBuf;
+	return outBuf
 
 
 def processTa( inBuf, keepOriginal, args ):
@@ -842,7 +842,7 @@ def processTa( inBuf, keepOriginal, args ):
 
 	outBuf.append(".ta-")
 
-	return outBuf;
+	return outBuf
 
 
 def processTitlePage( inBuf, keepOriginal ):
@@ -860,7 +860,7 @@ def processTitlePage( inBuf, keepOriginal ):
 
 	outBuf.append(".nf-")
 
-	return outBuf;
+	return outBuf
 
 
 def processBlockquote( inBuf, keepOriginal, args ):
@@ -882,7 +882,7 @@ def processBlockquote( inBuf, keepOriginal, args ):
 	outBuf.append(".ll")
 	outBuf.append(".in")
 
-	return outBuf;
+	return outBuf
 
 
 def processIndex( inBuf, keepOriginal, args ):
@@ -917,7 +917,7 @@ def processIndex( inBuf, keepOriginal, args ):
 	outBuf.append(".in")
 	outBuf.append(".ad")
 
-	return outBuf;
+	return outBuf
 
 
 # For a given ppgen command, parse all arguments in the form
@@ -994,7 +994,7 @@ def processToc( inBuf, keepOriginal, args ):
 
 	outBuf.append(".ta-")
 
-	return outBuf;
+	return outBuf
 
 
 def processPoetry( inBuf, keepOriginal ):
@@ -1009,7 +1009,7 @@ def processPoetry( inBuf, keepOriginal ):
 
 	outBuf.append(".nf-")
 
-	return outBuf;
+	return outBuf
 
 
 def processTable( inBuf, keepOriginal ):
@@ -1040,7 +1040,7 @@ def processTable( inBuf, keepOriginal ):
 	outBuf.append(".li-")
 	outBuf.append(".if-")
 
-	return outBuf;
+	return outBuf
 
 
 def rstTableToHTML( inBuf ):
@@ -1256,7 +1256,7 @@ def loadFile(fn):
 	for i in range(len(inBuf)):
 		inBuf[i] = inBuf[i].rstrip()
 
-	return inBuf;
+	return inBuf
 
 
 def createOutputFileName( infile ):
@@ -1338,7 +1338,7 @@ def processSidenotes( inBuf, keepOriginal ):
 
 	logging.info("Processed {} sidenotes".format(sidenotesCount))
 
-	return outBuf;
+	return outBuf
 
 
 def parseFootnotes( inBuf ):
@@ -1407,7 +1407,7 @@ def parseFootnotes( inBuf ):
 			# Extract footnote ID
 			m = re.match(r"\[Footnote (\w{1,2}):", fnBlock[0])
 			if m:
-				fnID = m.group(1);
+				fnID = m.group(1)
 
 			# Strip markup text from [Footnote] block
 			fnText = []
@@ -1472,7 +1472,7 @@ def parseFootnotes( inBuf ):
 		logging.info("-- Merged {} broken footnote(s)".format(joinCount))
 		logging.info("-- {} total footnotes after joining".format(len(footnotes)))
 
-	return footnotes;
+	return footnotes
 
 
 def processFootnoteAnchors( inBuf, footnotes, useAutoNumbering ):
@@ -1841,7 +1841,7 @@ def buildImageDictionary():
 #	print(images)
 	logging.info("----- Found {} images".format(len(images)))
 
-	return images;
+	return images
 
 
 def idFromFilename( fn ):
@@ -1914,12 +1914,12 @@ def processIllustrations( inBuf ):
 				for letter in alphabet:
 					if testID+letter in illustrations and illustrations[testID+letter]['usageCount'] == 0:
 						ilID = testID+letter
-						break;
+						break
 
 			if ilID == None and testID in illustrations:
 				ilID = testID
 			elif ilID == None:
-				logging.error("No image file for illustration located on scan page {}".format(currentScanPage));
+				logging.error("No image file for illustration located on scan page {}".format(currentScanPage))
 
 			if ilID:
 				# Convert to ppgen illustration block
@@ -1943,13 +1943,13 @@ def processIllustrations( inBuf ):
 				pass
 			elif len(captionBlock) == 1:
 				# One line caption
-				outBlock.append(".ca " + captionBlock[0]);
+				outBlock.append(".ca " + captionBlock[0])
 			else:
 				# Multiline caption
-				outBlock.append(".ca");
+				outBlock.append(".ca")
 				for line in captionBlock:
 					outBlock.append(line)
-				outBlock.append(".ca-");
+				outBlock.append(".ca-")
 
 			# Write out ppgen illustration block
 			for line in outBlock:
@@ -1964,7 +1964,7 @@ def processIllustrations( inBuf ):
 	if asteriskIllustrationTagCount > 0:
 		logging.warning("Found {} *[Illustrations] tags; ppgen .il/.ca statements have been generated, but relocation to paragraph break must be performed manually.".format(asteriskIllustrationTagCount))
 
-	return outBuf;
+	return outBuf
 
 
 def getLinesUntil( inBuf, startLineNum, endRegex, direction=1 ):
@@ -2406,16 +2406,16 @@ def main():
 	logging.debug(args)
 
 	# Process processing options
-	doChapterHeadings = args['--chapters'];
-	doSectionHeadings = args['--sections'];
-	doFootnotes = args['--footnotes'];
-	doSidenotes = args['--sidenotes'];
+	doChapterHeadings = args['--chapters']
+	doSectionHeadings = args['--sections']
+	doFootnotes = args['--footnotes']
+	doSidenotes = args['--sidenotes']
 	doIllustrations = args['--illustrations']
-	doMarkup = args['--markup'];
-	doPages = args['--pages'];
-	doJoinSpanned = args['--joinspanned'];
-	doFixup = args['--fixup'];
-	doUTF8 = args['--utf8'];
+	doMarkup = args['--markup']
+	doPages = args['--pages']
+	doJoinSpanned = args['--joinspanned']
+	doFixup = args['--fixup']
+	doUTF8 = args['--utf8']
 
 	#TODO, load config file and use those options if one is present
 	chapterMaxLines = 16
