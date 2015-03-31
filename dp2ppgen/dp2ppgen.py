@@ -2474,16 +2474,19 @@ def main():
 		if doIllustrations:
 			outBuf = processIllustrations(outBuf)
 		if doFootnotes:
-			footnoteDestination = "chapterend"
+			footnoteDestination = "paragraphend"
 			if args['--fndest']:
 				footnoteDestination = args['--fndest']
+			lzdestt = "chapterend"
+			if args['--lzdestt']:
+				lzdesth = args['--lzdestt']
 			lzdesth = "bookend"
 			if args['--lzdesth']:
 				lzdesth = args['--lzdesth']
 			useAutoNumbering = False
 			if args['--fnautonum']:
 				useAutoNumbering = True
-			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'], args['--lzdestt'], lzdesth, useAutoNumbering)
+			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'], lzdestt, lzdesth, useAutoNumbering)
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
