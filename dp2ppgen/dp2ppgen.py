@@ -613,7 +613,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 					outBuf.append(line)
 
 				# Log action
-				logging.info("---- .h3 {}".format(sectionID))
+				logging.info("---- .h3 {}".format(inBlock[0]))
 				sectionCount += 1
 
 		else:
