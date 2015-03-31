@@ -796,9 +796,9 @@ def processNf( inBuf, keepOriginal, args ):
 	if 'c' in args:
 		align = 'c'
 	if 'l' in args:
-		align = 'c'
+		align = 'l'
 	if 'r' in args:
-		align = 'c'
+		align = 'r'
 
 	outBuf.append(".nf {}".format(align))
 
@@ -1898,11 +1898,11 @@ def processIllustrations( inBuf ):
 
 				if bracketLevel == 0 and re.search(r"]$", inBuf[lineNum]):
 					done = True
-				else:
-					lineNum += 1
 					inBlock.append(inBuf[lineNum])
-
-			lineNum += 1
+					lineNum += 1
+				else:
+					inBlock.append(inBuf[lineNum])
+					lineNum += 1
 
 			# Handle multiple illustrations per page, must be named (i_001a, i_001b, ...) or (i_001, i_001a, i_001b, ...)
 			ilID = None
@@ -1927,7 +1927,7 @@ def processIllustrations( inBuf ):
 				outBlock.append(".il id={} fn={} w={}px alt=''".format(ilID,illustrations[ilID]['fileName'],str(illustrations[ilID]['dimensions'][0])))
 				illustrations[ilID]['usageCount'] += 1
 			else:
-				outBlock.append(".il id={} fn={} alt=''".format(testID,testID))
+				outBlock.append(".il id={} fn={}.jpg alt=''".format(testID,testID))
 
 			# Extract caption from illustration block
 			captionBlock = []
