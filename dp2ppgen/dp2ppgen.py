@@ -1651,7 +1651,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
 		fnMarkup.append("FOOTNOTES:")
 		fnMarkup.append(".sp 2")
 		for i, fn in enumerate(footnotes):
-			fnMarkup.append(".fn {}".format(i+1))
+			fnMarkup.append(".fn {}  // {}".format(i+1,fn['scanPageNum']))
 			for line in fn['fnText']:
 				fnMarkup.append(line)
 			fnMarkup.append(".fn-")
@@ -1673,9 +1673,9 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
 #			print("{} {}".format(fn['chapterEnd'],fn['fnText'][0]))
 			fnMarkup = []
 			if useAutoNumbering:
-				fnMarkup.append(".fn #")
+				fnMarkup.append(".fn #  // {}".format(fn['scanPageNum']))
 			else:
-				fnMarkup.append(".fn {}".format(i+1))
+				fnMarkup.append(".fn {}  // {}".format(i+1,fn['scanPageNum']))
 
 			for line in fn['fnText']:
 				fnMarkup.append(line)
