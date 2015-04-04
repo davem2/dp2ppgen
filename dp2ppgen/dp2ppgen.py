@@ -1461,6 +1461,26 @@ def parseFootnotes( inBuf ):
 				logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[toFn]['scanPageNum'], i+1,footnotes[toFn]['startLine']+1,footnotes[toFn]['fnBlock'][0]))
 				logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]))
 			else:
+				# handle spanned hyphenation within spanned footnote
+				needsHyphenJoin = False
+				if re.search(r"(?<![-—])-\*?$",footnotes[toFn]['fnText'][-1]):
+					if footnotes[i]['fnText'][0][0] != '*':
+						logging.error("Footnote {}: Unresolved hyphenation\n       {}\n       {}".format(toFn,footnotes[toFn]['fnText'][-1],footnotes[i]['fnText'][0][0]))
+					else:
+						needsHyphenJoin = True
+
+				if needsHyphenJoin:
+					# Grab first word of from line
+					fromWord = footnotes[i]['fnText'][0].split(' ',1)[0]
+					if len(footnotes[i]['fnText'][0].split(' ',1)) > 1:
+						footnotes[i]['fnText'][0] = footnotes[i]['fnText'][0].split(' ',1)[1]
+					else:
+						# Single word on from line, remove blank line
+						del footnotes[i]['fnText'][0]
+
+					# Append it to toline
+					footnotes[toFn]['fnText'][-1] = footnotes[toFn]['fnText'][-1] + fromWord
+
 				# merge fnBlock and fnText from second into first
 				footnotes[toFn]['fnBlock'].extend(footnotes[i]['fnBlock'])
 				footnotes[toFn]['fnText'].extend(footnotes[i]['fnText'])
