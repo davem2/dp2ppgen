@@ -1613,7 +1613,8 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth
 
 	if len(footnotes) > 0:
 		outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination, lzdestt, lzdesth, useAutoNumbering)
-		outBuf = generateLandingZones(outBuf, footnotes, lzdestt, lzdesth)
+		if lzdestt or lzdesth:
+			outBuf = generateLandingZones(outBuf, footnotes, lzdestt, lzdesth)
 
 	logging.info("Processed {} footnotes".format(len(footnotes)))
 
@@ -1734,6 +1735,9 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
 		# Still need to clean up continued footnotes, *[Footnote
 		outBuf = stripFootnoteMarkup(outBuf)
 
+	else:
+		logging.error("Unrecognized value for --fndest ({})".format(footnoteDestination))
+
 	return outBuf
 
 
@@ -1742,6 +1746,11 @@ def generateLandingZones( inBuf, footnotes, lzdestt, lzdesth ):
 	outBuf = inBuf
 
 	logging.info("-- Generating footnote landing zones (lzdestt={} lzdesth={})".format(lzdestt,lzdesth))
+
+	if not lzdestt in ("chapterend","bookend",""):
+		logging.error("Unrecognized value for --lzdestt ({})".format(lzdestt))
+	if not lzdesth in ("chapterend","bookend",""):
+		logging.error("Unrecognized value for --lzdesth ({})".format(lzdesth))
 
 	if lzdestt == "bookend" or lzdesth == "bookend":
 		lzs = ""
