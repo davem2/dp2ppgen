@@ -1896,13 +1896,15 @@ def processIllustrations( inBuf ):
 			currentScanPage = os.path.splitext(pn)[0]
 
 		# Copy until next illustration block
-		if re.match(r"^\[Illustration", inBuf[lineNum]) or re.match(r"^\*\[Illustration", inBuf[lineNum]):
+		if re.match(r"\[Illustration", inBuf[lineNum]) or re.match(r"\*\[Illustration", inBuf[lineNum]):
 			inBlock = []
 			outBlock = []
 
 			# *[Illustration:] tags need to be handled manually afterward (can't reposition before or illustration will change page location)
-			if re.match(r"^\*\[Illustration", inBuf[lineNum]):
+			ilNeedsRelocation = False
+			if re.match(r"\*\[Illustration", inBuf[lineNum]):
 				asteriskIllustrationTagCount += 1
+				ilNeedsRelocation = True
 			else:
 				illustrationTagCount += 1
 
@@ -1943,6 +1945,9 @@ def processIllustrations( inBuf ):
 			elif ilID == None:
 				logging.error("No image file for illustration located on scan page {}".format(currentScanPage))
 
+			if ilNeedsRelocation:
+				outBlock.append("// *** DP2PPGEN *[Illustration] NEEDS RELOCATION ***")
+
 			if ilID:
 				# Convert to ppgen illustration block
 				# .il id=i001 fn=i_001.jpg w=600 alt=''
@@ -1954,8 +1959,8 @@ def processIllustrations( inBuf ):
 			# Extract caption from illustration block
 			captionBlock = []
 			for line in inBlock:
-				line = re.sub(r"^\[Illustration: ", "", line)
-				line = re.sub(r"^\[Illustration", "", line)
+				line = re.sub(r"^\*?\[Illustration: ", "", line)
+				line = re.sub(r"^\*?\[Illustration", "", line)
 				line = re.sub(r"]$", "", line)
 				captionBlock.append(line)
 
