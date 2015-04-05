@@ -86,3 +86,4 @@
     [**Footnotes have been renumbered and moved to the end of the book.] becomes
         Footnotes have been renumbered and moved to the end of the book.
 
+- Remove -d option (dryrun)? Not so useful now that dp2ppgen does not modify input file.

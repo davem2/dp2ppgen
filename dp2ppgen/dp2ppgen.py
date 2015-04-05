@@ -1741,7 +1741,7 @@ def generateLandingZones( inBuf, footnotes, lzdestt, lzdesth ):
 
 	outBuf = inBuf
 
-	logging.info("-- Generating footnote landing zones")
+	logging.info("-- Generating footnote landing zones (lzdestt={} lzdesth={})".format(lzdestt,lzdesth))
 
 	if lzdestt == "bookend" or lzdesth == "bookend":
 		lzs = ""
@@ -2501,19 +2501,26 @@ def main():
 		if doIllustrations:
 			outBuf = processIllustrations(outBuf)
 		if doFootnotes:
-			footnoteDestination = "paragraphend"
+			# Set defaults
+			fndest = ""
+			lzdestt = ""
+			lzdesth = ""
 			if args['--fndest']:
-				footnoteDestination = args['--fndest']
-			lzdestt = "chapterend"
+				fndest = args['--fndest']
+			else:
+				fndest = "paragraphend"
+				lzdestt = "chapterend"
+				lzdesth = "bookend"
+
 			if args['--lzdestt']:
-				lzdesth = args['--lzdestt']
-			lzdesth = "bookend"
+				lzdestt = args['--lzdestt']
 			if args['--lzdesth']:
 				lzdesth = args['--lzdesth']
-			useAutoNumbering = False
+			fnautonum = False
 			if args['--fnautonum']:
-				useAutoNumbering = True
-			outBuf = processFootnotes(outBuf, footnoteDestination, args['--keeporiginal'], lzdestt, lzdesth, useAutoNumbering)
+				fnautonum = True
+
+			outBuf = processFootnotes(outBuf, fndest, args['--keeporiginal'], lzdestt, lzdesth, fnautonum)
 		if doJoinSpanned:
 			outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
 			outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
