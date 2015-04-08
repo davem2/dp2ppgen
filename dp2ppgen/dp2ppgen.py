@@ -2022,7 +2022,7 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	# Find:
 	# 1: the last word on this line is cont-*
 	# 2: // 010.png
-	# 3: *-inued. on the line below
+	# 3: *inued. on the line below
 
 	# 4: the last word on this line is emdash--*
 	# 5: // 010.png
@@ -2031,6 +2031,10 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	# 7: the first word on the next page is emdash
 	# 8: // 010.png
 	# 9: *--This is the line below
+
+	# 10: the last word on this line is <i>cont-*</i>
+	# 11: // 010.png
+	# 12: <i>*-inued</i>. on the line below
 
 	# Replace with:
 	# 1: the last word on this line is cont-**inued.
@@ -2045,6 +2049,10 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 	# 8: // 010.png
 	# 9: is the line below
 
+	# 10: the last word on this line is <i>cont-**inued</i>.
+	# 11: // 010.png
+	# 12: on the line below
+
 	lineNum = 0
 	joinCount = 0
 	nowrapLevel = 0
@@ -2052,6 +2060,8 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 		needsJoin = False
 		joinToLineNum = 0
 		joinFromLineNum = 0
+		solInlineMarkup = ""
+		eolInlineMarkup = ""
 
 		if inBuf[lineNum].startswith("/*"):
 			nowrapLevel += 1
@@ -2060,12 +2070,18 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 
 		# spanned hyphenation
 		#TODO skip multiline [] markup between spanned hyphenation
-		if re.search(r"(?<![-—])-\*?$",inBuf[lineNum]) and lineNum < len(inBuf)-1 and isLinePageBreak(inBuf[lineNum+1]):
-			if inBuf[lineNum][-1] == "*":
+
+		m = re.search(r"(?<![-—])-\*?(<\/(i|b|sc|g|f)>)?$",inBuf[lineNum])
+		if m and lineNum < len(inBuf)-1 and isLinePageBreak(inBuf[lineNum+1]):
+			eolInlineMarkup = m.group(1)
+			if inBuf[lineNum][-1] == "*" or inBuf[lineNum].endswith("*{}".format(eolInlineMarkup)):
 				#logging.debug("spanned hyphenation found: {}".format(inBuf[lineNum]))
 				joinToLineNum = lineNum
 				joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
-				if inBuf[joinFromLineNum][0] != '*':
+				m = re.match(r"\*?(<(i|b|sc|g|f)>)",inBuf[joinFromLineNum])
+				if m:
+					solInlineMarkup = m.group(1)
+				if inBuf[joinFromLineNum][0] != '*' and not inBuf[joinFromLineNum].startswith("{}*".format(solInlineMarkup)):
 					logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1,inBuf[joinToLineNum],inBuf[joinFromLineNum]))
 				else:
 					needsJoin = True
@@ -2109,6 +2125,15 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 			else:
 				dl = -1*(joinFromLineNum-joinToLineNum)
 				outBuf[dl] = outBuf[dl] + fromWord
+
+			# Collapse inline markup inside join
+			if not eolInlineMarkup:
+				eolInlineMarkup = solInlineMarkup.replace('<','</')
+			inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}{}*'.format(eolInlineMarkup,solInlineMarkup),'-**')
+			inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('{}-**{}'.format(eolInlineMarkup,solInlineMarkup),'-**')
+			inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-{}**{}'.format(eolInlineMarkup,solInlineMarkup),'-**')
+			inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}*{}'.format(eolInlineMarkup,solInlineMarkup),'-**')
+			inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}{}*'.format(eolInlineMarkup,solInlineMarkup),'-**')
 
 			logging.debug("{}: Resolved hyphenation, ...{}".format(joinToLineNum+1,inBuf[joinToLineNum][-30:]))
 			joinCount += 1
