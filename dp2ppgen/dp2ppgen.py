@@ -2570,8 +2570,7 @@ def main():
 			logging.info("Saving output to '{}'".format(outfile))
 			# Save file
 			f = open(outfile,'w')
-			for line in outBuf:
-				f.write(line+'\n')
+			f.write('\n'.join(outBuf))
 			f.close()
 
 	return

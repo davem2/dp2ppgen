@@ -90,3 +90,6 @@
 
 - Verify that nested OOLF markup is handled properly
 
+- Handle -*</i> .. pb .. *<i> case inside spanned footnotes
+
+- Redesign application with a parse object to reduce all the redundant checks for things like (am I inside OOLF markup block?
