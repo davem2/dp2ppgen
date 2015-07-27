@@ -92,4 +92,8 @@
 
 - Handle -*</i> .. pb .. *<i> case inside spanned footnotes
 
-- Redesign application with a parse object to reduce all the redundant checks for things like (am I inside OOLF markup block?
+- Redesign application with a parse object to reduce all the redundant checks for things like (am I inside OOLF markup block?)
+
+- Add option to automatically relocate *[Illustration *[Sidenote statements
+    move outside of paragraph (always before?)
+    leave ppgen comment at original location and another comment at new location

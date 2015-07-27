@@ -17,7 +17,7 @@
 .de .figright { margin:0.5em 0em 0.5em 1em; }
 
 // No border on pageno
-.de .pageno { border: none; font-family: sans-serif, serif }
+.de .pageno { border: none; font-family: sans-serif, serif; }
 
 // Headings
 .de h2 { text-align: center; font-weight: normal; font-size: 1.2em; }
