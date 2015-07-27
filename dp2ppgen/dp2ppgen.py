@@ -1968,7 +1968,7 @@ def processIllustrations( inBuf ):
 			# Extract caption from illustration block
 			captionBlock = []
 			for line in inBlock:
-				line = re.sub(r"^\*?\[Illustration: ", "", line)
+				line = re.sub(r"^\*?\[Illustration: ?", "", line)
 				line = re.sub(r"^\*?\[Illustration", "", line)
 				line = re.sub(r"]$", "", line)
 				captionBlock.append(line)
