@@ -2477,6 +2477,7 @@ def main():
 	doJoinSpanned = args['--joinspanned']
 	doFixup = args['--fixup']
 	doUTF8 = args['--utf8']
+	doBoilerplate = args['--boilerplate']
 
 	#TODO, load config file and use those options if one is present
 	chapterMaxLines = 16
@@ -2496,6 +2497,7 @@ def main():
 		not doPages and \
 		not doFixup and \
 		not doUTF8 and \
+		not doBoilerplate and \
 		not doJoinSpanned:
 
 		logging.info("No processing options were given, using default set of options -pcfj --fixup --utf8\n      Run 'dp2ppgen -h' for a full list of options")
@@ -2508,6 +2510,7 @@ def main():
 		doMarkup = False
 		doFixup = False
 		doUTF8 = True
+		doBoilerplate = False
 		doJoinSpanned = True
 
 	# Process source document
@@ -2563,7 +2566,7 @@ def main():
 		if doMarkup:
 			outBuf = processOOLFMarkup(outBuf, args['--keeporiginal'])
 
-		if args['--boilerplate']:
+		if doBoilerplate:
 			outBuf = addBoilerplate(outBuf)
 
 		if not args['--dryrun']:
