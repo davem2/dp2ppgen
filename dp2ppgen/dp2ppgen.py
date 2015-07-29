@@ -1754,12 +1754,15 @@ def generateLandingZones( inBuf, footnotes, lzdestt, lzdesth ):
 
 	if lzdestt == "bookend" or lzdesth == "bookend":
 		lzs = ""
+		fnMarkup = []
+
 		if lzdestt == "bookend":
 			lzs += "t"
 		if lzdesth == "bookend":
 			lzs += "h"
 
-		fnMarkup = []
+		if len(lzs) == 1:
+			fnMarkup.append(".if {}".format(lzs))
 		fnMarkup.append(".sp 4")
 		fnMarkup.append(".pb")
 		fnMarkup.append(".de div.footnotes { border: dashed 1px #aaaaaa; padding: 1.5em; }")
@@ -1771,6 +1774,8 @@ def generateLandingZones( inBuf, footnotes, lzdestt, lzdesth ):
 		fnMarkup.append(".sp 2")
 		fnMarkup.append(".fm rend=no lz={}".format(lzs))
 		fnMarkup.append(".dv-")
+		if len(lzs) == 1:
+			fnMarkup.append(".if-")
 
 		outBuf.extend(fnMarkup)
 
