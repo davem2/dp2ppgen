@@ -1,6 +1,10 @@
 // TODO: replace TITLE, AUTHOR
+.dt TITLE, by AUTHOR—A Project Gutenberg eBook
+or
 .dt The Project Gutenberg eBook of TITLE, by AUTHOR
 
+
+// -----------------------------( CSS )---------------------------------
 // Captions
 .de div.figcenter p { font-size: 90%; }
 .de div.figleft p { font-size: 90%; }
@@ -28,7 +32,33 @@
 .de .sidenote, .sni { text-indent: 0; text-align: left; width: 9em; min-width: 9em; max-width: 9em; padding-bottom: .3em; padding-top: .3em; padding-left: .3em; padding-right: .3em; margin-right: 1em; float: left; clear: left; margin-top: 1em; margin-bottom: .3em; font-size: smaller; color: black; background-color: #eeeeee; border: thin dotted gray; }
 
 
-// Cover image
+// ----------------------------( Macros )-------------------------------
+// Insert vertical spacing into HTML only
+.dm sp-htmlonly $1
+.de div.mt$1 { margin-top: $1; }
+.dv class="mt$1"
+.dv-
+.dm-
+
+// Illustrated <hr>
+.dm hr-illustrated
+.if h
+.il fn=hr1.jpg w=80px ew=10%
+.if-
+.if t
+.hr 10%
+.if-
+.dm-
+
+// Mark page break without displaying <hr> in html or text
+.dm pb-no-hr
+.de div.pbb { page-break-before:always; }
+.dv class="pbb"
+.dv-
+.dm-
+
+
+// -------------------------( Cover image )-----------------------------
 .if h
 .de div.covernote { border: dashed 1px #aaa; color: black; padding: 0.8em; margin: 0.8em; font-family: sans-serif, serif; font-size: small; text-align: center; }
 .il fn=cover.jpg w=600px
@@ -43,7 +73,7 @@
 .pb
 .if-
 
-// Text only TN (if needed)
+// ------------------( Text only TN (if needed) )-----------------------
 .if t
 .nf l
  TRANSCRIBER'S NOTE

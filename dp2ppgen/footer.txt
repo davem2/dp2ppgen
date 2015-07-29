@@ -1,3 +1,18 @@
+
+// ----------------------( Transcriber’s note )-------------------------
+.sp 4
+.pb
+.na
+.ni
+.de div.transnote { background-color: #eef; border: dashed 1px #aaa; color: black; padding: 1em; font-family: sans-serif, serif; }
+.de div.transnote h2 { margin-top: 1em; }
+.dv class="transnote"
+.sp 2
+.h2 nobreak //id=transnote
+TRANSCRIBER’S NOTE:
+.sp 2
+.in 2
+Silently corrected obvious punctuation and capitalization errors.
 //Punctuation, quotation marks and hyphenation inconsistencies have been corrected.
 //Obvious typographical errors have been corrected.
 //Obvious printer errors have been silently corrected.
@@ -13,26 +28,10 @@
 //Blank pages have been skipped.
 //Original spelling, hyphenation and punctuation have been kept, but variant spellings were made consistent when a predominant usage was found.
 
-
-// Transcriber’s note
-.sp 4
-.pb
-.na
-.ni
-.de div.transnote { background-color: #eef; border: dashed 1px #aaa; color: black; padding: 1em; font-family: sans-serif, serif; }
-.de div.transnote h2 { margin-top: 1em; }
-.dv class="transnote"
-.sp 2
-.h2 id=transnote nobreak
-TRANSCRIBER’S NOTE:
-.sp 2
-.in 2
-Silently corrected obvious punctuation and capitalization errors.
-
 Other changes:
 .in +1
 .ma • *
-.ma → “->”
+.ma → "->"
 .nf l
 • #Page 018:Page_18#: He looked as her keenly → He looked at her keenly
 • #Page 066:Page_66#: There was the sightest pause → There was the slightest pause
