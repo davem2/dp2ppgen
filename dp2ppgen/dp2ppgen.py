@@ -946,20 +946,22 @@ def processIndex( inBuf, keepOriginal, args ):
 # 	arg=val
 #
 def parseArgs(commandLine):
-	arguments = {}
+	args = {}
 
 	# break up command line
 	tokens = shlex.split(commandLine)
-#	print(tokens)
+	print(tokens)
 
 	# process parameters (skip .command)
 	for t in tokens[1:]:
 		t = re.sub(r"[\'\"]","",t)
 		m = re.match(r"(.+)=(.+)", t)
 		if m:
-			arguments[m.group(1)]=m.group(2)
+			args[m.group(1)]=m.group(2)
+		else:
+			args[t]=t
 
-	return(arguments)
+	return(args)
 
 
 def processToc( inBuf, keepOriginal, args ):
