@@ -689,7 +689,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 	outBuf = []
 	lineNum = 0
 	rewrapLevel = 0
-	markupCount = {'nf':0, 'ta':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'index':0, 'bq':0, 'hang':0 }
+	markupCount = {'nf':0, 'ta':0, 'table':0, 'toc':0, 'title':0, 'poetry':0, 'index':0, 'bq':0, 'hang':0, 'signature':0 }
 
 	while lineNum < len(inBuf):
 
@@ -740,6 +740,8 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 					outBlock = processBlockquote(inBlock, keepOriginal, args)
 				elif markupType == "hang":
 					outBlock = processHangingIndent(inBlock, keepOriginal, args)
+				elif markupType == "signature":
+					outBlock = processSignature(inBlock, keepOriginal, args)
 				else:
 					logging.warn("{}: Unknown markup type '{}' found".format(lineNum+1,markupType))
 
@@ -884,6 +886,31 @@ def processBlockquote( inBuf, keepOriginal, args ):
 	return outBuf
 
 
+def processSignature( inBuf, keepOriginal, args ):
+	outBuf = []
+	lineNum = 0
+
+	# Use arguments if provided
+	indent = 2
+	if 'in' in args:
+		indent = args['in']
+
+	outBuf.append(".sp 1".format(indent))
+	outBuf.append(".in +{}".format(indent))
+	outBuf.append(".ll -{}".format(indent))
+	outBuf.append(".nf r".format(indent))
+
+	while lineNum < len(inBuf):
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	outBuf.append(".nf-")
+	outBuf.append(".ll")
+	outBuf.append(".in")
+
+	return outBuf
+
+
 def processHangingIndent( inBuf, keepOriginal, args ):
 	outBuf = []
 	lineNum = 0
@@ -944,7 +971,7 @@ def processIndex( inBuf, keepOriginal, args ):
 # 	arg="val"
 # 	arg='val'
 # 	arg=val
-#
+#   val val
 def parseArgs(commandLine):
 	args = {}
 
