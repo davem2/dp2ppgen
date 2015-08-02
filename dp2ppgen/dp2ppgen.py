@@ -739,7 +739,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 				elif markupType == "bq":
 					outBlock = processBlockquote(inBlock, keepOriginal, args)
 				elif markupType == "hang":
-					outBlock = processHangingindent(inBlock, keepOriginal)
+					outBlock = processHangingIndent(inBlock, keepOriginal, args)
 				else:
 					logging.warn("{}: Unknown markup type '{}' found".format(lineNum+1,markupType))
 
@@ -879,6 +879,27 @@ def processBlockquote( inBuf, keepOriginal, args ):
 		lineNum += 1
 
 	outBuf.append(".ll")
+	outBuf.append(".in")
+
+	return outBuf
+
+
+def processHangingIndent( inBuf, keepOriginal, args ):
+	outBuf = []
+	lineNum = 0
+
+	# Use arguments if provided
+	indent = 4
+	if 'in' in args:
+		indent = args['in']
+
+	outBuf.append(".in {}".format(indent))
+	outBuf.append(".ti -{}".format(indent))
+
+	while lineNum < len(inBuf):
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
 	outBuf.append(".in")
 
 	return outBuf
