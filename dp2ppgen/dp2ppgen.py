@@ -705,7 +705,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 			outBlock = []
 			foundChapterHeadingEnd = False
 			consecutiveEmptyLineCount = 0
-			markupType = m.group(2).split(" ")[0]
+			markupType = parseMarkupType(m.group(2))
 			args = parseArgs(m.group(2))
 			dpType = m.group(1)
 
@@ -745,7 +745,8 @@ def processOOLFMarkup( inBuf, keepOriginal ):
 				else:
 					logging.warn("{}: Unknown markup type '{}' found".format(lineNum+1,markupType))
 
-				markupCount[markupType] += 1
+				c = markupCount.get(markupType,0)
+				markupCount[markupType] = c + 1
 
 				for line in outBlock:
 					outBuf.append(line)
@@ -989,6 +990,17 @@ def parseArgs(commandLine):
 			args[t]=t
 
 	return(args)
+
+
+def parseMarkupType(commandLine):
+	markupType = commandLine.split(" ")[0]
+
+	if markupType == "sig":
+		markupType == "signature"
+	elif markupType == "poem":
+		markupType == "poetry"
+
+	return(markupType)
 
 
 def processToc( inBuf, keepOriginal, args ):
