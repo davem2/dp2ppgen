@@ -77,6 +77,8 @@
     table of illustrations (in ppgimg too?)
     list of proofer notes
     markup errors with associated line numbers
+    list each usage of all <i>, <cite>, <i><lang>, ...
+    list each usage of all <b>, <sc>, ...
 
 - Recognize .pn 1 type statements r"\.pn (?<!\+)([IXVCL0-9]+)". Map pn to scanpagenum (overkill? is delta enough?). Use this data for TN generation.
 

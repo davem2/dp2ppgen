@@ -899,13 +899,12 @@ def processSignature( inBuf, keepOriginal, args ):
 	outBuf.append(".sp 1".format(indent))
 	outBuf.append(".in +{}".format(indent))
 	outBuf.append(".ll -{}".format(indent))
-	outBuf.append(".nf r".format(indent))
+	outBuf.append(".rj {}".format(len(inBuf)))
 
 	while lineNum < len(inBuf):
 		outBuf.append(inBuf[lineNum])
 		lineNum += 1
 
-	outBuf.append(".nf-")
 	outBuf.append(".ll")
 	outBuf.append(".in")
 
