@@ -2559,8 +2559,8 @@ def generateTransNote( inBuf ):
 			if len(t) == 1: # Non-substitution type note, or unprocessed note
 				tnote.append("• #Page {}:Page_{}#: {}".format(pageLabel,pageLabel,m.group(0)))
 			else:
-				oldText = "{}{}{}".format(start,t[0],end)
-				newText = "{}{}{}".format(start,t[1],end)
+				oldText = "{}<B>{}</B>{}".format(start,t[0],end)
+				newText = "{}<B>{}</B>{}".format(start,t[1],end)
 				tnote.append("• #Page {}:tnote_{}#: {} → {}".format(pageLabel,lineNum,oldText,newText))
 
 				inBuf[lineNum] = inBuf[lineNum].replace(m.group(0),"<span id=tnote_{}>{}</span>".format(lineNum,t[1]))
@@ -2590,7 +2590,7 @@ def generateTransNote( inBuf ):
 	outBuf.append('.ma → "->"')
 	outBuf.append(".nf l")
 
-	outBuf.extend(stripHtml(tnote))
+	outBuf.extend(tnote)
 
 	outBuf.append(".nf-")
 	outBuf.append(".in")
