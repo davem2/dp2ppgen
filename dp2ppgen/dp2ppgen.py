@@ -103,7 +103,7 @@ def validateDpMarkup( inBuf ):
 #		m = re.findall(r"(\[|\]|\{|\}|<\/?\w+>)", inBuf[lineNum])
 
 		# Check balance of [], <i></i>
-		m = re.findall(r"(\[|\]|<\/?\w+>)", inBuf[lineNum])
+		m = re.findall(r"(\[|\]|<\/?[^>]>)", inBuf[lineNum])
 		for v in m:
 
 			if v == "<tb>": # ignore
