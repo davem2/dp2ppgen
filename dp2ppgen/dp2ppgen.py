@@ -36,6 +36,7 @@ Options:
   -s, --sidenotes       Convert sidenotes into ppgen format.
   --snkeepbreaks        Keep exact line endings for multi-line sidenotes.
   --detectmarkup        Best guess what out of line markup /* */ /# #/ represent (table, toc, poetry, etc..)
+  --tnote               Generate transcribers note.
   -m, --markup          Convert out of line markup /* */ /# #/ into ppgen format.
   -v, --verbose         Print more text.
   -h, --help            Show help.
@@ -2509,6 +2510,171 @@ def doStandardConversions( inBuf, keepOriginal ):
 	return outBuf
 
 
+def generateTransNote( inBuf ):
+	outBuf = []
+	tnote = []
+
+	pageNumbers = calcPageNumbers(inBuf)
+#	print(pageNumbers)
+	lineNum = 0
+	currentPageNum = 0
+	currentScanPage = 0
+	isPageNumRoman = True
+
+	logging.info("-- Generating transcriber's note")
+	while lineNum < len(inBuf):
+		# Keep track of active scanpage
+		if isLinePageBreak(inBuf[lineNum]):
+			currentScanPage = parseScanPage(inBuf[lineNum])
+
+		# Look for proofers notes [**
+		m = re.search(r"\[\*\*([^\]]+)]",inBuf[lineNum])
+		if m:
+			#print("[{}] {}".format(pageNumbers[currentScanPage]['pageNum'],inBuf[lineNum]))
+			#print("{}".format(m.group(1)))
+
+			if pageNumbers[currentScanPage]['isPageNumRoman']:
+				pageLabel = str(toRoman(pageNumbers[currentScanPage]['pageNum']))
+			else:
+				pageLabel = str(pageNumbers[currentScanPage]['pageNum'])
+
+			t = m.group(1).split('|')
+			if len(t) > 2: # sanity check
+				fatal("Error parsing proofer note [{}] {}".format(pageNumbers[currentScanPage]['pageNum'],m.group(0)))
+
+			start = "{}".format(inBuf[lineNum][m.start(0)-20:m.start(0)])
+			end = "{}".format(inBuf[lineNum][m.end(0):m.end(0)+20])
+
+			try:
+				start = start.split(' ', 1)[1]
+			except IndexError as e:
+				start = "{}".format(inBuf[lineNum][:m.start(0)])
+
+			try:
+				end = end.rsplit(' ', 1)[0]
+			except IndexError as e:
+				end = "{}".format(inBuf[lineNum][m.end(0):])
+
+			#print(inBuf[lineNum])
+			if len(t) == 1: # Non-substitution type note, or unprocessed note
+				tnote.append("• #Page {}:Page_{}#: {}".format(pageLabel,pageLabel,m.group(0)))
+			else:
+				oldText = "{}{}{}".format(start,t[0],end)
+				newText = "{}{}{}".format(start,t[1],end)
+				tnote.append("• #Page {}:tnote_{}#: {} → {}".format(pageLabel,lineNum,oldText,newText))
+
+				inBuf[lineNum] = inBuf[lineNum].replace(m.group(0),"<span id=tnote_{}>{}</span>".format(lineNum,t[1]))
+
+		outBuf.append(inBuf[lineNum])
+		lineNum += 1
+
+	outBuf.append("")
+	outBuf.append("// Transcriber’s note")
+	outBuf.append(".sp 4")
+	outBuf.append(".pb")
+	outBuf.append(".na")
+	outBuf.append(".ni")
+	outBuf.append(".de div.transnote { background-color: #eef; border: dashed 1px #aaa; color: black; padding: 1em; font-family: sans-serif, serif; }")
+	outBuf.append(".de div.transnote h2 { margin-top: 1em; }")
+	outBuf.append('.dv class="transnote"')
+	outBuf.append(".sp 2")
+	outBuf.append(".h2 nobreak //id=transnote")
+	outBuf.append("TRANSCRIBER’S NOTE:")
+	outBuf.append(".sp 2")
+	outBuf.append(".in 2")
+	outBuf.append("Silently corrected obvious punctuation and capitalization errors.")
+	outBuf.append("")
+	outBuf.append("Other changes:")
+	outBuf.append(".in +1")
+	outBuf.append(".ma • *")
+	outBuf.append('.ma → "->"')
+	outBuf.append(".nf l")
+
+	outBuf.extend(stripHtml(tnote))
+
+	outBuf.append(".nf-")
+	outBuf.append(".in")
+	outBuf.append(".in")
+	outBuf.append(".dv-")
+	outBuf.append("")
+
+	return outBuf
+
+
+def stripHtml( inBuf ):
+	outBuf = []
+	for line in inBuf:
+		line = re.sub("</?[^>]+>","",line)
+
+		outBuf.append(line)
+
+	return outBuf
+
+
+def calcPageNumbers( inBuf ):
+	# -------------------------------------------------------------------------------------
+	# Roman numeral processsing
+
+	# Define digit mapping
+	romanNumeralMap = (('m',  1000), ('cm', 900), ('d',  500), ('cd', 400), ('c',  100),
+		('xc', 90), ('l',  50), ('xl', 40), ('x',  10), ('ix', 9), ('v',  5),
+		('iv', 4), ('i',  1))
+
+	def toRoman(self, n):
+		"""convert integer to Roman numeral"""
+		result = ""
+		for numeral, integer in self.romanNumeralMap:
+			while n >= integer:
+				result += numeral
+				n -= integer
+		return result
+
+	def fromRoman(self, s):
+		"""convert Roman numeral to integer"""
+		result = 0
+		index = 0
+		for numeral, integer in self.romanNumeralMap:
+			while s[index:index+len(numeral)] == numeral:
+				result += integer
+				index += len(numeral)
+		return result
+
+	pageNumbers = {}
+	lineNum = 0
+	currentPageNum = 0
+	currentScanPage = 0
+	isPageNumRoman = True
+
+	logging.info("-- Calculating page numbers")
+	while lineNum < len(inBuf):
+		# Keep track of page number
+		m = re.match(r".pn (.+)",inBuf[lineNum])
+		if m:
+			pn = "{}".format(m.group(1))
+			if pn[0] == '+':
+				d = int(pn[1:])
+				currentPageNum += d
+
+			elif pn[0] in [i[0][0] for i in romanNumeralMap]:
+				num = fromRoman(pn)
+				currentPageNum = int(num)
+				isPageNumRoman = True
+			else:
+				currentPageNum = int(pn)
+				isPageNumRoman = False
+
+#			print("[{}] {} {} {}".format(currentScanPage, currentPageNum, d, isPageNumRoman))
+			pageNumbers[currentScanPage] = ({'pageNum':currentPageNum, 'isPageNumRoman':isPageNumRoman })
+
+		# Keep track of active scanpage
+		if isLinePageBreak(inBuf[lineNum]):
+			currentScanPage = parseScanPage(inBuf[lineNum])
+
+		lineNum += 1
+
+	return pageNumbers
+
+
 def main():
 	args = docopt(__doc__, version="dp2ppgen v{}".format(VERSION))
 
@@ -2544,6 +2710,7 @@ def main():
 	doFixup = args['--fixup']
 	doUTF8 = args['--utf8']
 	doBoilerplate = args['--boilerplate']
+	doTransNote = args['--tnote']
 
 	#TODO, load config file and use those options if one is present
 	chapterMaxLines = 16
@@ -2564,6 +2731,7 @@ def main():
 		not doFixup and \
 		not doUTF8 and \
 		not doBoilerplate and \
+		not doTransNote and \
 		not doJoinSpanned:
 
 		logging.info("No processing options were given, using default set of options -pcfj --fixup --utf8\n      Run 'dp2ppgen -h' for a full list of options")
@@ -2578,6 +2746,7 @@ def main():
 		doUTF8 = True
 		doBoilerplate = False
 		doJoinSpanned = True
+		doTransNote = False
 
 	# Process source document
 	logging.info("Processing '{}'".format(infile))
@@ -2634,6 +2803,9 @@ def main():
 
 		if doBoilerplate:
 			outBuf = addBoilerplate(outBuf)
+
+		if doTransNote:
+			outBuf = generateTransNote(outBuf)
 
 		if not args['--dryrun']:
 			logging.info("Saving output to '{}'".format(outfile))
