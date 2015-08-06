@@ -2557,11 +2557,11 @@ def generateTransNote( inBuf ):
 
 			#print(inBuf[lineNum])
 			if len(t) == 1: # Non-substitution type note, or unprocessed note
-				tnote.append("• #Page {}:Page_{}#: {}".format(pageLabel,pageLabel,m.group(0)))
+				tnote.append("• #{}:Page_{}#".format(m.group(0),pageLabel))
 			else:
 				oldText = "{}<B>{}</B>{}".format(start,t[0],end)
 				newText = "{}<B>{}</B>{}".format(start,t[1],end)
-				tnote.append("• #Page {}:tnote_{}#: {} → {}".format(pageLabel,lineNum,oldText,newText))
+				tnote.append("#Page {}:tnote_{}#: {} → {}".format(pageLabel,lineNum,oldText,newText))
 
 				inBuf[lineNum] = inBuf[lineNum].replace(m.group(0),"<span id=tnote_{}>{}</span>".format(lineNum,t[1]))
 
@@ -2576,18 +2576,18 @@ def generateTransNote( inBuf ):
 	outBuf.append(".ni")
 	outBuf.append(".de div.transnote { background-color: #eef; border: dashed 1px #aaa; color: black; padding: 1em; font-family: sans-serif, serif; }")
 	outBuf.append(".de div.transnote h2 { margin-top: 1em; }")
+	outBuf.append(".ma • *")
+	outBuf.append('.ma → "->"')
 	outBuf.append('.dv class="transnote"')
 	outBuf.append(".sp 2")
 	outBuf.append(".h2 nobreak //id=transnote")
 	outBuf.append("TRANSCRIBER’S NOTE:")
 	outBuf.append(".sp 2")
 	outBuf.append(".in 2")
-	outBuf.append("Silently corrected obvious punctuation and capitalization errors.")
+	outBuf.append("• Silently corrected obvious punctuation and capitalization errors.")
 	outBuf.append("")
-	outBuf.append("Other changes:")
+	outBuf.append("• Other changes:")
 	outBuf.append(".in +1")
-	outBuf.append(".ma • *")
-	outBuf.append('.ma → "->"')
 	outBuf.append(".nf l")
 
 	outBuf.extend(tnote)
