@@ -328,7 +328,7 @@ def getDpMarkupBlock( buf, startLine ):
 def isNextOriginalLineBlank( buf, startLine ):
 	result = None
 	lineNum = startLine
-	while lineNum < len(buf) and result == None:
+	while lineNum < len(buf) and result is None:
 		if isLineBlank(buf[lineNum]):
 			result = True
 		elif isLineOriginalText(buf[lineNum]):
@@ -340,7 +340,7 @@ def isNextOriginalLineBlank( buf, startLine ):
 def isPreviousOriginalLineBlank( buf, startLine ):
 	result = None
 	lineNum = startLine
-	while lineNum >= 0 and result == None:
+	while lineNum >= 0 and result is None:
 		if isLineBlank(buf[lineNum]):
 			result = True
 		elif isLineOriginalText(buf[lineNum]):
@@ -356,7 +356,7 @@ def isLineComment( line ):
 	return line.startswith("//")
 
 def isLinePageBreak( line ):
-	return (parseScanPage(line) != None)
+	return (parseScanPage(line) is not None)
 
 def isDotCommand( line ):
 	return re.match(r"\.[a-z0-9]{2}[ -]", line)
@@ -2064,9 +2064,9 @@ def processIllustrations( inBuf ):
 						ilID = testID+letter
 						break
 
-			if ilID == None and testID in illustrations:
+			if ilID is None and testID in illustrations:
 				ilID = testID
-			elif ilID == None:
+			elif ilID is None:
 				logging.error("No image file for illustration located on scan page {}".format(currentScanPage))
 
 			if ilNeedsRelocation:
