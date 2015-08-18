@@ -56,7 +56,11 @@ import shlex
 from PIL import Image
 
 
-__version__="0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
+__appname__ = "dp2ppgen"
+__author__  = "David Maranhao"
+__license__ = "MIT"
+__version__ = "0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
+
 
 markupTypes = {
 	'nf': {
