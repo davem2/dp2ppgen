@@ -56,7 +56,7 @@ import shlex
 from PIL import Image
 
 
-VERSION="0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
+__version__="0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
 
 markupTypes = {
 	'nf': {
@@ -2731,7 +2731,7 @@ def calcPageNumbers( inBuf ):
 
 
 def main():
-	args = docopt(__doc__, version="dp2ppgen v{}".format(VERSION))
+	args = docopt(__doc__, version="dp2ppgen v{}".format(__version__))
 
 	# Process required command line arguments
 	outfile = createOutputFileName(args['<infile>'])
