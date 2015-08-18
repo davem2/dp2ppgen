@@ -59,8 +59,52 @@ from PIL import Image
 VERSION="0.2.0" # MAJOR.MINOR.PATCH | http://semver.org
 
 markupTypes = {
-	'/*': ('table','toc','titlepage','poetry','index'),
-	'/#': ('blockquote','hangingindent'),
+	'nf': {
+		'alias': None,
+		'count': None,
+	},
+	'table': {
+		'alias': ('t','$'),
+		'count': None,
+	},
+	'ta': {
+		'alias': None,
+		'count': None,
+	},
+	'toc': {
+		'alias': ('x','X'),
+		'count': None,
+	},
+	'title': {
+		'alias': ('titlepage','f','F','frontmatter'),
+		'count': None,
+	},
+	'poetry': {
+		'alias': ('poem','p','P'),
+		'count': None,
+	},
+	'index': {
+		'alias': ('idx'),
+		'count': None,
+	},
+	'blockquote': {
+		'alias': ('bq'),
+		'count': None,
+	},
+	'hangingindent': {
+		'alias': ('hang','hi'),
+		'count': None,
+	},
+	'halftitle': {
+		'alias': ('ht'),
+		'count': None,
+	},
+	'signature': {
+		'alias': ('sig'),
+		'count': None,
+	},
+	#TODO
+	# L - Unsigned List
 }
 
 
@@ -2542,25 +2586,35 @@ def generateTransNote( inBuf ):
 			if len(t) > 2: # sanity check
 				fatal("Error parsing proofer note [{}] {}".format(pageNumbers[currentScanPage]['pageNum'],m.group(0)))
 
-			start = "{}".format(inBuf[lineNum][m.start(0)-20:m.start(0)])
-			end = "{}".format(inBuf[lineNum][m.end(0):m.end(0)+20])
+			beforeText = "{}".format(inBuf[lineNum][m.start(0)-20:m.start(0)])
+			afterText = "{}".format(inBuf[lineNum][m.end(0):m.end(0)+20])
 
 			try:
-				start = start.split(' ', 1)[1]
+				beforeText = beforeText.split(' ', 1)[1]
 			except IndexError as e:
-				start = "{}".format(inBuf[lineNum][:m.start(0)])
+				beforeText = "{}".format(inBuf[lineNum][:m.start(0)])
 
 			try:
-				end = end.rsplit(' ', 1)[0]
+				afterText = afterText.rsplit(' ', 1)[0]
 			except IndexError as e:
-				end = "{}".format(inBuf[lineNum][m.end(0):])
+				afterText = "{}".format(inBuf[lineNum][m.end(0):])
 
 			#print(inBuf[lineNum])
 			if len(t) == 1: # Non-substitution type note, or unprocessed note
 				tnote.append("• #{}:Page_{}#".format(m.group(0),pageLabel))
 			else:
-				oldText = "{}<B>{}</B>{}".format(start,t[0],end)
-				newText = "{}<B>{}</B>{}".format(start,t[1],end)
+				if t[0] == "":
+					oldText = "{}{}{}".format(beforeText,t[0],afterText)
+				else:
+					oldText = "{}<B>{}</B>{}".format(beforeText,t[0],afterText)
+
+				if t[1] == "":
+					newText = "{}{}{}".format(beforeText,t[1],afterText)
+				else:
+					newText = "{}<B>{}</B>{}".format(beforeText,t[1],afterText)
+
+
+				newText = "{}<B>{}</B>{}".format(beforeText,t[1],afterText)
 				tnote.append("#Page {}:tnote_{}#: {} → {}".format(pageLabel,lineNum,oldText,newText))
 
 				inBuf[lineNum] = inBuf[lineNum].replace(m.group(0),"<span id=tnote_{}>{}</span>".format(lineNum,t[1]))
@@ -2583,11 +2637,11 @@ def generateTransNote( inBuf ):
 	outBuf.append(".h2 nobreak //id=transnote")
 	outBuf.append("TRANSCRIBER’S NOTE:")
 	outBuf.append(".sp 2")
-	outBuf.append(".in 2")
+	outBuf.append(".in 1")
 	outBuf.append("• Silently corrected obvious punctuation and capitalization errors.")
 	outBuf.append("")
 	outBuf.append("• Other changes:")
-	outBuf.append(".in +1")
+	outBuf.append(".in +2")
 	outBuf.append(".nf l")
 
 	outBuf.extend(tnote)
@@ -2611,34 +2665,35 @@ def stripHtml( inBuf ):
 	return outBuf
 
 
+# -------------------------------------------------------------------------------------
+# Roman numeral processsing
+
+# Define digit mapping
+romanNumeralMap = (('m',  1000), ('cm', 900), ('d',  500), ('cd', 400), ('c',  100),
+	('xc', 90), ('l',  50), ('xl', 40), ('x',  10), ('ix', 9), ('v',  5),
+	('iv', 4), ('i',  1))
+
+def toRoman( n ):
+	"""convert integer to Roman numeral"""
+	result = ""
+	for numeral, integer in romanNumeralMap:
+		while n >= integer:
+			result += numeral
+			n -= integer
+	return result
+
+def fromRoman( s ):
+	"""convert Roman numeral to integer"""
+	result = 0
+	index = 0
+	for numeral, integer in romanNumeralMap:
+		while s[index:index+len(numeral)] == numeral:
+			result += integer
+			index += len(numeral)
+	return result
+
+
 def calcPageNumbers( inBuf ):
-	# -------------------------------------------------------------------------------------
-	# Roman numeral processsing
-
-	# Define digit mapping
-	romanNumeralMap = (('m',  1000), ('cm', 900), ('d',  500), ('cd', 400), ('c',  100),
-		('xc', 90), ('l',  50), ('xl', 40), ('x',  10), ('ix', 9), ('v',  5),
-		('iv', 4), ('i',  1))
-
-	def toRoman(self, n):
-		"""convert integer to Roman numeral"""
-		result = ""
-		for numeral, integer in self.romanNumeralMap:
-			while n >= integer:
-				result += numeral
-				n -= integer
-		return result
-
-	def fromRoman(self, s):
-		"""convert Roman numeral to integer"""
-		result = 0
-		index = 0
-		for numeral, integer in self.romanNumeralMap:
-			while s[index:index+len(numeral)] == numeral:
-				result += integer
-				index += len(numeral)
-		return result
-
 	pageNumbers = {}
 	lineNum = 0
 	currentPageNum = 0

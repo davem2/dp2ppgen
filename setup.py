@@ -8,9 +8,9 @@ setup(
   packages      = ['dp2ppgen'], # this must be the same as the name above
   package_data  = {'': ['header.txt','footer.txt']},
   version       = '0.2.0',
-  url           = 'https://github.com/davem2/dp2ppgen', # use the URL to the github repo
-  download_url  = 'https://github.com/davem2/dp2ppgen/tarball/0.2.0', # I'll explain this in a second
-  keywords      = ['text', 'processing', 'book', 'ebook', 'gutenberg', 'distributedproofreaders'], # arbitrary keywords
+  url           = 'https://github.com/davem2/dp2ppgen',
+  download_url  = 'https://github.com/davem2/dp2ppgen/tarball/0.2.0',
+  keywords      = ['text', 'processing', 'book', 'ebook', 'gutenberg', 'distributedproofreaders'],
   entry_points = {
       'console_scripts': [
           'dp2ppgen = dp2ppgen.dp2ppgen:main',
