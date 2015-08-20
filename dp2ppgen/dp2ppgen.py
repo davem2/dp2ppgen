@@ -68,7 +68,7 @@ markupTypes = {
         'count': None,
     },
     'table': {
-        'alias': ('t','$'),
+        'alias': ('t', '$'),
         'count': None,
     },
     'ta': {
@@ -76,15 +76,15 @@ markupTypes = {
         'count': None,
     },
     'toc': {
-        'alias': ('x','X'),
+        'alias': ('x', 'X'),
         'count': None,
     },
     'title': {
-        'alias': ('titlepage','f','F','frontmatter'),
+        'alias': ('titlepage', 'f', 'F', 'frontmatter'),
         'count': None,
     },
     'poetry': {
-        'alias': ('poem','p','P'),
+        'alias': ('poem', 'p', 'P'),
         'count': None,
     },
     'index': {
@@ -96,7 +96,7 @@ markupTypes = {
         'count': None,
     },
     'hangingindent': {
-        'alias': ('hang','hi'),
+        'alias': ('hang', 'hi'),
         'count': None,
     },
     'halftitle': {
@@ -113,7 +113,7 @@ markupTypes = {
 
 
 # Limited check for syntax errors in dp markup of input file
-def validateDpMarkup( inBuf ):
+def validateDpMarkup(inBuf):
 
     # TODO, someone must have written a more thorough version of this already.. use that instead
 
@@ -129,7 +129,7 @@ def validateDpMarkup( inBuf ):
         # Detect unbalanced out-of-line formatting markup /# #/ /* */
         m = re.match(r"\/(\*|\#)", inBuf[lineNum])
         if m:
-            d = ({'ln':lineNum+1,'v':"/{}".format(m.group(1))})
+            d = ({'ln':lineNum+1, 'v':"/{}".format(m.group(1))})
             formattingStack.append(d)
 
         m = re.match(r"(\*|\#)\/", inBuf[lineNum])
@@ -138,9 +138,9 @@ def validateDpMarkup( inBuf ):
             if len(formattingStack) == 0 or formattingStack[-1]['v'] != "/{}".format(v):
                 errorCount += 1
                 if len(formattingStack) == 0:
-                    logging.error("Line {}: Unexpected {}/".format(lineNum+1,v))
+                    logging.error("Line {}: Unexpected {}/".format(lineNum+1, v))
                 else:
-                    logging.error("Line {}: Unexpected {}/, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+                    logging.error("Line {}: Unexpected {}/, previous ({}:{})".format(lineNum+1, v, formattingStack[-1]['ln'], formattingStack[-1]['v']))
             else:
                 formattingStack.pop()
 
@@ -162,9 +162,9 @@ def validateDpMarkup( inBuf ):
                 if len(formattingStack) == 0 or formattingStack[-1]['v'] != "[":
                     errorCount += 1
                     if len(formattingStack) == 0:
-                        logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+                        logging.error("Line {}: Unexpected {}".format(lineNum+1, v))
                     else:
-                        logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+                        logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1, v, formattingStack[-1]['ln'], formattingStack[-1]['v']))
                 else:
                     formattingStack.pop()
 
@@ -172,9 +172,9 @@ def validateDpMarkup( inBuf ):
 #               if len(formattingStack) == 0 or formattingStack[-1]['v'] != "{":
 #                   errorCount += 1
 #                   if len(formattingStack) == 0:
-#                       logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+#                       logging.error("Line {}: Unexpected {}".format(lineNum+1, v))
 #                   else:
-#                       logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+#                       logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1, v, formattingStack[-1]['ln'], formattingStack[-1]['v']))
 #                       logging.debug("{}".format(formattingStack))
 #               else:
 #                   formattingStack.pop()
@@ -183,26 +183,26 @@ def validateDpMarkup( inBuf ):
 #               if len(formattingStack) == 0 or formattingStack[-1]['v'] != "(":
 #                   errorCount += 1
 #                   if len(formattingStack) == 0:
-#                       logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+#                       logging.error("Line {}: Unexpected {}".format(lineNum+1, v))
 #                   else:
-#                       logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+#                       logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1, v, formattingStack[-1]['ln'], formattingStack[-1]['v']))
 #                       logging.debug("{}".format(formattingStack))
 #               else:
 #                   formattingStack.pop()
 
             elif "/" in v: # closing markup
-                v2 = re.sub("/","",v)
+                v2 = re.sub("/", "", v)
                 if len(formattingStack) == 0 or formattingStack[-1]['v'] != v2:
                     errorCount += 1
                     if len(formattingStack) == 0:
-                        logging.error("Line {}: Unexpected {}".format(lineNum+1,v))
+                        logging.error("Line {}: Unexpected {}".format(lineNum+1, v))
                     else:
-                        logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1,v,formattingStack[-1]['ln'],formattingStack[-1]['v']))
+                        logging.error("Line {}: Unexpected {}, previous ({}:{})".format(lineNum+1, v, formattingStack[-1]['ln'], formattingStack[-1]['v']))
                 else:
                     formattingStack.pop()
 
             else:
-                d = ({'ln':lineNum+1,'v':v})
+                d = ({'ln':lineNum+1, 'v':v})
                 formattingStack.append(d)
 
 
@@ -214,14 +214,14 @@ def validateDpMarkup( inBuf ):
             if inBuf[lineNum].count('[') - inBuf[lineNum].count(']') == 0: # ignore multiline footnotes with proofer notes or some other [] markup within them
                 if not (inBuf[lineNum][-1] == ']' or inBuf[lineNum][-2:] == ']*'):
                     errorCount += 1
-                    logging.error("Line {}: Extra characters found after closing ']' in [Footnote]\n       {}".format(lineNum+1,inBuf[lineNum]))
+                    logging.error("Line {}: Extra characters found after closing ']' in [Footnote]\n       {}".format(lineNum+1, inBuf[lineNum]))
 
         # Extra text after out-of-line formatting markup
         # ex. /*[**new stanza?]
 #       m = re.match(r"(\/\*|\/\#|\*\/|\#\/)(.+)", inBuf[lineNum])
 #       if m and m.group(2) not in markupTypes['/*'] and m.group(2) not in markupTypes['/#']:
 #           errorCount += 1
-#           logging.error("Line {}: Extra text after out-of-line formatting markup\n       {}".format(lineNum+1,inBuf[lineNum]))
+#           logging.error("Line {}: Extra text after out-of-line formatting markup\n       {}".format(lineNum+1, inBuf[lineNum]))
 
         lineNum += 1
 
@@ -235,28 +235,28 @@ def validateDpMarkup( inBuf ):
 
         if errorCount == 1:
             logging.error("Unresolved markup:")
-            s = "Line {}: '{}'".format(formattingStack[0]['ln'],formattingStack[0]['v'])
+            s = "Line {}: '{}'".format(formattingStack[0]['ln'], formattingStack[0]['v'])
             for v in formattingStack[1:]:
-                s += ", Line {}: '{}'".format(v['ln'],v['v'])
+                s += ", Line {}: '{}'".format(v['ln'], v['v'])
             logging.error(s)
         else:
             logging.debug(formattingStack)
 
     if errorCount > 0:
-        logging.info("Found {} markup errors".format(errorCount) )
+        logging.info("Found {} markup errors".format(errorCount))
 
     return errorCount
 
 
 # Format helper function, truncate to width and indicate truncation occured with ...
-def truncate( string, width ):
+def truncate(string, width):
     if len(string) > width:
         string = string[:width-3] + '...'
     return string
 
 
 # Removes trailing spaces and tabs from an array of strings
-def removeTrailingSpaces( inBuf ):
+def removeTrailingSpaces(inBuf):
     outBuf = []
 
     for line in inBuf:
@@ -267,7 +267,7 @@ def removeTrailingSpaces( inBuf ):
 
 # Replace : [Blank Page]
 # with    : // [Blank Page]
-def processBlankPages( inBuf, keepOriginal ):
+def processBlankPages(inBuf, keepOriginal):
     outBuf = []
     lineNum = 0
     count = 0
@@ -279,7 +279,7 @@ def processBlankPages( inBuf, keepOriginal ):
             if keepOriginal:
                 outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
             outBuf.append("// [Blank Page]")
-            logging.debug("{:>{:d}}: '{}' to '{}'".format(str(lineNum+1),len(str(len(inBuf))),inBuf[lineNum],outBuf[-1]))
+            logging.debug("{:>{:d}}: '{}' to '{}'".format(str(lineNum+1), len(str(len(inBuf))), inBuf[lineNum], outBuf[-1]))
             lineNum += 1
             count += 1
 
@@ -294,7 +294,7 @@ def processBlankPages( inBuf, keepOriginal ):
 
 # Replace : -----File: 001.png---\sparkleshine\swankypup\Kipling\SeaRose\Scholar\------
 # with    : // 001.png
-def processPageNumbers( inBuf, keepOriginal ):
+def processPageNumbers(inBuf, keepOriginal):
     outBuf = []
     lineNum = 0
     count = 0
@@ -306,10 +306,10 @@ def processPageNumbers( inBuf, keepOriginal ):
             scanPageNum = parseScanPage(inBuf[lineNum])
             if keepOriginal:
                 outBuf.append("// *** DP2PPGEN ORIGINAL: {}".format(inBuf[lineNum]))
-            s = ".bn {0} // -----------------------( {0} )".format(scanPageNum)
-            outBuf.append("{0}{1}".format(s,'-'*max(72-len(s),0)))
+            s = ".bn {0} // -----------------------({0})".format(scanPageNum)
+            outBuf.append("{0}{1}".format(s, '-'*max(72-len(s), 0)))
             outBuf.append(".pn +1")
-            logging.debug("{}: Page {}".format(str(lineNum+1),scanPageNum))
+            logging.debug("{}: Page {}".format(str(lineNum+1), scanPageNum))
             lineNum += 1
             count += 1
 
@@ -321,11 +321,11 @@ def processPageNumbers( inBuf, keepOriginal ):
 
     return outBuf
 
-def getDpMarkupBlock( buf, startLine ):
+def getDpMarkupBlock(buf, startLine):
     #TODO return line(s) containing /* */ /# #/ [] block
     return
 
-def isNextOriginalLineBlank( buf, startLine ):
+def isNextOriginalLineBlank(buf, startLine):
     result = None
     lineNum = startLine
     while lineNum < len(buf) and result is None:
@@ -337,7 +337,7 @@ def isNextOriginalLineBlank( buf, startLine ):
 
     return result
 
-def isPreviousOriginalLineBlank( buf, startLine ):
+def isPreviousOriginalLineBlank(buf, startLine):
     result = None
     lineNum = startLine
     while lineNum >= 0 and result is None:
@@ -349,19 +349,19 @@ def isPreviousOriginalLineBlank( buf, startLine ):
 
     return result
 
-def isLineBlank( line ):
+def isLineBlank(line):
     return re.match(r"\s*$", line)
 
-def isLineComment( line ):
+def isLineComment(line):
     return line.startswith("//")
 
-def isLinePageBreak( line ):
+def isLinePageBreak(line):
     return (parseScanPage(line) is not None)
 
-def isDotCommand( line ):
+def isDotCommand(line):
     return re.match(r"\.[a-z0-9]{2}[ -]", line)
 
-def isLineOriginalText( line ):
+def isLineOriginalText(line):
     # Non-original lines are:
     # ppgen dot commands
     # ppgen comment
@@ -371,7 +371,7 @@ def isLineOriginalText( line ):
     return not re.match(r"(\.[a-z0-9]{2} |[*#]\/|\/[*#]|\*?\[\w+|\/\/)", line) and not isLinePageBreak(line)
 
 
-def parseScanPage( line ):
+def parseScanPage(line):
     scanPageNum = None
 
     m = re.match(r"-----File: (\w+\.(png|jpg|jpeg)).*", line)
@@ -389,7 +389,7 @@ def parseScanPage( line ):
     return scanPageNum
 
 
-def formatAsID( s ):
+def formatAsID(s):
     s = re.sub(r"<\/?\w+>", "", s)  # Remove inline markup
     s = re.sub(r"[^A-Za-z0-9_ ]", "", s)   # Strip everything but alphanumeric and _
     s = re.sub(r" ", "_", s.rstrip())        # Replace spaces with underscore
@@ -398,7 +398,7 @@ def formatAsID( s ):
     return s
 
 
-def findNextEmptyLine( buf, startLine ):
+def findNextEmptyLine(buf, startLine):
     lineNum = startLine
     retVal = None
     while lineNum < len(buf) and not retVal:
@@ -407,7 +407,7 @@ def findNextEmptyLine( buf, startLine ):
         lineNum += 1
     return retVal
 
-def findPreviousEmptyLine( buf, startLine ):
+def findPreviousEmptyLine(buf, startLine):
     lineNum = startLine
     retVal = None
     while lineNum >= 0 and not retVal:
@@ -416,7 +416,7 @@ def findPreviousEmptyLine( buf, startLine ):
         lineNum -= 1
     return retVal
 
-def findNextNonEmptyLine( buf, startLine ):
+def findNextNonEmptyLine(buf, startLine):
     lineNum = startLine
     retVal = None
     while lineNum < len(buf) and not retVal:
@@ -425,7 +425,7 @@ def findNextNonEmptyLine( buf, startLine ):
         lineNum += 1
     return retVal
 
-def findPreviousNonEmptyLine( buf, startLine ):
+def findPreviousNonEmptyLine(buf, startLine):
     lineNum = startLine
     retVal = None
     while lineNum >= 0 and not retVal:
@@ -436,7 +436,7 @@ def findPreviousNonEmptyLine( buf, startLine ):
 
 # find previous line that contains original book text
 # (ignore ppgen markup, proofing markup, blank lines)
-def findPreviousLineOfText( buf, startLine ):
+def findPreviousLineOfText(buf, startLine):
     lineNum = findPreviousNonEmptyLine(buf, startLine)
     retVal = None
     while lineNum >= 0 and not retVal:
@@ -448,7 +448,7 @@ def findPreviousLineOfText( buf, startLine ):
 
 # find next line that contains original book text
 # (ignore ppgen markup, proofing markup, blank lines)
-def findNextLineOfText( buf, startLine ):
+def findNextLineOfText(buf, startLine):
     lineNum = findNextNonEmptyLine(buf, startLine)
     retVal = None
     while lineNum < len(buf) and not retVal:
@@ -458,7 +458,7 @@ def findNextLineOfText( buf, startLine ):
             lineNum = findNextNonEmptyLine(buf, lineNum+1)
     return lineNum
 
-def findNextChapter( buf, startLine ):
+def findNextChapter(buf, startLine):
     lineNum = startLine
     retVal = None
     while lineNum < len(buf)-1 and not retVal:
@@ -468,7 +468,7 @@ def findNextChapter( buf, startLine ):
     return retVal
 
 
-def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, chapterMaxLines, sectionMaxLines ):
+def processHeadings(inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, chapterMaxLines, sectionMaxLines):
     outBuf = []
     lineNum = 0
     consecutiveEmptyLineCount = 0
@@ -561,11 +561,11 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
                     extra.append(line)
 
             if not chapterLine:
-                logging.warning("Line {}: Disregarding chapter heading; no text found\n         {}".format(lineNum+1,inBlock[0]))
+                logging.warning("Line {}: Disregarding chapter heading; no text found\n         {}".format(lineNum+1, inBlock[0]))
                 for line in inBlock:
                     outBuf.append(line)
             elif len(inBlock) > chapterMaxLines:
-                logging.warning("Line {}: Disregarding chapter heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1,len(inBlock),chapterMaxLines,"\n".join(inBlock[0:6])))
+                logging.warning("Line {}: Disregarding chapter heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1, len(inBlock), chapterMaxLines, "\n".join(inBlock[0:6])))
                 for line in inBlock:
                     outBuf.append(line)
 
@@ -624,7 +624,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
 
             # Check if this is a heading
             if len(inBlock) > sectionMaxLines:
-                logging.debug("Line {}: Disregarding section heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1,len(inBlock),sectionMaxLines,"\n".join(inBlock[0:6])))
+                logging.debug("Line {}: Disregarding section heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1, len(inBlock), sectionMaxLines, "\n".join(inBlock[0:6])))
                 for line in inBlock:
                     outBuf.append(line)
             else:
@@ -684,7 +684,7 @@ def processHeadings( inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, 
     return outBuf
 
 
-def detectMarkup( inBuf ):
+def detectMarkup(inBuf):
     outBuf = []
     lineNum = 0
     rewrapLevel = 0
@@ -717,12 +717,12 @@ def detectMarkup( inBuf ):
 
             # autodetect markup
             if not markupType:
-                markupType = detectMarkupType(inBlock,dpType)
+                markupType = detectMarkupType(inBlock, dpType)
 
             if markupType:
                 markupCount[markupType] += 1
 
-            outBuf.append("/{}{}".format(dpType,markupType))
+            outBuf.append("/{}{}".format(dpType, markupType))
             for line in inBlock:
                 outBuf.append(line)
             outBuf.append("{}/".format(dpType))
@@ -734,7 +734,7 @@ def detectMarkup( inBuf ):
     return outBuf
 
 
-def processOOLFMarkup( inBuf, keepOriginal ):
+def processOOLFMarkup(inBuf, keepOriginal):
     outBuf = []
     lineNum = 0
     rewrapLevel = 0
@@ -769,7 +769,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
             lineNum += 1
 
             if markupType:
-                logging.info("----- Found {}, line {}".format(markupType,lineNum))
+                logging.info("----- Found {}, line {}".format(markupType, lineNum))
 
                 if markupType == "nf":
                     outBlock = processNf(inBlock, keepOriginal, args)
@@ -792,9 +792,9 @@ def processOOLFMarkup( inBuf, keepOriginal ):
                 elif markupType == "signature":
                     outBlock = processSignature(inBlock, keepOriginal, args)
                 else:
-                    logging.warn("{}: Unknown markup type '{}' found".format(lineNum+1,markupType))
+                    logging.warn("{}: Unknown markup type '{}' found".format(lineNum+1, markupType))
 
-                c = markupCount.get(markupType,0)
+                c = markupCount.get(markupType, 0)
                 markupCount[markupType] = c + 1
 
                 for line in outBlock:
@@ -840,7 +840,7 @@ def processOOLFMarkup( inBuf, keepOriginal ):
     return outBuf
 
 
-def processNf( inBuf, keepOriginal, args ):
+def processNf(inBuf, keepOriginal, args):
     outBuf = []
     lineNum = 0
 
@@ -864,7 +864,7 @@ def processNf( inBuf, keepOriginal, args ):
     return outBuf
 
 
-def processTa( inBuf, keepOriginal, args ):
+def processTa(inBuf, keepOriginal, args):
     outBuf = []
     lineNum = 0
 
@@ -882,12 +882,12 @@ def processTa( inBuf, keepOriginal, args ):
     outBuf.append(".ta {}".format(columns))
 
     while lineNum < len(inBuf):
-        m = re.search(s,inBuf[lineNum])
+        m = re.search(s, inBuf[lineNum])
         if m:
             print("{}: {}".format(lineNum+1, inBuf[lineNum]))
 
         if isLineOriginalText(inBuf[lineNum]):
-            inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
+            inBuf[lineNum] = re.sub(s, r, inBuf[lineNum])
         outBuf.append(inBuf[lineNum])
         lineNum += 1
 
@@ -896,7 +896,7 @@ def processTa( inBuf, keepOriginal, args ):
     return outBuf
 
 
-def processTitlePage( inBuf, keepOriginal ):
+def processTitlePage(inBuf, keepOriginal):
     outBuf = []
     lineNum = 0
 
@@ -914,7 +914,7 @@ def processTitlePage( inBuf, keepOriginal ):
     return outBuf
 
 
-def processBlockquote( inBuf, keepOriginal, args ):
+def processBlockquote(inBuf, keepOriginal, args):
     outBuf = []
     lineNum = 0
 
@@ -936,7 +936,7 @@ def processBlockquote( inBuf, keepOriginal, args ):
     return outBuf
 
 
-def processSignature( inBuf, keepOriginal, args ):
+def processSignature(inBuf, keepOriginal, args):
     outBuf = []
     lineNum = 0
 
@@ -960,7 +960,7 @@ def processSignature( inBuf, keepOriginal, args ):
     return outBuf
 
 
-def processHangingIndent( inBuf, keepOriginal, args ):
+def processHangingIndent(inBuf, keepOriginal, args):
     outBuf = []
     lineNum = 0
 
@@ -981,12 +981,12 @@ def processHangingIndent( inBuf, keepOriginal, args ):
     return outBuf
 
 
-def processIndex( inBuf, keepOriginal, args ):
+def processIndex(inBuf, keepOriginal, args):
     outBuf = []
     lineNum = 0
 
     # Use arguments if provided
-    s = r", (\d{1,3})(?!\d)"
+    s = r", (\d{1, 3})(?!\d)"
     if 's' in args:
         s = args['s']
     r = r", #\1#"
@@ -1002,10 +1002,10 @@ def processIndex( inBuf, keepOriginal, args ):
 
     while lineNum < len(inBuf):
         if isLineOriginalText(inBuf[lineNum]):
-            m = re.search(r"(\d{4,})",inBuf[lineNum])
+            m = re.search(r"(\d{4, })", inBuf[lineNum])
             if m:
                 logging.warning("Link not created for digit in index: {}".format(m.group(1)))
-            inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
+            inBuf[lineNum] = re.sub(s, r, inBuf[lineNum])
         outBuf.append(inBuf[lineNum])
         lineNum += 1
 
@@ -1026,11 +1026,11 @@ def parseArgs(commandLine):
 
     # break up command line
     tokens = shlex.split(commandLine)
-    print(tokens)
+    #print(tokens)
 
     # process parameters (skip .command)
     for t in tokens[1:]:
-        t = re.sub(r"[\'\"]","",t)
+        t = re.sub(r"[\'\"]", "", t)
         m = re.match(r"(.+)=(.+)", t)
         if m:
             args[m.group(1)]=m.group(2)
@@ -1051,23 +1051,23 @@ def parseMarkupType(commandLine):
     return(markupType)
 
 
-def processToc( inBuf, keepOriginal, args ):
+def processToc(inBuf, keepOriginal, args):
     outBuf = []
     lineNum = 0
 
     tocStyles = (
         # 3. County and Shire. Meaning of the Words      42
-        { 's': r'^(\d+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
+        { 's': r'^(\d+?\.) (.+?) {6, }(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
         # XI. Columbus and the Savages      48
-        { 's': r'^([XIVLC]+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
+        { 's': r'^([XIVLC]+?\.) (.+?) {6, }(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
         # SIR CHRISTOPHER WREN      24
-        { 's': r'^(.+?) {6,}(\d+)', 'r': r'#\1:Page_\2#|#\2#', 'count': 0, 'columns': 'lr' },
-    )
+        { 's': r'^(.+?) {6, }(\d+)', 'r': r'#\1:Page_\2#|#\2#', 'count': 0, 'columns': 'lr' },
+   )
 
     # Does toc fit a known style?
     for style in tocStyles:
         for line in inBuf:
-            if re.search(style['s'],line):
+            if re.search(style['s'], line):
                 style['count'] += 1
 
     styleUsed = ""
@@ -1091,12 +1091,12 @@ def processToc( inBuf, keepOriginal, args ):
     outBuf.append(".ta {}".format(columns))
 
     while lineNum < len(inBuf):
-        m = re.search(s,inBuf[lineNum])
+        m = re.search(s, inBuf[lineNum])
         if m:
             print("{}: {}".format(lineNum+1, inBuf[lineNum]))
 
         if isLineOriginalText(inBuf[lineNum]):
-            inBuf[lineNum] = re.sub(s,r,inBuf[lineNum])
+            inBuf[lineNum] = re.sub(s, r, inBuf[lineNum])
         outBuf.append(inBuf[lineNum])
         lineNum += 1
 
@@ -1105,7 +1105,7 @@ def processToc( inBuf, keepOriginal, args ):
     return outBuf
 
 
-def processPoetry( inBuf, keepOriginal ):
+def processPoetry(inBuf, keepOriginal):
     outBuf = []
     lineNum = 0
 
@@ -1120,7 +1120,7 @@ def processPoetry( inBuf, keepOriginal ):
     return outBuf
 
 
-def processTable( inBuf, keepOriginal ):
+def processTable(inBuf, keepOriginal):
     outBuf = []
     lineNum = 0
 
@@ -1151,7 +1151,7 @@ def processTable( inBuf, keepOriginal ):
     return outBuf
 
 
-def rstTableToHTML( inBuf ):
+def rstTableToHTML(inBuf):
 
     # Build input to rstToHtml
     inFile = tempfile.NamedTemporaryFile(delete=False)
@@ -1162,11 +1162,11 @@ def rstTableToHTML( inBuf ):
 
     # Process table with rst2html
     outFileName=makeTempFile()
-    commandLine=['rst2html',inFileName,outFileName]
+    commandLine=['rst2html', inFileName, outFileName]
     logging.debug("commandLine:{}".format(str(commandLine)))
     proc=subprocess.Popen(commandLine)
     proc.wait()
-    if( proc.returncode != 0 ):
+    if(proc.returncode != 0):
         logging.error("Command failed: {}".format(str(commandLine)))
 
     # Parse table HTML from rst2html output
@@ -1210,15 +1210,15 @@ def rstTableToHTML( inBuf ):
     inBuf = outBuf[:]
     outBuf = []
     for i, line in enumerate(inBuf):
-        if not re.match("</?tbody",line):
+        if not re.match("</?tbody", line):
             outBuf.append(line)
 
     # Assume first row is header row
     done = False
     for i, line in enumerate(outBuf):
         if "<tr" in line and not done:
-            outBuf[i] = outBuf[i].replace("<td","<th")
-            outBuf[i] = outBuf[i].replace("</td>","</th>")
+            outBuf[i] = outBuf[i].replace("<td", "<th")
+            outBuf[i] = outBuf[i].replace("</td>", "</th>")
             done = True
 
     return outBuf
@@ -1231,7 +1231,7 @@ def makeTempFile():
     return fn
 
 
-def dpTableToRst( inBuf ):
+def dpTableToRst(inBuf):
     outBuf = inBuf[:]
     tableWidth = 0
 
@@ -1243,31 +1243,31 @@ def dpTableToRst( inBuf ):
     inTable = False
     for i, line in enumerate(outBuf):
 
-        if re.match(r"\+[-=]",line):
+        if re.match(r"\+[-=]", line):
             inTable = True
-        elif re.match(r"[-=]",line):
+        elif re.match(r"[-=]", line):
             outBuf[i] = "+{}".format(outBuf[i])
             inTable = True
-        elif re.match(r"[^|+]",line) and inTable:
+        elif re.match(r"[^|+]", line) and inTable:
             outBuf[i] = "|{}".format(outBuf[i])
-        if re.search(r"[-=]$",line):
+        if re.search(r"[-=]$", line):
             outBuf[i] = "{}+".format(outBuf[i])
             tableWidth = len(outBuf[i])
-        elif re.search(r"[^|+]$",line) and inTable or tableWidth > len(outBuf[i]):
+        elif re.search(r"[^|+]$", line) and inTable or tableWidth > len(outBuf[i]):
             if tableWidth > len(outBuf[i]):
-                s = "{0:<{tableWidth}}|".format(outBuf[i],tableWidth=(tableWidth-1))
+                s = "{0:<{tableWidth}}|".format(outBuf[i], tableWidth=(tableWidth-1))
                 outBuf[i] = s
             else:
                 outBuf[i] = "{}|".format(outBuf[i])
 
         # Left align cell text
-        m = re.findall(r"\|([^|+]+)",outBuf[i])
+        m = re.findall(r"\|([^|+]+)", outBuf[i])
         for cell in m:
             cw = len(cell)
-            if re.search(r"[^|\s]",cell):
+            if re.search(r"[^|\s]", cell):
                 s = r"|{}".format(cell)
-                r = r"|{0:<{cw}}".format(cell.lstrip(),cw=cw)
-                outBuf[i] = outBuf[i].replace(s,r)
+                r = r"|{0:<{cw}}".format(cell.lstrip(), cw=cw)
+                outBuf[i] = outBuf[i].replace(s, r)
 
         # Ignore lines not inside table (title etc.)
         if not inTable and line != "":
@@ -1277,7 +1277,7 @@ def dpTableToRst( inBuf ):
     return outBuf
 
 
-def detectMarkupType( buf, dpType ):
+def detectMarkupType(buf, dpType):
     # Tables
     matches = {
               "table": {
@@ -1285,13 +1285,13 @@ def detectMarkupType( buf, dpType ):
                        "=========": 0,
                        "---------": 0,
                        #TODO update and test better markup
-                       # "[-=]{6,}+": False,
-                       # "[-=]{6,}": False,
+                       # "[-=]{6, }+": False,
+                       # "[-=]{6, }": False,
                        "|": 0,
                        "T[aAbBlLeE]": 0
               },
               "toc": {
-                       " {6,}\d+": 0,
+                       " {6, }\d+": 0,
               },
               "titlepage": {
                        "": 0,
@@ -1307,13 +1307,13 @@ def detectMarkupType( buf, dpType ):
 
     if (matches["table"]["--------+"] and matches["table"]["|"]) or (matches["table"]["T[aAbBlLeE]"] and matches["table"]["--------+"]):
         return "table"
-    elif matches["toc"][" {6,}\d+"]:
+    elif matches["toc"][" {6, }\d+"]:
         return "toc"
 
     return ""
 
 
-def fatal( errorMsg ):
+def fatal(errorMsg):
     logging.critical(errorMsg)
     exit(1)
     return
@@ -1367,12 +1367,12 @@ def loadFile(fn):
     return inBuf
 
 
-def createOutputFileName( infile ):
+def createOutputFileName(infile):
     # TODO make this smart.. is infile raw or ppgen source? maybe two functions needed
     outfile = "{}-out.txt".format(infile.split('.')[0])
     return outfile
 
-def stripFootnoteMarkup( inBuf ):
+def stripFootnoteMarkup(inBuf):
     outBuf = []
     lineNum = 0
 
@@ -1402,7 +1402,7 @@ def stripFootnoteMarkup( inBuf ):
     return outBuf
 
 
-def processSidenotes( inBuf, keepOriginal, keepBreaks ):
+def processSidenotes(inBuf, keepOriginal, keepBreaks):
     sidenotesCount = 0
     lineNum = 0
     outBuf = []
@@ -1453,7 +1453,7 @@ def processSidenotes( inBuf, keepOriginal, keepBreaks ):
     return outBuf
 
 
-def parseFootnotes( inBuf ):
+def parseFootnotes(inBuf):
 # parse footnotes into a list of dictionaries with the following properties for each entry
 #   startLine - line number of [Footnote start
 #   endLine - line number of last line of [Footnote] block
@@ -1508,7 +1508,7 @@ def parseFootnotes( inBuf ):
             joinToPrevious = fnBlock[0].startswith("*[Footnote")
             joinToNext = fnBlock[-1].endswith("]*")
             if joinToPrevious or joinToNext:
-                logging.debug("Footnote requires joining at line {}: {}".format(lineNum+1,inBuf[lineNum]))
+                logging.debug("Footnote requires joining at line {}: {}".format(lineNum+1, inBuf[lineNum]))
                 foundFootnote = True
 
             # Find end of paragraph
@@ -1517,7 +1517,7 @@ def parseFootnotes( inBuf ):
             chapterEnd = -1 # This must be done during footnote anchor processing as chapter end is relative to anchor and not [Footnote] markup
 
             # Extract footnote ID
-            m = re.match(r"\[Footnote (\w{1,2}):", fnBlock[0])
+            m = re.match(r"\[Footnote (\w{1, 2}):", fnBlock[0])
             if m:
                 fnID = m.group(1)
 
@@ -1543,7 +1543,7 @@ def parseFootnotes( inBuf ):
     while i > 0:
         if footnotes[i]['joinToNext']:
             logging.error("Unresolved join detected")
-            logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]))
+            logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i, footnotes[i]['startLine']+1, footnotes[i]['fnBlock'][0]))
 
         if footnotes[i]['joinToPrevious']:
             if joinCount == 0:
@@ -1568,22 +1568,22 @@ def parseFootnotes( inBuf ):
 
             if not footnotes[toFn]['joinToNext']:
                 logging.error("Attempt to join footnote failed!")
-                logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[toFn]['scanPageNum'], i+1,footnotes[toFn]['startLine']+1,footnotes[toFn]['fnBlock'][0]))
-                logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i,footnotes[i]['startLine']+1,footnotes[i]['fnBlock'][0]))
+                logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[toFn]['scanPageNum'], i+1, footnotes[toFn]['startLine']+1, footnotes[toFn]['fnBlock'][0]))
+                logging.error("ScanPg {} Footnote {} ({}): {}".format(footnotes[i]['scanPageNum'], i, footnotes[i]['startLine']+1, footnotes[i]['fnBlock'][0]))
             else:
                 # handle spanned hyphenation within spanned footnote
                 needsHyphenJoin = False
-                if re.search(r"(?<![-—])-\*?$",footnotes[toFn]['fnText'][-1]):
+                if re.search(r"(?<![-—])-\*?$", footnotes[toFn]['fnText'][-1]):
                     if footnotes[i]['fnText'][0][0] != '*':
-                        logging.error("Footnote {}: Unresolved hyphenation\n       {}\n       {}".format(toFn,footnotes[toFn]['fnText'][-1],footnotes[i]['fnText'][0][0]))
+                        logging.error("Footnote {}: Unresolved hyphenation\n       {}\n       {}".format(toFn, footnotes[toFn]['fnText'][-1], footnotes[i]['fnText'][0][0]))
                     else:
                         needsHyphenJoin = True
 
                 if needsHyphenJoin:
                     # Grab first word of from line
-                    fromWord = footnotes[i]['fnText'][0].split(' ',1)[0]
-                    if len(footnotes[i]['fnText'][0].split(' ',1)) > 1:
-                        footnotes[i]['fnText'][0] = footnotes[i]['fnText'][0].split(' ',1)[1]
+                    fromWord = footnotes[i]['fnText'][0].split(' ', 1)[0]
+                    if len(footnotes[i]['fnText'][0].split(' ', 1)) > 1:
+                        footnotes[i]['fnText'][0] = footnotes[i]['fnText'][0].split(' ', 1)[1]
                     else:
                         # Single word on from line, remove blank line
                         del footnotes[i]['fnText'][0]
@@ -1607,7 +1607,7 @@ def parseFootnotes( inBuf ):
     return footnotes
 
 
-def processFootnoteAnchors( inBuf, footnotes, useAutoNumbering ):
+def processFootnoteAnchors(inBuf, footnotes, useAutoNumbering):
 
     outBuf = inBuf
 
@@ -1638,12 +1638,12 @@ def processFootnoteAnchors( inBuf, footnotes, useAutoNumbering ):
 #               r = "|".join(fnIDs)
 #               r = r"\[({})\]".format(r)
 
-#       print("{}: {}".format(lineNum+1,outBuf[lineNum]))
-        m = re.findall("\[([A-Za-z]|[0-9]{1,2})\]", outBuf[lineNum])
+#       print("{}: {}".format(lineNum+1, outBuf[lineNum]))
+        m = re.findall("\[([A-Za-z]|[0-9]{1, 2})\]", outBuf[lineNum])
         for anchor in m:
             # Check that anchor found belongs to a footnote on this page
             if not anchor in fnIDs:
-                logging.error("No matching footnote for anchor [{}] on scan page {} (line {} in output file):\n       {}".format(anchor,currentScanPage,lineNum+1,outBuf[lineNum]))
+                logging.error("No matching footnote for anchor [{}] on scan page {} (line {} in output file):\n       {}".format(anchor, currentScanPage, lineNum+1, outBuf[lineNum]))
                 logging.debug(fnIDs)
 
             else:
@@ -1653,20 +1653,20 @@ def processFootnoteAnchors( inBuf, footnotes, useAutoNumbering ):
                     fnUniqueAnchorCount += 1
                     anchorsThisPage.append(curAnchor)
                 elif useAutoNumbering:
-                    logging.error("Duplicate anchors ([{}]) detected ({}); ppgen autonumbering may not function correctly".format(anchor,currentScanPage))
+                    logging.error("Duplicate anchors ([{}]) detected ({}); ppgen autonumbering may not function correctly".format(anchor, currentScanPage))
 
                 if useAutoNumbering:
                     newAnchor = "[#]"
                 else:
                     newAnchor = "[{}]".format(fnUniqueAnchorCount)
 
-                logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor,lineNum+1,currentScanPageLabel,outBuf[lineNum]))
+                logging.debug("{:>5s}: ({}|{}) ... {} ...".format(newAnchor, lineNum+1, currentScanPageLabel, outBuf[lineNum]))
                 for line in footnotes[fnUniqueAnchorCount-1]['fnText']:
                     logging.debug("       {}".format(line))
 
                 # sanity check (anchor and footnote should be on same scan page)
                 if currentScanPage != footnotes[fnUniqueAnchorCount-1]['scanPageNum']:
-                    fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage,footnotes[fnUniqueAnchorCount-1]['scanPageNum']))
+                    fatal("Anchor found on different scan page, anchor({}) and footnotes({}) may be out of sync".format(currentScanPage, footnotes[fnUniqueAnchorCount-1]['scanPageNum']))
 
                 # replace anchor
                 outBuf[lineNum] = re.sub(curAnchor, newAnchor, outBuf[lineNum])
@@ -1690,7 +1690,7 @@ def processFootnoteAnchors( inBuf, footnotes, useAutoNumbering ):
     return outBuf, fnUniqueAnchorCount
 
 
-def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth, useAutoNumbering ):
+def processFootnotes(inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth, useAutoNumbering):
     outBuf = []
 
     logging.info("Processing footnotes")
@@ -1732,7 +1732,7 @@ def processFootnotes( inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth
 
 
 # Generate ppgen footnote markup
-def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt, lzdesth, useAutoNumbering ):
+def generatePpgenFootnoteMarkup(inBuf, footnotes, footnoteDestination, lzdestt, lzdesth, useAutoNumbering):
 
     outBuf = inBuf
 
@@ -1762,7 +1762,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
         fnMarkup.append("FOOTNOTES:")
         fnMarkup.append(".sp 2")
         for i, fn in enumerate(footnotes):
-            fnMarkup.append(".fn {}  // {}".format(i+1,fn['scanPageNum']))
+            fnMarkup.append(".fn {}  // {}".format(i+1, fn['scanPageNum']))
             for line in fn['fnText']:
                 fnMarkup.append(line)
             fnMarkup.append(".fn-")
@@ -1781,12 +1781,12 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
                 curChapterEnd = fn['chapterEnd']
 
             # build markup for this footnote
-#           print("{} {}".format(fn['chapterEnd'],fn['fnText'][0]))
+#           print("{} {}".format(fn['chapterEnd'], fn['fnText'][0]))
             fnMarkup = []
             if useAutoNumbering:
                 fnMarkup.append(".fn #  // {}".format(fn['scanPageNum']))
             else:
-                fnMarkup.append(".fn {}  // {}".format(i+1,fn['scanPageNum']))
+                fnMarkup.append(".fn {}  // {}".format(i+1, fn['scanPageNum']))
 
             for line in fn['fnText']:
                 fnMarkup.append(line)
@@ -1807,7 +1807,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
                 curParagraphEnd = fn['paragraphEnd']
 
             # build markup for this footnote
-#           print("{} {}".format(fn['paragraphEnd'],fn['fnText'][0]))
+#           print("{} {}".format(fn['paragraphEnd'], fn['fnText'][0]))
             fnMarkup = []
             fnMarkup.append(".fn {}".format(i+1))
             for line in fn['fnText']:
@@ -1829,7 +1829,7 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
                 curScanPage = fn['scanPageNum']
 
             # build markup for this footnote
-#           print("{} {}".format(fn['paragraphEnd'],fn['fnText'][0]))
+#           print("{} {}".format(fn['paragraphEnd'], fn['fnText'][0]))
             fnMarkup = []
             fnMarkup.append(".fn {}".format(i+1))
             for line in fn['fnText']:
@@ -1851,15 +1851,15 @@ def generatePpgenFootnoteMarkup( inBuf, footnotes, footnoteDestination, lzdestt,
     return outBuf
 
 
-def generateLandingZones( inBuf, footnotes, lzdestt, lzdesth ):
+def generateLandingZones(inBuf, footnotes, lzdestt, lzdesth):
 
     outBuf = inBuf
 
-    logging.info("-- Generating footnote landing zones (lzdestt={} lzdesth={})".format(lzdestt,lzdesth))
+    logging.info("-- Generating footnote landing zones (lzdestt={} lzdesth={})".format(lzdestt, lzdesth))
 
-    if not lzdestt in ("chapterend","bookend",""):
+    if not lzdestt in ("chapterend", "bookend", ""):
         logging.error("Unrecognized value for --lzdestt ({})".format(lzdestt))
-    if not lzdesth in ("chapterend","bookend",""):
+    if not lzdesth in ("chapterend", "bookend", ""):
         logging.error("Unrecognized value for --lzdesth ({})".format(lzdesth))
 
     if lzdestt == "bookend" or lzdesth == "bookend":
@@ -1901,13 +1901,13 @@ def generateLandingZones( inBuf, footnotes, lzdestt, lzdesth ):
             # Find end of chapter (line after last line of last paragraph)
             # Chapter headings must be marked in ppgen format (.h2)
             lastChapterEnd = findPreviousEmptyLine(outBuf, nextChapterStart)
-            outBuf.insert(lastChapterEnd,".fm lz={}".format(lzs))
+            outBuf.insert(lastChapterEnd, ".fm lz={}".format(lzs))
             nextChapterStart = findNextChapter(outBuf, nextChapterStart+2)
 
     return outBuf
 
 
-def joinSpannedFormatting( inBuf, keepOriginal ):
+def joinSpannedFormatting(inBuf, keepOriginal):
     outBuf = []
 
     logging.info("Joining spanned out-of-line formatting markup")
@@ -1939,16 +1939,16 @@ def joinSpannedFormatting( inBuf, keepOriginal ):
             if ln < len(inBuf) and isLinePageBreak(inBuf[ln]):
                 outBlock.append(inBuf[ln])
                 ln += 1
-                while ln < len(inBuf)-1 and isLineBlank(inBuf[ln]) or re.match(r".pn",inBuf[ln]) or re.match(r"\/\/",inBuf[ln]):
+                while ln < len(inBuf)-1 and isLineBlank(inBuf[ln]) or re.match(r".pn", inBuf[ln]) or re.match(r"\/\/", inBuf[ln]):
                     outBlock.append(inBuf[ln])
                     ln += 1
 
-                if re.match(joinEndLineRegex,inBuf[ln]) and (ln-1)-findPreviousNonEmptyLine(inBuf,ln-1) < 4:
+                if re.match(joinEndLineRegex, inBuf[ln]) and (ln-1)-findPreviousNonEmptyLine(inBuf, ln-1) < 4:
                     for line in outBlock:
                         outBuf.append(line)
                     joinWasMade = True
                     joinCount += 1
-                    logging.debug("Lines {}, {}: Joined spanned markup /{} {}/".format(lineNum+1,ln,m.group(1)[0],m.group(1)[0]))
+                    logging.debug("Lines {}, {}: Joined spanned markup /{} {}/".format(lineNum+1, ln, m.group(1)[0], m.group(1)[0]))
                     lineNum = ln + 1
 
         if not joinWasMade:
@@ -1976,12 +1976,12 @@ def buildImageDictionary():
         else:
             fn = os.path.basename(f)
             anchorID = idFromFilename(fn)
-            logging.debug("Found image id={} fn='{}' size={}".format(anchorID,fn,img.size))
-            scanPageNum = re.sub("[^0-9]","",fn)
+            logging.debug("Found image id={} fn='{}' size={}".format(anchorID, fn, img.size))
+            scanPageNum = re.sub("[^0-9]", "", fn)
             key = idFromFilename(fn)
             images[key] = ({'anchorID':anchorID, 'fileName':fn, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':"", 'usageCount':0 })
 
-            if not re.match(r"i_\d{3,4}[a-z]?\.", fn) and fn != "cover.jpg":
+            if not re.match(r"i_\d{3, 4}[a-z]?\.", fn) and fn != "cover.jpg":
                 logging.warning("File '{}' does not match expected naming convention (i_001, i_001a)".format(fn))
 
 #   print(images)
@@ -1990,16 +1990,16 @@ def buildImageDictionary():
     return images
 
 
-def idFromFilename( fn ):
+def idFromFilename(fn):
     id = os.path.basename(fn) # strip to filename only
     id = os.path.splitext(id)[0] # strip off extension
     return id
 
-def idFromPageNumber( pn ):
+def idFromPageNumber(pn):
     s =  'i_{}'.format(pn)
     return s
 
-def processIllustrations( inBuf ):
+def processIllustrations(inBuf):
     # Replace [Illustration: caption] markup with equivalent .il/.ca statements
     outBuf = []
     lineNum = 0
@@ -2058,7 +2058,7 @@ def processIllustrations( inBuf ):
             if testID in illustrations and illustrations[testID]['usageCount'] == 0:
                 ilID = testID
             else: # try i_001a, i_001b, ..., i_001z
-                alphabet = map(chr, range(97,123))
+                alphabet = map(chr, range(97, 123))
                 for letter in alphabet:
                     if testID+letter in illustrations and illustrations[testID+letter]['usageCount'] == 0:
                         ilID = testID+letter
@@ -2075,10 +2075,10 @@ def processIllustrations( inBuf ):
             if ilID:
                 # Convert to ppgen illustration block
                 # .il id=i001 fn=i_001.jpg w=600 alt=''
-                outBlock.append(".il id={} fn={} w={}px alt=''".format(ilID,illustrations[ilID]['fileName'],str(illustrations[ilID]['dimensions'][0])))
+                outBlock.append(".il id={} fn={} w={}px alt=''".format(ilID, illustrations[ilID]['fileName'], str(illustrations[ilID]['dimensions'][0])))
                 illustrations[ilID]['usageCount'] += 1
             else:
-                outBlock.append(".il id={} fn={}.jpg alt=''".format(testID,testID))
+                outBlock.append(".il id={} fn={}.jpg alt=''".format(testID, testID))
 
             # Extract caption from illustration block
             captionBlock = []
@@ -2106,7 +2106,7 @@ def processIllustrations( inBuf ):
             for line in outBlock:
                 outBuf.append(line)
 
-            logging.debug("{}: ScanPage {}: convert {}".format(str(lineNum+1),str(currentScanPage),str(inBlock)))
+            logging.debug("{}: ScanPage {}: convert {}".format(str(lineNum+1), str(currentScanPage), str(inBlock)))
         else:
             outBuf.append(inBuf[lineNum])
             lineNum += 1
@@ -2118,18 +2118,18 @@ def processIllustrations( inBuf ):
     return outBuf
 
 
-def getLinesUntil( inBuf, startLineNum, endRegex, direction=1 ):
+def getLinesUntil(inBuf, startLineNum, endRegex, direction=1):
     outBlock = []
     lineNum = startLineNum
 
-    while lineNum >= 0 and lineNum < len(inBuf) and not re.search(endRegex,inBuf[lineNum]):
+    while lineNum >= 0 and lineNum < len(inBuf) and not re.search(endRegex, inBuf[lineNum]):
         outBlock.append(inBuf[lineNum])
         lineNum += 1
 
     return outBlock
 
 
-def joinSpannedHyphenations( inBuf, keepOriginal ):
+def joinSpannedHyphenations(inBuf, keepOriginal):
     outBuf = []
 
     logging.info("Joining spanned hyphenations")
@@ -2186,50 +2186,50 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
         # spanned hyphenation
         #TODO skip multiline [] markup between spanned hyphenation
 
-        m = re.search(r"(?<![-—])-\*?(<\/(i|b|sc|g|f)>)?$",inBuf[lineNum])
+        m = re.search(r"(?<![-—])-\*?(<\/(i|b|sc|g|f)>)?$", inBuf[lineNum])
         if m and lineNum < len(inBuf)-1 and isLinePageBreak(inBuf[lineNum+1]):
             eolInlineMarkup = m.group(1)
             if inBuf[lineNum][-1] == "*" or inBuf[lineNum].endswith("*{}".format(eolInlineMarkup)):
                 #logging.debug("spanned hyphenation found: {}".format(inBuf[lineNum]))
                 joinToLineNum = lineNum
-                joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
-                m = re.match(r"\*?(<(i|b|sc|g|f)>)",inBuf[joinFromLineNum])
+                joinFromLineNum = findNextLineOfText(inBuf, lineNum+1)
+                m = re.match(r"\*?(<(i|b|sc|g|f)>)", inBuf[joinFromLineNum])
                 if m:
                     solInlineMarkup = m.group(1)
                 if inBuf[joinFromLineNum][0] != '*' and not inBuf[joinFromLineNum].startswith("{}*".format(solInlineMarkup)):
-                    logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1,inBuf[joinToLineNum],inBuf[joinFromLineNum]))
+                    logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1, inBuf[joinToLineNum], inBuf[joinFromLineNum]))
                 else:
                     needsJoin = True
             elif not isDotCommand(inBuf[lineNum]):
-                logging.warning("Line {}: Unmarked end of line hyphenation\n         {}".format(lineNum+1,inBuf[lineNum]))
+                logging.warning("Line {}: Unmarked end of line hyphenation\n         {}".format(lineNum+1, inBuf[lineNum]))
 
         # em-dash / long dash end of last line
-        if re.search(r"(?<![-—])(--|—)\*?$",inBuf[lineNum]) or re.search(r"(?<![-—])(----|——)\*?$",inBuf[lineNum]):
+        if re.search(r"(?<![-—])(--|—)\*?$", inBuf[lineNum]) or re.search(r"(?<![-—])(----|——)\*?$", inBuf[lineNum]):
             if inBuf[lineNum][-1] == "*":
                 #logging.debug("end of line emdash found: {}".format(inBuf[lineNum]))
                 joinToLineNum = lineNum
-                joinFromLineNum = findNextLineOfText(inBuf,lineNum+1)
+                joinFromLineNum = findNextLineOfText(inBuf, lineNum+1)
                 needsJoin = True
-            elif nowrapLevel == 0 and not isNextOriginalLineBlank(inBuf,lineNum+1):
-                logging.warning("Line {}: Unclothed end of line dashes\n         {}".format(lineNum+1,inBuf[lineNum]))
+            elif nowrapLevel == 0 and not isNextOriginalLineBlank(inBuf, lineNum+1):
+                logging.warning("Line {}: Unclothed end of line dashes\n         {}".format(lineNum+1, inBuf[lineNum]))
 
         # em-dash / long dash start of first line
-        if re.match(r"\*?(--|—)(?![-—])",inBuf[lineNum]) or re.match(r"\*?(----|——)(?![-—])",inBuf[lineNum]):
+        if re.match(r"\*?(--|—)(?![-—])", inBuf[lineNum]) or re.match(r"\*?(----|——)(?![-—])", inBuf[lineNum]):
             if inBuf[lineNum][0] == "*":
                 #logging.debug("start of line emdash found: {}".format(inBuf[lineNum]))
-                joinToLineNum = findPreviousLineOfText(inBuf,lineNum-1)
+                joinToLineNum = findPreviousLineOfText(inBuf, lineNum-1)
                 joinFromLineNum = lineNum
                 needsJoin = True
-            elif nowrapLevel == 0 and not isPreviousOriginalLineBlank(inBuf,lineNum-1):
-                logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum+1,inBuf[lineNum]))
+            elif nowrapLevel == 0 and not isPreviousOriginalLineBlank(inBuf, lineNum-1):
+                logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum+1, inBuf[lineNum]))
 
         if needsJoin:
             #logging.debug("  joinToLineNum: {}".format(inBuf[joinToLineNum]))
             #logging.debug("joinFromLineNum: {}".format(inBuf[joinFromLineNum]))
             # Remove first word of from line
-            fromWord = inBuf[joinFromLineNum].split(' ',1)[0]
-            if len(inBuf[joinFromLineNum].split(' ',1)) > 1:
-                inBuf[joinFromLineNum] = inBuf[joinFromLineNum].split(' ',1)[1]
+            fromWord = inBuf[joinFromLineNum].split(' ', 1)[0]
+            if len(inBuf[joinFromLineNum].split(' ', 1)) > 1:
+                inBuf[joinFromLineNum] = inBuf[joinFromLineNum].split(' ', 1)[1]
             else:
                 # Single word on from line, remove blank line
                 del inBuf[joinFromLineNum]
@@ -2243,14 +2243,14 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
 
             # Collapse inline markup inside join
             if not eolInlineMarkup:
-                eolInlineMarkup = solInlineMarkup.replace('<','</')
-            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}{}*'.format(eolInlineMarkup,solInlineMarkup),'-**')
-            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('{}-**{}'.format(eolInlineMarkup,solInlineMarkup),'-**')
-            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-{}**{}'.format(eolInlineMarkup,solInlineMarkup),'-**')
-            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}*{}'.format(eolInlineMarkup,solInlineMarkup),'-**')
-            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}{}*'.format(eolInlineMarkup,solInlineMarkup),'-**')
+                eolInlineMarkup = solInlineMarkup.replace('<', '</')
+            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}{}*'.format(eolInlineMarkup, solInlineMarkup), '-**')
+            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('{}-**{}'.format(eolInlineMarkup, solInlineMarkup), '-**')
+            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-{}**{}'.format(eolInlineMarkup, solInlineMarkup), '-**')
+            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}*{}'.format(eolInlineMarkup, solInlineMarkup), '-**')
+            inBuf[joinToLineNum] = inBuf[joinToLineNum].replace('-*{}{}*'.format(eolInlineMarkup, solInlineMarkup), '-**')
 
-            logging.debug("{}: Resolved hyphenation, ...{}".format(joinToLineNum+1,inBuf[joinToLineNum][-30:]))
+            logging.debug("{}: Resolved hyphenation, ...{}".format(joinToLineNum+1, inBuf[joinToLineNum][-30:]))
             joinCount += 1
 
         outBuf.append(inBuf[lineNum])
@@ -2260,11 +2260,11 @@ def joinSpannedHyphenations( inBuf, keepOriginal ):
     return outBuf
 
 
-def addBoilerplate( inBuf ):
+def addBoilerplate(inBuf):
     outBuf = inBuf
 
     headerBlock = []
-    fn = os.path.join(os.path.dirname(os.path.realpath(__file__)),'header.txt')
+    fn = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'header.txt')
     logging.info("Adding boilerplate from {}".format(fn))
     try:
         with open(fn, 'r') as f:
@@ -2276,7 +2276,7 @@ def addBoilerplate( inBuf ):
     outBuf[0:0] = headerBlock
 
     footerBlock = []
-    fn = os.path.join(os.path.dirname(os.path.realpath(__file__)),'footer.txt')
+    fn = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'footer.txt')
     logging.info("Adding boilerplate from {}".format(fn))
     try:
         with open(fn, 'r') as f:
@@ -2290,7 +2290,7 @@ def addBoilerplate( inBuf ):
     return outBuf
 
 
-def tabsToSpaces( inBuf, tabSize ):
+def tabsToSpaces(inBuf, tabSize):
     outBuf = []
 
     for line in inBuf:
@@ -2301,7 +2301,7 @@ def tabsToSpaces( inBuf, tabSize ):
     return outBuf
 
 
-def convertUTF8( inBuf ):
+def convertUTF8(inBuf):
     outBuf = []
     lineCount = 0
 
@@ -2311,8 +2311,8 @@ def convertUTF8( inBuf ):
         originalLine = line
         if not isLinePageBreak(line):
             # -- becomes a unicode mdash, ---- becomes 2 unicode mdashes
-            line = re.sub(r"(?<!-)-{2}(?!-)","—", line)
-            line = re.sub(r"(?<!-)-{4}(?!-)","——", line)
+            line = re.sub(r"(?<!-)-{2}(?!-)", "—", line)
+            line = re.sub(r"(?<!-)-{4}(?!-)", "——", line)
             if "--" in line:
                 logging.warn("Unconverted dashes: {}".format(line))
 
@@ -2323,8 +2323,8 @@ def convertUTF8( inBuf ):
 
         if line != originalLine:
             lineCount += 1
-            logging.debug("{}: {}".format(i,originalLine))
-            logging.debug("{}{}".format(" "*(len(str(i))+2),line))
+            logging.debug("{}: {}".format(i, originalLine))
+            logging.debug("{}{}".format(" "*(len(str(i))+2), line))
 
         outBuf.append(line)
 
@@ -2334,18 +2334,18 @@ def convertUTF8( inBuf ):
     return outBuf
 
 
-def convertThoughtBreaks( inBuf ):
+def convertThoughtBreaks(inBuf):
     outBuf = []
 
     for line in inBuf:
         # <tb> to .tb
-        line = re.sub(r"^<tb>$",".tb", line)
+        line = re.sub(r"^<tb>$", ".tb", line)
         outBuf.append(line)
 
     return outBuf
 
 
-def removeBlankLinesAtPageEnds( inBuf ):
+def removeBlankLinesAtPageEnds(inBuf):
     outBuf = []
 
     for line in inBuf:
@@ -2359,7 +2359,7 @@ def removeBlankLinesAtPageEnds( inBuf ):
 
 
 # TODO: Make this a tool in itself?
-def fixup( inBuf, keepOriginal ):
+def fixup(inBuf, keepOriginal):
 #    • Remove spaces at end of line.
 #    • Remove blank lines at end of pages.
 #    • Remove spaces on either side of hyphens.
@@ -2390,7 +2390,7 @@ def fixup( inBuf, keepOriginal ):
     return outBuf
 
 #TODO: Full guiguts fixit seems error prone.. maybe only do safe defaults or break off into seperate tool with each setting configurable, does gutsweeper do this already?
-#def removeExtraSpaces( inBuf ):
+#def removeExtraSpaces(inBuf):
 #    • Remove spaces on either side of hyphens.
 #    • Remove space before periods.
 #    • Remove space before exclamation points.
@@ -2413,20 +2413,20 @@ def fixup( inBuf, keepOriginal ):
 #       if rewrapLevel == 0:
 #           # Remove multiple spaces
 #           # $line =~ s/(?<=\S)\s\s+(?=\S)/
-#           line = re.sub(r"(?<=\S)\s\s+(?=\S)","", line)
+#           line = re.sub(r"(?<=\S)\s\s+(?=\S)", "", line)
 #
 #           # Remove spaces on either side of hyphens.
 #           # Remove spaces before hyphen (only if hyphen isn't first on line, like poetry)
 #           # $line =~ s/(\S) +-/$1-/g;
-#           line = re.sub(r"(\S) +-","\1-", line)
+#           line = re.sub(r"(\S) +-", "\1-", line)
 #
 #           # Remove space after hyphen
 #           # $line =~ s/- /-/g;
-#           line = re.sub(r"- ","-", line)
+#           line = re.sub(r"- ", "-", line)
 #
 #           # Except leave a space after a string of three or more hyphens
 #           # $line =~ s/(?<![-])([-]*---)(?=[^\s\\"F-])/$1 /g
-#           line = re.sub(r'(?<!-)(-*---)(?=[^\s\\"F-])',"\1", line)
+#           line = re.sub(r'(?<!-)(-*---)(?=[^\s\\"F-])', "\1", line)
 #
 #       outBuf.append(line)
 #
@@ -2439,7 +2439,7 @@ def fixup( inBuf, keepOriginal ):
 #
 #
 #
-#           if ( ${ $::lglobal{fixopt} }[1] ) {
+#           if (${ $::lglobal{fixopt} }[1]) {
 #               ; # Remove spaces before hyphen (only if hyphen isn't first on line, like poetry)
 #               $edited++ if $line =~ s/(\S) +-/$1-/g;
 #               $edited++ if $line =~ s/- /-/g;    # Remove space after hyphen
@@ -2447,38 +2447,38 @@ def fixup( inBuf, keepOriginal ):
 #                 if $line =~ s/(?<![-])([-]*---)(?=[^\s\\"F-])/$1 /g
 #               ; # Except leave a space after a string of three or more hyphens
 #           }
-#           if ( ${ $::lglobal{fixopt} }[3] ) {
+#           if (${ $::lglobal{fixopt} }[3]) {
 #               ; # Remove space before periods (only if not first on line, like poetry's ellipses)
 #               $edited++ if $line =~ s/(\S) +\.(?=\D)/$1\./g;
 #           }
 #           ;     # Get rid of space before periods
-#           if ( ${ $::lglobal{fixopt} }[4] ) {
+#           if (${ $::lglobal{fixopt} }[4]) {
 #               $edited++
 #                 if $line =~ s/ +!/!/g;
 #           }
 #           ;     # Get rid of space before exclamation points
-#           if ( ${ $::lglobal{fixopt} }[5] ) {
+#           if (${ $::lglobal{fixopt} }[5]) {
 #               $edited++
 #                 if $line =~ s/ +\?/\?/g;
 #           }
 #           ;     # Get rid of space before question marks
-#           if ( ${ $::lglobal{fixopt} }[6] ) {
+#           if (${ $::lglobal{fixopt} }[6]) {
 #               $edited++
 #                 if $line =~ s/ +\;/\;/g;
 #           }
 #           ;     # Get rid of space before semicolons
-#           if ( ${ $::lglobal{fixopt} }[7] ) {
+#           if (${ $::lglobal{fixopt} }[7]) {
 #               $edited++
 #                 if $line =~ s/ +:/:/g;
 #           }
 #           ;     # Get rid of space before colons
-#           if ( ${ $::lglobal{fixopt} }[8] ) {
+#           if (${ $::lglobal{fixopt} }[8]) {
 #               $edited++
-#                 if $line =~ s/ +,/,/g;
+#                 if $line =~ s/ +, /, /g;
 #           }
 #           ;     # Get rid of space before commas
 #                 # FIXME way to go on managing quotes
-#           if ( ${ $::lglobal{fixopt} }[9] ) {
+#           if (${ $::lglobal{fixopt} }[9]) {
 #               $edited++
 #                 if $line =~ s/^\" +/\"/
 #               ; # Remove space after doublequote if it is the first character on a line
@@ -2486,7 +2486,7 @@ def fixup( inBuf, keepOriginal ):
 #                 if $line =~ s/ +\"$/\"/
 #               ; # Remove space before doublequote if it is the last character on a line
 #           }
-#           if ( ${ $::lglobal{fixopt} }[10] ) {
+#           if (${ $::lglobal{fixopt} }[10]) {
 #               $edited++
 #                 if $line =~ s/(?<=(\(|\{|\[)) //g
 #               ;    # Get rid of space after opening brackets
@@ -2495,61 +2495,61 @@ def fixup( inBuf, keepOriginal ):
 #               ;    # Get rid of space before closing brackets
 #           }
 #           ;        # FIXME format to standard thought breaks - changed to <tb>
-#           if ( ${ $::lglobal{fixopt} }[11] ) {
+#           if (${ $::lglobal{fixopt} }[11]) {
 #               $edited++
 #
 #          #                  if $line =~
 #          # s/^\s*(\*\s*){5}$/       \*       \*       \*       \*       \*\n/;
-#                 if $line =~ s/^\s*(\*\s*){4,}$/<tb>\n/;
+#                 if $line =~ s/^\s*(\*\s*){4, }$/<tb>\n/;
 #           }
-#           $edited++ if ( $line =~ s/ +$// );
+#           $edited++ if ($line =~ s/ +$//);
 #           ;        # Fix llth, lst
-#           if ( ${ $::lglobal{fixopt} }[12] ) {
+#           if (${ $::lglobal{fixopt} }[12]) {
 #               $edited++ if $line =~ s/llth/11th/g;
 #               $edited++ if $line =~ s/(?<=\d)lst/1st/g;
 #               $edited++ if $line =~ s/(?<=\s)lst/1st/g;
 #               $edited++ if $line =~ s/^lst/1st/;
 #           }
 #           ;        # format ellipses correctly
-#           if ( ${ $::lglobal{fixopt} }[13] ) {
+#           if (${ $::lglobal{fixopt} }[13]) {
 #               $edited++ if $line =~ s/(?<![\.\!\?])\.{3}(?!\.)/ \.\.\./g;
 #               $edited++ if $line =~ s/^ \./\./;
 #           }
 #           ;        # format guillemets correctly
 #           ;        # french guillemets
-#           if ( ${ $::lglobal{fixopt} }[14] and ${ $::lglobal{fixopt} }[15] ) {
+#           if (${ $::lglobal{fixopt} }[14] and ${ $::lglobal{fixopt} }[15]) {
 #               $edited++ if $line =~ s/«\s+/«/g;
 #               $edited++ if $line =~ s/\s+»/»/g;
 #           }
 #           ;        # german guillemets
-#           if ( ${ $::lglobal{fixopt} }[14] and !${ $::lglobal{fixopt} }[15] )
+#           if (${ $::lglobal{fixopt} }[14] and !${ $::lglobal{fixopt} }[15])
 #           {
 #               $edited++ if $line =~ s/\s+«/«/g;
 #               $edited++ if $line =~ s/»\s+/»/g;
 #           }
-#           $update++ if ( ( $index % 250 ) == 0 );
-#           $textwindow->see($index) if ( $edited || $update );
+#           $update++ if (($index % 250) == 0);
+#           $textwindow->see($index) if ($edited || $update);
 #           if ($edited) {
-#               $textwindow->replacewith( $lastindex, $index, $line );
+#               $textwindow->replacewith($lastindex, $index, $line);
 #           }
 #       }
-#       $textwindow->markSet( 'insert', $index ) if $update;
-#       $textwindow->update   if ( $edited || $update );
-#       ::update_indicators() if ( $edited || $update );
+#       $textwindow->markSet('insert', $index) if $update;
+#       $textwindow->update   if ($edited || $update);
+#       ::update_indicators() if ($edited || $update);
 #       $edited    = 0;
 #       $update    = 0;
 #       $lastindex = $index;
 #       $index++;
 #       $index .= '.0';
-#       if ( $index > $end ) { $index = $end }
+#       if ($index > $end) { $index = $end }
 #       if ($::operationinterrupt) { $::operationinterrupt = 0; return }
 #   }
-#   $textwindow->markSet( 'insert', 'end' );
+#   $textwindow->markSet('insert', 'end');
 #   $textwindow->see('end');
 #   ::update_indicators();
 #}
 
-def doStandardConversions( inBuf, keepOriginal ):
+def doStandardConversions(inBuf, keepOriginal):
     outBuf = inBuf
 
     outBuf = removeTrailingSpaces(outBuf)
@@ -2558,7 +2558,7 @@ def doStandardConversions( inBuf, keepOriginal ):
     return outBuf
 
 
-def generateTransNote( inBuf ):
+def generateTransNote(inBuf):
     outBuf = []
     tnote = []
 
@@ -2576,9 +2576,9 @@ def generateTransNote( inBuf ):
             currentScanPage = parseScanPage(inBuf[lineNum])
 
         # Look for proofers notes [**
-        m = re.search(r"\[\*\*([^\]]+)]",inBuf[lineNum])
+        m = re.search(r"\[\*\*([^\]]+)]", inBuf[lineNum])
         if m:
-            #print("[{}] {}".format(pageNumbers[currentScanPage]['pageNum'],inBuf[lineNum]))
+            #print("[{}] {}".format(pageNumbers[currentScanPage]['pageNum'], inBuf[lineNum]))
             #print("{}".format(m.group(1)))
 
             if pageNumbers[currentScanPage]['isPageNumRoman']:
@@ -2588,7 +2588,7 @@ def generateTransNote( inBuf ):
 
             t = m.group(1).split('|')
             if len(t) > 2: # sanity check
-                fatal("Error parsing proofer note [{}] {}".format(pageNumbers[currentScanPage]['pageNum'],m.group(0)))
+                fatal("Error parsing proofer note [{}] {}".format(pageNumbers[currentScanPage]['pageNum'], m.group(0)))
 
             beforeText = "{}".format(inBuf[lineNum][m.start(0)-20:m.start(0)])
             afterText = "{}".format(inBuf[lineNum][m.end(0):m.end(0)+20])
@@ -2605,23 +2605,22 @@ def generateTransNote( inBuf ):
 
             #print(inBuf[lineNum])
             if len(t) == 1: # Non-substitution type note, or unprocessed note
-                tnote.append("• #{}:Page_{}#".format(m.group(0),pageLabel))
+                tnote.append("• #{}:Page_{}#".format(m.group(0), pageLabel))
             else:
                 if t[0] == "":
-                    oldText = "{}{}{}".format(beforeText,t[0],afterText)
+                    oldText = "{}{}{}".format(beforeText, t[0], afterText)
                 else:
-                    oldText = "{}<B>{}</B>{}".format(beforeText,t[0],afterText)
+                    oldText = "{}<B>{}</B>{}".format(beforeText, t[0], afterText)
 
                 if t[1] == "":
-                    newText = "{}{}{}".format(beforeText,t[1],afterText)
+                    newText = "{}{}{}".format(beforeText, t[1], afterText)
                 else:
-                    newText = "{}<B>{}</B>{}".format(beforeText,t[1],afterText)
+                    newText = "{}<B>{}</B>{}".format(beforeText, t[1], afterText)
 
+                newText = "{}<B>{}</B>{}".format(beforeText, t[1], afterText)
+                tnote.append("#Page {}:tnote_{}#: {} → {}".format(pageLabel, lineNum, oldText, newText))
 
-                newText = "{}<B>{}</B>{}".format(beforeText,t[1],afterText)
-                tnote.append("#Page {}:tnote_{}#: {} → {}".format(pageLabel,lineNum,oldText,newText))
-
-                inBuf[lineNum] = inBuf[lineNum].replace(m.group(0),"<span id=tnote_{}>{}</span>".format(lineNum,t[1]))
+                inBuf[lineNum] = inBuf[lineNum].replace(m.group(0), "<span id=tnote_{}>{}</span>".format(lineNum, t[1]))
 
         outBuf.append(inBuf[lineNum])
         lineNum += 1
@@ -2659,10 +2658,10 @@ def generateTransNote( inBuf ):
     return outBuf
 
 
-def stripHtml( inBuf ):
+def stripHtml(inBuf):
     outBuf = []
     for line in inBuf:
-        line = re.sub("</?[^>]+>","",line)
+        line = re.sub("</?[^>]+>", "", line)
 
         outBuf.append(line)
 
@@ -2677,7 +2676,7 @@ romanNumeralMap = (('m',  1000), ('cm', 900), ('d',  500), ('cd', 400), ('c',  1
     ('xc', 90), ('l',  50), ('xl', 40), ('x',  10), ('ix', 9), ('v',  5),
     ('iv', 4), ('i',  1))
 
-def toRoman( n ):
+def toRoman(n):
     """convert integer to Roman numeral"""
     result = ""
     for numeral, integer in romanNumeralMap:
@@ -2686,7 +2685,7 @@ def toRoman( n ):
             n -= integer
     return result
 
-def fromRoman( s ):
+def fromRoman(s):
     """convert Roman numeral to integer"""
     result = 0
     index = 0
@@ -2697,7 +2696,7 @@ def fromRoman( s ):
     return result
 
 
-def calcPageNumbers( inBuf ):
+def calcPageNumbers(inBuf):
     pageNumbers = {}
     lineNum = 0
     currentPageNum = 0
@@ -2707,7 +2706,7 @@ def calcPageNumbers( inBuf ):
     logging.info("-- Calculating page numbers")
     while lineNum < len(inBuf):
         # Keep track of page number
-        m = re.match(r".pn (.+)",inBuf[lineNum])
+        m = re.match(r".pn (.+)", inBuf[lineNum])
         if m:
             pn = "{}".format(m.group(1))
             if pn[0] == '+':
@@ -2869,7 +2868,7 @@ def main():
         if not args['--dryrun']:
             logging.info("Saving output to '{}'".format(outfile))
             # Save file
-            f = open(outfile,'w')
+            f = open(outfile, 'w')
             f.write('\n'.join(outBuf))
             f.close()
 
