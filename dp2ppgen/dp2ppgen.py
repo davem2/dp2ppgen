@@ -23,7 +23,7 @@ Options:
   --sectionmaxlines     Max lines a section can be, ianything larger is not a section
   -f, --footnotes       Convert footnotes into ppgen format.
   --fnautonum           Use ppgen autonumbering for generated anchors and .fn statements.
-  --fndest=<fndest>     Where to relocate footnotes (paragraphend, chapterend, bookend, inplace).
+  --fndest=<fndest>     Where to relocate footnotes (paragraphend, chapterend, bookend).
   --lzdestt=<lzdestt>   Where to place footnote landing zones for text output (chapterend, bookend).
   --lzdesth=<lzdesth>   Where to place footnote landing zones for HTML output (chapterend, bookend).
   --fixup               Perform guiguts style fixup operations.
@@ -1711,9 +1711,7 @@ def processFootnotes(inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth,
     # parse footnotes into list of dictionaries
     footnotes = parseFootnotes(outBuf)
 
-    if footnoteDestination != "inplace":
-        # strip [Footnote markup
-        outBuf = stripFootnoteMarkup(outBuf)
+    outBuf = stripFootnoteMarkup(outBuf)
 
     # find and markup footnote anchors
     outBuf, fnUniqueAnchorCount = processFootnoteAnchors(outBuf, footnotes, useAutoNumbering)
@@ -1818,32 +1816,6 @@ def generatePpgenFootnoteMarkup(inBuf, footnotes, footnoteDestination, lzdestt, 
             outBuf[curParagraphEnd:curParagraphEnd] = fnMarkup
 
         outBuf.insert(curParagraphEnd, fmText)
-
-    elif footnoteDestination == "inplace":
-        logging.info("-- Adding ppgen style footnotes in place")
-        curScanPage = footnotes[-1]['scanPageNum']
-        lastStartLine = footnotes[-1]['startLine']
-        for i, fn in reversed(list(enumerate(footnotes))):
-            if curScanPage != fn['scanPageNum']:
-                outBuf.insert(lastStartLine, fmText)
-                curScanPage = fn['scanPageNum']
-
-            # build markup for this footnote
-#           print("{} {}".format(fn['paragraphEnd'], fn['fnText'][0]))
-            fnMarkup = []
-            fnMarkup.append(".fn {}".format(i+1))
-            for line in fn['fnText']:
-                fnMarkup.append(line)
-            fnMarkup.append(".fn-")
-            lastStartLine = fn['startLine']
-
-            # insert it
-            outBuf[fn['startLine']:fn['endLine']+1] = fnMarkup
-
-        outBuf.insert(lastStartLine, fmText)
-
-        # Still need to clean up continued footnotes, *[Footnote
-        outBuf = stripFootnoteMarkup(outBuf)
 
     else:
         logging.error("Unrecognized value for --fndest ({})".format(footnoteDestination))
