@@ -986,7 +986,7 @@ def processIndex(inBuf, keepOriginal, args):
     lineNum = 0
 
     # Use arguments if provided
-    s = r", (\d{1, 3})(?!\d)"
+    s = r", (\d{1,3})(?!\d)"
     if 's' in args:
         s = args['s']
     r = r", #\1#"
@@ -1002,7 +1002,7 @@ def processIndex(inBuf, keepOriginal, args):
 
     while lineNum < len(inBuf):
         if isLineOriginalText(inBuf[lineNum]):
-            m = re.search(r"(\d{4, })", inBuf[lineNum])
+            m = re.search(r"(\d{4,})", inBuf[lineNum])
             if m:
                 logging.warning("Link not created for digit in index: {}".format(m.group(1)))
             inBuf[lineNum] = re.sub(s, r, inBuf[lineNum])
@@ -1057,11 +1057,11 @@ def processToc(inBuf, keepOriginal, args):
 
     tocStyles = (
         # 3. County and Shire. Meaning of the Words      42
-        { 's': r'^(\d+?\.) (.+?) {6, }(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
+        { 's': r'^(\d+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
         # XI. Columbus and the Savages      48
-        { 's': r'^([XIVLC]+?\.) (.+?) {6, }(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
+        { 's': r'^([XIVLC]+?\.) (.+?) {6,}(\d+)', 'r': r'\1|#\2:Page_\3#|#\3#', 'count': 0, 'columns': 'rlr' },
         # SIR CHRISTOPHER WREN      24
-        { 's': r'^(.+?) {6, }(\d+)', 'r': r'#\1:Page_\2#|#\2#', 'count': 0, 'columns': 'lr' },
+        { 's': r'^(.+?) {6,}(\d+)', 'r': r'#\1:Page_\2#|#\2#', 'count': 0, 'columns': 'lr' },
    )
 
     # Does toc fit a known style?
@@ -1285,13 +1285,13 @@ def detectMarkupType(buf, dpType):
                        "=========": 0,
                        "---------": 0,
                        #TODO update and test better markup
-                       # "[-=]{6, }+": False,
-                       # "[-=]{6, }": False,
+                       # "[-=]{6,}+": False,
+                       # "[-=]{6,}": False,
                        "|": 0,
                        "T[aAbBlLeE]": 0
               },
               "toc": {
-                       " {6, }\d+": 0,
+                       " {6,}\d+": 0,
               },
               "titlepage": {
                        "": 0,
@@ -1307,7 +1307,7 @@ def detectMarkupType(buf, dpType):
 
     if (matches["table"]["--------+"] and matches["table"]["|"]) or (matches["table"]["T[aAbBlLeE]"] and matches["table"]["--------+"]):
         return "table"
-    elif matches["toc"][" {6, }\d+"]:
+    elif matches["toc"][" {6,}\d+"]:
         return "toc"
 
     return ""
@@ -1517,7 +1517,7 @@ def parseFootnotes(inBuf):
             chapterEnd = -1 # This must be done during footnote anchor processing as chapter end is relative to anchor and not [Footnote] markup
 
             # Extract footnote ID
-            m = re.match(r"\[Footnote (\w{1, 2}):", fnBlock[0])
+            m = re.match(r"\[Footnote (\w{1,2}):", fnBlock[0])
             if m:
                 fnID = m.group(1)
 
@@ -1639,7 +1639,7 @@ def processFootnoteAnchors(inBuf, footnotes, useAutoNumbering):
 #               r = r"\[({})\]".format(r)
 
 #       print("{}: {}".format(lineNum+1, outBuf[lineNum]))
-        m = re.findall("\[([A-Za-z]|[0-9]{1, 2})\]", outBuf[lineNum])
+        m = re.findall("\[([A-Za-z]|[0-9]{1,2})\]", outBuf[lineNum])
         for anchor in m:
             # Check that anchor found belongs to a footnote on this page
             if not anchor in fnIDs:
@@ -1953,7 +1953,7 @@ def buildImageDictionary():
             key = idFromFilename(fn)
             images[key] = ({'anchorID':anchorID, 'fileName':fn, 'scanPageNum':scanPageNum, 'dimensions':img.size, 'caption':"", 'usageCount':0 })
 
-            if not re.match(r"i_\d{3, 4}[a-z]?\.", fn) and fn != "cover.jpg":
+            if not re.match(r"i_\d{3,4}[a-z]?\.", fn) and fn != "cover.jpg":
                 logging.warning("File '{}' does not match expected naming convention (i_001, i_001a)".format(fn))
 
 #   print(images)
@@ -2472,7 +2472,7 @@ def fixup(inBuf, keepOriginal):
 #
 #          #                  if $line =~
 #          # s/^\s*(\*\s*){5}$/       \*       \*       \*       \*       \*\n/;
-#                 if $line =~ s/^\s*(\*\s*){4, }$/<tb>\n/;
+#                 if $line =~ s/^\s*(\*\s*){4,}$/<tb>\n/;
 #           }
 #           $edited++ if ($line =~ s/ +$//);
 #           ;        # Fix llth, lst
