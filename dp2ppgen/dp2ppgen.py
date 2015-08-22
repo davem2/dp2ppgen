@@ -229,7 +229,7 @@ def validateDpMarkup(inBuf):
         # Sections
 
     # Look for unresolved <i></i>, [], {}
-    if len(formattingStack) > 0:
+    if formattingStack:
         errorCount += 1
         logging.error("Reached end of file with unresolved formatting markup, (probably due to previous markup error(s))")
 
@@ -1634,7 +1634,7 @@ def processFootnoteAnchors(inBuf, footnotes, useAutoNumbering):
                     fnIDs.append(fn['fnID'])
 
             # Build regex for footnote anchors that can be found on this scanpage
-#           if len(fnIDs) > 0:
+#           if fnIDs:
 #               r = "|".join(fnIDs)
 #               r = r"\[({})\]".format(r)
 
@@ -1719,7 +1719,7 @@ def processFootnotes(inBuf, footnoteDestination, keepOriginal, lzdestt, lzdesth,
     if len(footnotes) != fnUniqueAnchorCount:
         logging.error("Footnote anchor count does not match footnote count")
 
-    if len(footnotes) > 0:
+    if footnotes:
         outBuf = generatePpgenFootnoteMarkup(outBuf, footnotes, footnoteDestination, lzdestt, lzdesth, useAutoNumbering)
         if lzdestt or lzdesth:
             outBuf = generateLandingZones(outBuf, footnotes, lzdestt, lzdesth)
