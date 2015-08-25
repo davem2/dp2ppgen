@@ -2553,9 +2553,12 @@ def generateTransNote(inBuf):
         m = re.search(r"\[\*\*([^\]]+)]", inBuf[lineNum])
         if m:
             #print("[{}] {}".format(pageNumbers[currentScanPage]['pageNum'], inBuf[lineNum]))
-            #print("{}".format(m.group(1)))
+            logging.info("[**note] found {}: {}".format(lineNum,m.group(0)))
 
-            if pageNumbers[currentScanPage]['isPageNumRoman']:
+            if not pageNumbers:
+                logging.warning("Page number for proofers note could not be determined, add .pn statements and run again")
+                pageLabel = "???"
+            elif pageNumbers[currentScanPage]['isPageNumRoman']:
                 pageLabel = str(toRoman(pageNumbers[currentScanPage]['pageNum']))
             else:
                 pageLabel = str(pageNumbers[currentScanPage]['pageNum'])
