@@ -17,6 +17,7 @@ Examples:
 Options:
   --boilerplate         Pastes contents of header.txt and footer.txt to start and end
   -c, --chapters        Convert chapter headings into ppgen style chapter headings.
+  --config=<config>     Use the set of options in the given configuration file
   --chaptermaxlines     Max lines a chapter can be, anything larger is not a chapter
   -d, --dryrun          Run through conversions but do not write out result.
   -e, --sections        Convert section headings into ppgen style section headings.
@@ -2737,9 +2738,11 @@ def main():
     # Process processing options
 
     #TODO, load config file and use those options if one is present
+    if args['--config']:
+        args = mergeDict(args,loadJson(args['--config']))
 
     # Use default options if no processing options are set
-    if not args['--chapters'] and \
+    elif not args['--chapters'] and \
         not args['--sections'] and \
         not args['--footnotes'] and \
         not args['--sidenotes'] and \
