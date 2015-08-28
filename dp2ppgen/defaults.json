@@ -1,0 +1,22 @@
+{
+    "--pages": true,
+    "--joinspanned": true,
+    "--utf8": true,
+    "--fixup": true,
+    "--chapters": true,
+    "--chaptermaxlines": 15,
+    "--sections": true,
+    "--sectionmaxlines": 3,
+    "--illustrations": true,
+    "--markup": true,
+    "--detectmarkup": true,
+    "--boilerplate": false,
+    "--tnote": false,
+    "--footnotes": true,
+    "--fnautonum": false,
+    "--fndest": "paragraphend",
+    "--lzdestt": null,
+    "--lzdesth": "bookend",
+    "--sidenotes": true,
+    "--snkeepbreaks": false
+}

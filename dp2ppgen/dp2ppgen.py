@@ -53,6 +53,7 @@ import logging
 import tempfile
 import subprocess
 import shlex
+import json
 from PIL import Image
 
 
@@ -2734,54 +2735,27 @@ def main():
     logging.debug(args)
 
     # Process processing options
-    doChapterHeadings = args['--chapters']
-    doSectionHeadings = args['--sections']
-    doFootnotes = args['--footnotes']
-    doSidenotes = args['--sidenotes']
-    doIllustrations = args['--illustrations']
-    doMarkup = args['--markup']
-    doPages = args['--pages']
-    doJoinSpanned = args['--joinspanned']
-    doFixup = args['--fixup']
-    doUTF8 = args['--utf8']
-    doBoilerplate = args['--boilerplate']
-    doTransNote = args['--tnote']
 
     #TODO, load config file and use those options if one is present
-    chapterMaxLines = 16
-    if args['--chaptermaxlines']:
-        chapterMaxLines = int(args['--chaptermaxlines'])
-    sectionMaxLines = 3
-    if args['--sectionmaxlines']:
-        sectionMaxLines = int(args['--sectionmaxlines'])
 
     # Use default options if no processing options are set
-    if not doChapterHeadings and \
-        not doSectionHeadings and \
-        not doFootnotes and \
-        not doSidenotes and \
-        not doIllustrations and \
-        not doMarkup and \
-        not doPages and \
-        not doFixup and \
-        not doUTF8 and \
-        not doBoilerplate and \
-        not doTransNote and \
-        not doJoinSpanned:
+    if not args['--chapters'] and \
+        not args['--sections'] and \
+        not args['--footnotes'] and \
+        not args['--sidenotes'] and \
+        not args['--illustrations'] and \
+        not args['--markup'] and \
+        not args['--pages'] and \
+        not args['--fixup'] and \
+        not args['--utf8'] and \
+        not args['--boilerplate'] and \
+        not args['--tnote'] and \
+        not args['--joinspanned']:
 
-        logging.info("No processing options were given, using default set of options -pcfj --fixup --utf8\n      Run 'dp2ppgen -h' for a full list of options")
-        doPages = True
-        doChapterHeadings = True
-        doSectionHeadings = False
-        doFootnotes = True
-        doSidenotes = True
-        doIllustrations = True
-        doMarkup = False
-        doFixup = False
-        doUTF8 = True
-        doBoilerplate = False
-        doJoinSpanned = True
-        doTransNote = False
+        logging.info("No processing options were given, using default options from defaults.json\n      Run 'dp2ppgen -h' for a full list of options")
+
+        defaultConfig = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'defaults.json')
+        args = mergeDict(args,loadJson(defaultConfig))
 
     # Process source document
     logging.info("Processing '{}'".format(infile))
@@ -2794,20 +2768,20 @@ def main():
     else:
         outBuf = doStandardConversions(outBuf, args['--keeporiginal'])
 
-        if doPages:
+        if args['--pages']:
             outBuf = processBlankPages(outBuf, args['--keeporiginal'])
             outBuf = processPageNumbers(outBuf, args['--keeporiginal'])
-        if doFixup:
+        if args['--fixup']:
             outBuf = fixup(outBuf, args['--keeporiginal'])
-        if doUTF8:
+        if args['--utf8']:
             outBuf = convertUTF8(outBuf)
-        if doChapterHeadings or doSectionHeadings:
-            outBuf = processHeadings(outBuf, doChapterHeadings, doSectionHeadings, args['--keeporiginal'], chapterMaxLines, sectionMaxLines)
-        if doSidenotes:
+        if args['--chapters'] or args['--sections']:
+            outBuf = processHeadings(outBuf, args['--chapters'], args['--sections'], args['--keeporiginal'], args['--chaptermaxlines'], args['--sectionmaxlines'])
+        if args['--sidenotes']:
             outBuf = processSidenotes(outBuf, args['--keeporiginal'], args['--snkeepbreaks'])
-        if doIllustrations:
+        if args['--illustrations']:
             outBuf = processIllustrations(outBuf)
-        if doFootnotes:
+        if args['--footnotes']:
             # Set defaults
             fndest = ""
             lzdestt = ""
@@ -2828,18 +2802,18 @@ def main():
                 fnautonum = True
 
             outBuf = processFootnotes(outBuf, fndest, args['--keeporiginal'], lzdestt, lzdesth, fnautonum)
-        if doJoinSpanned:
+        if args['--joinspanned']:
             outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
             outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
         if args['--detectmarkup']:
             outBuf = detectMarkup(outBuf)
-        if doMarkup:
+        if args['--markup']:
             outBuf = processOOLFMarkup(outBuf, args['--keeporiginal'])
 
-        if doBoilerplate:
+        if args['--boilerplate']:
             outBuf = addBoilerplate(outBuf)
 
-        if doTransNote:
+        if args['--tnote']:
             outBuf = generateTransNote(outBuf)
 
         if not args['--dryrun']:
@@ -2850,6 +2824,22 @@ def main():
             f.close()
 
     return
+
+
+def loadJson(fn):
+    with open(fn) as f:
+        data = json.load(f)
+
+    return data
+
+
+def mergeDict(dict_1, dict_2):
+    """Merge two dictionaries.
+    Values that evaluate to true take priority over falsy values.
+    `dict_1` takes priority over `dict_2`.
+    """
+    return dict((str(key), dict_1.get(key) or dict_2.get(key))
+                for key in set(dict_2) | set(dict_1))
 
 
 if __name__ == "__main__":
