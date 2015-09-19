@@ -2176,7 +2176,7 @@ def joinSpannedHyphenations(inBuf, keepOriginal):
                     logging.error("Line {}: Unresolved hyphenation\n       {}\n       {}".format(lineNum+1, inBuf[joinToLineNum], inBuf[joinFromLineNum]))
                 else:
                     needsJoin = True
-            elif not isDotCommand(inBuf[lineNum]):
+            elif not isDotCommand(inBuf[lineNum]) and not isLinePageBreak(inBuf[lineNum]):
                 logging.warning("Line {}: Unmarked end of line hyphenation\n         {}".format(lineNum+1, inBuf[lineNum]))
 
         # em-dash / long dash end of last line
@@ -2186,7 +2186,7 @@ def joinSpannedHyphenations(inBuf, keepOriginal):
                 joinToLineNum = lineNum
                 joinFromLineNum = findNextLineOfText(inBuf, lineNum+1)
                 needsJoin = True
-            elif nowrapLevel == 0 and not isNextOriginalLineBlank(inBuf, lineNum+1):
+            elif nowrapLevel == 0 and not isNextOriginalLineBlank(inBuf, lineNum+1) and not isLinePageBreak(inBuf[lineNum]):
                 logging.warning("Line {}: Unclothed end of line dashes\n         {}".format(lineNum+1, inBuf[lineNum]))
 
         # em-dash / long dash start of first line
@@ -2196,7 +2196,7 @@ def joinSpannedHyphenations(inBuf, keepOriginal):
                 joinToLineNum = findPreviousLineOfText(inBuf, lineNum-1)
                 joinFromLineNum = lineNum
                 needsJoin = True
-            elif nowrapLevel == 0 and not isPreviousOriginalLineBlank(inBuf, lineNum-1):
+            elif nowrapLevel == 0 and not isPreviousOriginalLineBlank(inBuf, lineNum-1) and not isLinePageBreak(inBuf[lineNum]):
                 logging.warning("Line {}: Unclothed start of line dashes\n         {}".format(lineNum+1, inBuf[lineNum]))
 
         if needsJoin:
