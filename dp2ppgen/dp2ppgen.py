@@ -15,34 +15,35 @@ Examples:
   dp2ppgen book.txt book-src.txt
 
 Options:
-  --boilerplate         Pastes contents of header.txt and footer.txt to start and end
-  -c, --chapters        Convert chapter headings into ppgen style chapter headings.
-  --config=<config>     Use the set of options in the given configuration file
-  --chaptermaxlines     Max lines a chapter can be, anything larger is not a chapter
-  -d, --dryrun          Run through conversions but do not write out result.
-  -e, --sections        Convert section headings into ppgen style section headings.
-  --sectionmaxlines     Max lines a section can be, ianything larger is not a section
-  -f, --footnotes       Convert footnotes into ppgen format.
-  --fnautonum           Use ppgen autonumbering for generated anchors and .fn statements.
-  --fndest=<fndest>     Where to relocate footnotes (paragraphend, chapterend, bookend).
-  --lzdestt=<lzdestt>   Where to place footnote landing zones for text output (chapterend, bookend).
-  --lzdesth=<lzdesth>   Where to place footnote landing zones for HTML output (chapterend, bookend).
-  --fixup               Perform guiguts style fixup operations.
-  --force               Ignore markup errors and force operation.
-  -i, --illustrations   Convert raw [Illustration] tags into ppgen .il/.ca markup.
-  -j, --joinspanned     Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
-  -k, --keeporiginal    On any conversion keep original text as a comment.
-  -p, --pages           Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines.
-  -q, --quiet           Print less text.
-  -s, --sidenotes       Convert sidenotes into ppgen format.
-  --snkeepbreaks        Keep exact line endings for multi-line sidenotes.
-  --detectmarkup        Best guess what out of line markup /* */ /# #/ represent (table, toc, poetry, etc..)
-  --tnote               Generate transcribers note.
-  -m, --markup          Convert out of line markup /* */ /# #/ into ppgen format.
-  -v, --verbose         Print more text.
-  -h, --help            Show help.
-  --utf8                Convert characters to UTF8
-  --version             Show version.
+  --boilerplate                Pastes contents of header.txt and footer.txt to start and end
+  -c, --chapters               Convert chapter headings into ppgen style chapter headings
+  --config=<config>            Use the set of options in the given configuration file
+  --chaptermaxlines            Max lines a chapter can be, anything larger is not a chapter
+  -d, --dryrun                 Run through conversions but do not write out result
+  -e, --sections               Convert section headings into ppgen style section headings
+  --sectionmaxlines            Max lines a section can be, ianything larger is not a section
+  -f, --footnotes              Convert footnotes into ppgen format
+  --fnautonum                  Use ppgen autonumbering for generated anchors and .fn statements
+  --fndest=<fndest>            Where to relocate footnotes (paragraphend, chapterend, bookend)
+  --lzdestt=<lzdestt>          Where to place footnote landing zones for text output (chapterend, bookend)
+  --lzdesth=<lzdesth>          Where to place footnote landing zones for HTML output (chapterend, bookend)
+  --fixup                      Perform guiguts style fixup operations
+  --force                      Ignore markup errors and force operation
+  -i, --illustrations          Convert raw [Illustration] tags into ppgen .il/.ca markup
+  -j, --joinspanned            Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
+  -k, --keeporiginal           On any conversion keep original text as a comment
+  -p, --pages                  Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines
+  -q, --quiet                  Print less text
+  -r, --report=[txt,html,csv]  Perform various analysis on the input file
+  -s, --sidenotes              Convert sidenotes into ppgen format
+  --snkeepbreaks               Keep exact line endings for multi-line sidenotes
+  --detectmarkup               Best guess what out of line markup /* */ /# #/ represent (table, toc, poetry, etc..)
+  --tnote                      Generate transcribers note
+  -m, --markup                 Convert out of line markup /* */ /# #/ into ppgen format
+  -v, --verbose                Print more text
+  -h, --help                   Show help
+  --utf8                       Convert characters to UTF8
+  --version                    Show version
 """
 
 from docopt import docopt
