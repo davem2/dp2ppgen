@@ -18,10 +18,10 @@ Options:
   --boilerplate                Pastes contents of header.txt and footer.txt to start and end
   -c, --chapters               Convert chapter headings into ppgen style chapter headings
   --config=<config>            Use the set of options in the given configuration file
-  --chaptermaxlines            Max lines a chapter can be, anything larger is not a chapter
+  --chaptermaxlines=<max>      Max lines a chapter can be, anything larger is not a chapter [default: 15]
   -d, --dryrun                 Run through conversions but do not write out result
   -e, --sections               Convert section headings into ppgen style section headings
-  --sectionmaxlines            Max lines a section can be, ianything larger is not a section
+  --sectionmaxlines=<max>      Max lines a section can be, ianything larger is not a section [default: 3]
   -f, --footnotes              Convert footnotes into ppgen format
   --fnautonum                  Use ppgen autonumbering for generated anchors and .fn statements
   --fndest=<fndest>            Where to relocate footnotes (paragraphend, chapterend, bookend)
@@ -567,7 +567,7 @@ def processHeadings(inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, c
                 logging.warning("Line {}: Disregarding chapter heading; no text found\n         {}".format(lineNum+1, inBlock[0]))
                 for line in inBlock:
                     outBuf.append(line)
-            elif len(inBlock) > chapterMaxLines:
+            elif len(inBlock) > int(chapterMaxLines):
                 logging.warning("Line {}: Disregarding chapter heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1, len(inBlock), chapterMaxLines, "\n".join(inBlock[0:6])))
                 for line in inBlock:
                     outBuf.append(line)
@@ -626,7 +626,7 @@ def processHeadings(inBuf, doChapterHeadings, doSectionHeadings, keepOriginal, c
             # TODO: Join section lines into one line.. really needed?
 
             # Check if this is a heading
-            if len(inBlock) > sectionMaxLines:
+            if len(inBlock) > int(sectionMaxLines):
                 logging.debug("Line {}: Disregarding section heading; too many lines ({} > {}):\n ---\n{}\n ---".format((lineNum-len(inBlock))+1, len(inBlock), sectionMaxLines, "\n".join(inBlock[0:6])))
                 for line in inBlock:
                     outBuf.append(line)
