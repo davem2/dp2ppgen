@@ -2871,66 +2871,66 @@ def main():
         if errorCount > 0 and not args['--force']:
             fatal("Correct markup issues then re-run operation, or use --force to ignore markup errors")
 
-    else:
-        outBuf = doStandardConversions(outBuf, args['--keeporiginal'])
 
-        if args['--pages']:
-            outBuf = processBlankPages(outBuf, args['--keeporiginal'])
-            outBuf = processPageNumbers(outBuf, args['--keeporiginal'])
-        if args['--fixup']:
-            outBuf = fixup(outBuf, args['--keeporiginal'])
-        if args['--utf8']:
-            outBuf = convertUTF8(outBuf)
-        if args['--chapters'] or args['--sections']:
-            outBuf = processHeadings(outBuf, args['--chapters'], args['--sections'], args['--keeporiginal'], args['--chaptermaxlines'], args['--sectionmaxlines'])
-        if args['--sidenotes']:
-            outBuf = processSidenotes(outBuf, args['--keeporiginal'], args['--snkeepbreaks'])
-        if args['--illustrations']:
-            outBuf = processIllustrations(outBuf)
-        if args['--footnotes']:
-            # Set defaults
-            fndest = ""
-            lzdestt = ""
-            lzdesth = ""
-            if args['--fndest']:
-                fndest = args['--fndest']
-            else:
-                fndest = "paragraphend"
-                lzdestt = "chapterend"
-                lzdesth = "bookend"
+    outBuf = doStandardConversions(outBuf, args['--keeporiginal'])
 
-            if args['--lzdestt']:
-                lzdestt = args['--lzdestt']
-            if args['--lzdesth']:
-                lzdesth = args['--lzdesth']
-            fnautonum = False
-            if args['--fnautonum']:
-                fnautonum = True
+    if args['--pages']:
+        outBuf = processBlankPages(outBuf, args['--keeporiginal'])
+        outBuf = processPageNumbers(outBuf, args['--keeporiginal'])
+    if args['--fixup']:
+        outBuf = fixup(outBuf, args['--keeporiginal'])
+    if args['--utf8']:
+        outBuf = convertUTF8(outBuf)
+    if args['--chapters'] or args['--sections']:
+        outBuf = processHeadings(outBuf, args['--chapters'], args['--sections'], args['--keeporiginal'], args['--chaptermaxlines'], args['--sectionmaxlines'])
+    if args['--sidenotes']:
+        outBuf = processSidenotes(outBuf, args['--keeporiginal'], args['--snkeepbreaks'])
+    if args['--illustrations']:
+        outBuf = processIllustrations(outBuf)
+    if args['--footnotes']:
+        # Set defaults
+        fndest = ""
+        lzdestt = ""
+        lzdesth = ""
+        if args['--fndest']:
+            fndest = args['--fndest']
+        else:
+            fndest = "paragraphend"
+            lzdestt = "chapterend"
+            lzdesth = "bookend"
 
-            outBuf = processFootnotes(outBuf, fndest, args['--keeporiginal'], lzdestt, lzdesth, fnautonum)
-        if args['--joinspanned']:
-            outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
-            outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
-        if args['--detectmarkup']:
-            outBuf = detectMarkup(outBuf)
-        if args['--markup']:
-            outBuf = processOOLFMarkup(outBuf, args['--keeporiginal'])
+        if args['--lzdestt']:
+            lzdestt = args['--lzdestt']
+        if args['--lzdesth']:
+            lzdesth = args['--lzdesth']
+        fnautonum = False
+        if args['--fnautonum']:
+            fnautonum = True
 
-        if args['--boilerplate']:
-            outBuf = addBoilerplate(outBuf)
+        outBuf = processFootnotes(outBuf, fndest, args['--keeporiginal'], lzdestt, lzdesth, fnautonum)
+    if args['--joinspanned']:
+        outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
+        outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
+    if args['--detectmarkup']:
+        outBuf = detectMarkup(outBuf)
+    if args['--markup']:
+        outBuf = processOOLFMarkup(outBuf, args['--keeporiginal'])
 
-        if args['--tnote']:
-            outBuf = generateTransNote(outBuf)
+    if args['--boilerplate']:
+        outBuf = addBoilerplate(outBuf)
 
-        if args['--report']:
-            generateReport(outBuf,args['--report'])
+    if args['--tnote']:
+        outBuf = generateTransNote(outBuf)
 
-        if not args['--dryrun']:
-            logging.info("Saving output to '{}'".format(outfile))
-            # Save file
-            f = open(outfile, 'w')
-            f.write('\n'.join(outBuf))
-            f.close()
+    if args['--report']:
+        generateReport(outBuf,args['--report'])
+
+    if not args['--dryrun']:
+        logging.info("Saving output to '{}'".format(outfile))
+        # Save file
+        f = open(outfile, 'w')
+        f.write('\n'.join(outBuf))
+        f.close()
 
     return
 
