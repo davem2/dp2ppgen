@@ -31,6 +31,7 @@ Options:
   --force                      Ignore markup errors and force operation
   -i, --illustrations          Convert raw [Illustration] tags into ppgen .il/.ca markup
   -j, --joinspanned            Join hypenations (-* *-) and formatting markup (/* */ /# #/) that spans page breaks
+  --autofixhyphens             Analyze hyphenated word usage and replace joined hyphenations with best fit (if one exists)
   -k, --keeporiginal           On any conversion keep original text as a comment
   -p, --pages                  Convert page breaks into ppgen // 001.png style, add .pn statements and comment out [Blank Page] lines
   -q, --quiet                  Print less text
@@ -2712,6 +2713,74 @@ def calcPageNumbers(inBuf):
 
     return pageNumbers
 
+def autoFixHyphens(inBuf):
+    logging.info("-- Automatically fixing hyphenation issues")
+    hyphenIssues = analyzeHyphenation(inBuf)
+
+    for h in hyphenIssues:
+        s = '{}{}{}'.format(h['firstWord'],h['hyphens'],h['secondWord'])
+        r = None
+        if h['hyphens'] == '-*':
+            if h['usageWithHyphen'] == 0 and h['usageWithoutHyphen'] > 0:
+                r = '{}{}'.format(h['firstWord'],h['secondWord'])
+            elif h['usageWithoutHyphen'] == 0 and h['usageWithHyphen'] > 0:
+                r = '{}-{}'.format(h['firstWord'],h['secondWord'])
+
+        elif h['hyphens'] == '-**':
+            if h['usageWithHyphen'] == 0 and h['usageWithoutHyphen'] > 0:
+                r = '{}{}'.format(h['firstWord'],h['secondWord'])
+            elif h['usageWithoutHyphen'] == 0 and h['usageWithHyphen'] > 0:
+                r = '{}-{}'.format(h['firstWord'],h['secondWord'])
+
+        if r is not None:
+            inBuf[h['lineNum']] = inBuf[h['lineNum']].replace(s,r)
+            logging.info("[{}] Replaced {} with {} ({} vs {})".format(h['lineNum'],s,r,h['usageWithHyphen'],h['usageWithoutHyphen']))
+        else:
+            logging.info("[{}] Skipped {} ({} vs {})".format(h['lineNum'],s,h['usageWithHyphen'],h['usageWithoutHyphen']))
+
+    return inBuf
+
+
+def analyzeHyphenation(inBuf):
+    logging.info("-- Analyzing hyphenation")
+    logging.warning("Multiple matches on the same line will only be counted as one")
+
+    hyphenation = []
+    lineNum = 0
+
+    while lineNum < len(inBuf):
+        m = re.findall(r"(\w+)(\*+-|-\*+)(\w+)", inBuf[lineNum])
+        for match in m:
+            firstWord = match[0]
+            hyphens = match[1]
+            secondWord = match[2]
+
+            unhyphenatedWord = '{}{}'.format(firstWord,secondWord).lower()
+            hyphenatedWord = '{}-{}'.format(firstWord,secondWord).lower()
+
+            # Much slower version (~10x), but properly detects multiple uses on the same line
+            #usageWithoutHyphen = sum([1 for line in inBuf for m in re.finditer(unhyphenatedWord,line)])
+            #usageWithHyphen = sum([1 for line in inBuf for m in re.finditer(hyphenatedWord,line)])
+
+            # Slower version (~5x) multiple matches on the same line will correctly be counted as multiple match
+            #usageWithoutHyphen = sum([1 for line in inBuf for w in line.lower().split() if unhyphenatedWord in w])
+            #usageWithHyphen = sum([1 for line in inBuf for w in line.lower().split() if hyphenatedWord in w])
+
+            # Fast, but will only report one match maximum for each line of input (multiple matches on the same line will be counted as one match)
+            usageWithoutHyphen = sum([1 for line in inBuf if unhyphenatedWord in line.lower()])
+            usageWithHyphen = sum([1 for line in inBuf if hyphenatedWord in line.lower()])
+
+            commonUsage = '??'
+            if usageWithHyphen > usageWithoutHyphen:
+                commonUsage = '{}-{}'.format(firstWord,secondWord)
+            elif usageWithHyphen < usageWithoutHyphen:
+                commonUsage = '{}{}'.format(firstWord,secondWord)
+
+            hyphenation.append({'firstWord':firstWord,'hyphens':hyphens,'secondWord':secondWord,'lineNum':lineNum,'usageWithoutHyphen':usageWithoutHyphen,'usageWithHyphen':usageWithHyphen,'commonUsage':commonUsage})
+        lineNum += 1
+
+    return hyphenation
+
 
 def generateReport(inBuf,reportFormat):
 
@@ -2729,45 +2798,6 @@ def generateReport(inBuf,reportFormat):
 
         return outline
 
-    def analyzeHyphenation(inBuf):
-        logging.info("-- Analyzing hyphenation")
-        logging.warning("Multiple matches on the same line will only be counted as one")
-
-        hyphenation = []
-        lineNum = 0
-
-        while lineNum < len(inBuf):
-            m = re.findall(r"(\w+)(\*+-|-\*+)(\w+)", inBuf[lineNum])
-            for match in m:
-                firstWord = match[0]
-                hyphens = match[1]
-                secondWord = match[2]
-
-                unhyphenatedWord = '{}{}'.format(firstWord,secondWord).lower()
-                hyphenatedWord = '{}-{}'.format(firstWord,secondWord).lower()
-
-                # Much slower version (~10x), but properly detects multiple uses on the same line
-                #usageWithoutHyphen = sum([1 for line in inBuf for m in re.finditer(unhyphenatedWord,line)])
-                #usageWithHyphen = sum([1 for line in inBuf for m in re.finditer(hyphenatedWord,line)])
-
-                # Slower version (~5x) multiple matches on the same line will correctly be counted as multiple match
-                #usageWithoutHyphen = sum([1 for line in inBuf for w in line.lower().split() if unhyphenatedWord in w])
-                #usageWithHyphen = sum([1 for line in inBuf for w in line.lower().split() if hyphenatedWord in w])
-
-                # Fast, but will only report one match maximum for each line of input (multiple matches on the same line will be counted as one match)
-                usageWithoutHyphen = sum([1 for line in inBuf if unhyphenatedWord in line.lower()])
-                usageWithHyphen = sum([1 for line in inBuf if hyphenatedWord in line.lower()])
-
-                commonUsage = '??'
-                if usageWithHyphen > usageWithoutHyphen:
-                    commonUsage = '{}-{}'.format(firstWord,secondWord)
-                elif usageWithHyphen < usageWithoutHyphen:
-                    commonUsage = '{}{}'.format(firstWord,secondWord)
-
-                hyphenation.append({'firstWord':firstWord,'hyphens':hyphens,'secondWord':secondWord,'lineNum':lineNum,'usageWithoutHyphen':usageWithoutHyphen,'usageWithHyphen':usageWithHyphen,'commonUsage':commonUsage})
-            lineNum += 1
-
-        return hyphenation
 
     report = {}
 
@@ -2855,6 +2885,7 @@ def main():
         not args['--boilerplate'] and \
         not args['--report'] and \
         not args['--tnote'] and \
+        not args['--autofixhyphens'] and \
         not args['--joinspanned']:
 
         logging.info("No processing options were given, using default options from defaults.json\n      Run 'dp2ppgen -h' for a full list of options")
@@ -2911,6 +2942,8 @@ def main():
     if args['--joinspanned']:
         outBuf = joinSpannedFormatting(outBuf, args['--keeporiginal'])
         outBuf = joinSpannedHyphenations(outBuf, args['--keeporiginal'])
+    if args['--autofixhyphens']:
+        autoFixHyphens(outBuf)
     if args['--detectmarkup']:
         outBuf = detectMarkup(outBuf)
     if args['--markup']:
