@@ -2713,6 +2713,106 @@ def calcPageNumbers(inBuf):
     return pageNumbers
 
 
+def generateReport(inBuf,reportFormat):
+
+    def parseOutline(inBuf):
+        outline = []
+        lineNum = 0
+        while lineNum < len(inBuf):
+            m = re.match(r".h([0-9]) (.+)", inBuf[lineNum])
+            if m:
+                hLevel = m.group(1)
+                hOptions = m.group(2)
+                hText = inBuf[lineNum+1]
+                outline.append({'hLevel':hLevel,'hOptions':hOptions,'hText':hText,'lineNum':lineNum})
+            lineNum += 1
+
+        return outline
+
+    def analyzeHyphenation(inBuf):
+        logging.info("-- Analyzing hyphenation")
+        logging.warning("Multiple matches on the same line will only be counted as one")
+
+        hyphenation = []
+        lineNum = 0
+
+        while lineNum < len(inBuf):
+            m = re.findall(r"(\w+)(\*+-|-\*+)(\w+)", inBuf[lineNum])
+            for match in m:
+                firstWord = match[0]
+                hyphens = match[1]
+                secondWord = match[2]
+
+                unhyphenatedWord = '{}{}'.format(firstWord,secondWord).lower()
+                hyphenatedWord = '{}-{}'.format(firstWord,secondWord).lower()
+
+                # Much slower version (~10x), but properly detects multiple uses on the same line
+                #usageWithoutHyphen = sum([1 for line in inBuf for m in re.finditer(unhyphenatedWord,line)])
+                #usageWithHyphen = sum([1 for line in inBuf for m in re.finditer(hyphenatedWord,line)])
+
+                # Slower version (~5x) multiple matches on the same line will correctly be counted as multiple match
+                #usageWithoutHyphen = sum([1 for line in inBuf for w in line.lower().split() if unhyphenatedWord in w])
+                #usageWithHyphen = sum([1 for line in inBuf for w in line.lower().split() if hyphenatedWord in w])
+
+                # Fast, but will only report one match maximum for each line of input (multiple matches on the same line will be counted as one match)
+                usageWithoutHyphen = sum([1 for line in inBuf if unhyphenatedWord in line.lower()])
+                usageWithHyphen = sum([1 for line in inBuf if hyphenatedWord in line.lower()])
+
+                commonUsage = '??'
+                if usageWithHyphen > usageWithoutHyphen:
+                    commonUsage = '{}-{}'.format(firstWord,secondWord)
+                elif usageWithHyphen < usageWithoutHyphen:
+                    commonUsage = '{}{}'.format(firstWord,secondWord)
+
+                hyphenation.append({'firstWord':firstWord,'hyphens':hyphens,'secondWord':secondWord,'lineNum':lineNum,'usageWithoutHyphen':usageWithoutHyphen,'usageWithHyphen':usageWithHyphen,'commonUsage':commonUsage})
+            lineNum += 1
+
+        return hyphenation
+
+    report = {}
+
+    report['outline'] = parseOutline(inBuf)
+    report['hyphenation'] = analyzeHyphenation(inBuf)
+
+    w1 = max([len(str(r['lineNum'])) for r in report['hyphenation']])
+    w2 = max([len(r['firstWord'])+len(r['hyphens'])+len(r['secondWord']) for r in report['hyphenation']])
+    w3 = max(5,len('w/ -'))
+    w4 = max(5,len('wo/ -'))
+    w5 = max(w2,len('Common Case'))
+    tableHeading = '{:<{}}  {:<{}}  {:<{}} {:<{}} {:<{}}'.format('Line',w1,'Word',w2,'w/-',w3,'wo/-',w4,'Common Case',w5)
+
+    print('\n{:-<{}}'.format('---[Words marked with -*]-',len(tableHeading)))
+    print(tableHeading)
+    print('{:-<{}}'.format('',len(tableHeading)))
+    for r in report['hyphenation']:
+        if r['hyphens'] == '-*':
+            print('{:<{}}  {:<{}}  {:<{}} {:<{}} {}'.format(r['lineNum'],w1,r['firstWord']+r['hyphens']+r['secondWord'],w2,r['usageWithHyphen'],w3,r['usageWithoutHyphen'],w4,r['commonUsage'],w5))
+
+    print('\n{:-<{}}'.format('---[Words marked with -**]-',len(tableHeading)))
+    print(tableHeading)
+    print('{:-<{}}'.format('',len(tableHeading)))
+    for r in report['hyphenation']:
+        if r['hyphens'] == '-**':
+            print('{:<{}}  {:<{}}  {:<{}} {:<{}} {}'.format(r['lineNum'],w1,r['firstWord']+r['hyphens']+r['secondWord'],w2,r['usageWithHyphen'],w3,r['usageWithoutHyphen'],w4,r['commonUsage'],w5))
+
+    for r in report['outline']:
+        print('yes')
+        print('{}[[h{}{}] {}'.format(r['hLevel'],r['hLevel']*3,r['hOptions'],r['hText']))
+
+#   toc outline
+#   table of footnotes
+#   table of illustrations (in ppgimg too?)
+#   list of proofer notes
+#   markup errors with associated line numbers
+#   list each usage of all <i>, <cite>, <i><lang>, ...
+#   list each usage of all <b>, <sc>, ...
+
+
+
+    #print(report)
+
+
+
 def main():
     args = docopt(__doc__, version="dp2ppgen v{}".format(__version__))
 
@@ -2753,6 +2853,7 @@ def main():
         not args['--fixup'] and \
         not args['--utf8'] and \
         not args['--boilerplate'] and \
+        not args['--report'] and \
         not args['--tnote'] and \
         not args['--joinspanned']:
 
@@ -2765,9 +2866,10 @@ def main():
     logging.info("Processing '{}'".format(infile))
     outBuf = inBuf
 
-    errorCount = validateDpMarkup(inBuf)
-    if errorCount > 0 and not args['--force']:
-        fatal("Correct markup issues then re-run operation, or use --force to ignore markup errors")
+    if not args['--report']:
+        errorCount = validateDpMarkup(inBuf)
+        if errorCount > 0 and not args['--force']:
+            fatal("Correct markup issues then re-run operation, or use --force to ignore markup errors")
 
     else:
         outBuf = doStandardConversions(outBuf, args['--keeporiginal'])
@@ -2819,6 +2921,9 @@ def main():
 
         if args['--tnote']:
             outBuf = generateTransNote(outBuf)
+
+        if args['--report']:
+            generateReport(outBuf,args['--report'])
 
         if not args['--dryrun']:
             logging.info("Saving output to '{}'".format(outfile))
