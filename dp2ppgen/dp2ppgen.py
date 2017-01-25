@@ -2601,7 +2601,7 @@ def generateTransNote(inBuf):
                 newText = "{}<B>{}</B>{}".format(beforeText, t[1], afterText)
                 tnote.append("#Page {}:tnote_{}#: {} → {}".format(pageLabel, lineNum, oldText, newText))
 
-                inBuf[lineNum] = inBuf[lineNum].replace(m.group(0), "<span id=tnote_{}>{}</span>".format(lineNum, t[1]))
+                inBuf[lineNum] = inBuf[lineNum].replace(m.group(0), "<span id='tnote_{}'>{}</span>".format(lineNum, t[1]))
 
         outBuf.append(inBuf[lineNum])
         lineNum += 1
@@ -2790,14 +2790,27 @@ def generateReport(inBuf,reportFormat):
         while lineNum < len(inBuf):
             m = re.match(r".h([0-9]) (.+)", inBuf[lineNum])
             if m:
-                hLevel = m.group(1)
-                hOptions = m.group(2)
-                hText = inBuf[lineNum+1]
-                outline.append({'hLevel':hLevel,'hOptions':hOptions,'hText':hText,'lineNum':lineNum})
+                level = m.group(1)
+                options = m.group(2)
+                text = inBuf[lineNum+1]
+                outline.append({'level':level,'options':options,'text':text,'lineNum':lineNum})
             lineNum += 1
 
         return outline
 
+    def parseIllos(inBuf):
+        illos = []
+        lineNum = 0
+        while lineNum < len(inBuf):
+            m = re.match(r".il (.+)", inBuf[lineNum])
+            if m:
+                level = m.group(1)
+                options = m.group(2)
+                text = inBuf[lineNum+1]
+                outline.append({'lineNum':lineNum,'scanPageNum':scanPageNum,'pageNum':pageNum,'fileName':fileName,'dimensions':dimensions})
+            lineNum += 1
+
+        return illos
 
     report = {}
 
@@ -2827,7 +2840,7 @@ def generateReport(inBuf,reportFormat):
 
     for r in report['outline']:
         print('yes')
-        print('{}[[h{}{}] {}'.format(r['hLevel'],r['hLevel']*3,r['hOptions'],r['hText']))
+        print('{}[[h{}{}] {}'.format(r['level'],r['level']*3,r['options'],r['text']))
 
 #   toc outline
 #   table of footnotes
